@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   The Brand Coach Network - Global Styles
+   ============================================ */
+
+@layer base {
+  /* Custom font imports */
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/inter-var.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/poppins-var.woff2') format('woff2');
+  }
+
+  /* Base HTML styles */
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-900 font-sans;
+    @apply dark:bg-neutral-950 dark:text-neutral-100;
+  }
+
+  /* Heading defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+
+  /* Focus ring for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+    @apply dark:ring-offset-neutral-900;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-brand-500/20 text-brand-900;
+    @apply dark:bg-brand-500/30 dark:text-brand-100;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2 rounded-lg font-medium;
+    @apply transition-all duration-200 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-500 text-white;
+    @apply hover:bg-brand-600 active:bg-brand-700;
+    @apply focus:ring-brand-500;
+    @apply shadow-brand hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply btn bg-neutral-200 text-neutral-900;
+    @apply hover:bg-neutral-300 active:bg-neutral-400;
+    @apply focus:ring-neutral-500;
+    @apply dark:bg-neutral-800 dark:text-neutral-100;
+    @apply dark:hover:bg-neutral-700;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-brand-500 text-brand-500;
+    @apply hover:bg-brand-500 hover:text-white;
+    @apply focus:ring-brand-500;
+  }
+
+  .btn-ghost {
+    @apply btn text-neutral-600 hover:bg-neutral-100;
+    @apply dark:text-neutral-400 dark:hover:bg-neutral-800;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-xl shadow-card;
+    @apply dark:bg-neutral-900 dark:border dark:border-neutral-800;
+    @apply transition-shadow duration-200;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg;
+    @apply bg-white border border-neutral-300;
+    @apply text-neutral-900 placeholder:text-neutral-400;
+    @apply focus:border-brand-500 focus:ring-1 focus:ring-brand-500;
+    @apply disabled:bg-neutral-100 disabled:cursor-not-allowed;
+    @apply dark:bg-neutral-900 dark:border-neutral-700;
+    @apply dark:text-neutral-100 dark:placeholder:text-neutral-500;
+  }
+
+  .input-error {
+    @apply input border-error-500 focus:border-error-500 focus:ring-error-500;
+  }
+
+  /* Label styles */
+  .label {
+    @apply block text-sm font-medium text-neutral-700 mb-1.5;
+    @apply dark:text-neutral-300;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-brand {
+    @apply badge bg-brand-100 text-brand-700;
+    @apply dark:bg-brand-900/30 dark:text-brand-400;
+  }
+
+  .badge-success {
+    @apply badge bg-success-100 text-success-700;
+    @apply dark:bg-success-900/30 dark:text-success-400;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-700;
+    @apply dark:bg-warning-900/30 dark:text-warning-400;
+  }
+
+  .badge-error {
+    @apply badge bg-error-100 text-error-700;
+    @apply dark:bg-error-900/30 dark:text-error-400;
+  }
+
+  /* Container */
+  .container-app {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Section padding */
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse bg-neutral-200 rounded;
+    @apply dark:bg-neutral-800;
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-500 to-accent-500;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md;
+    @apply dark:bg-neutral-900/80;
+  }
+
+  /* Safe area padding for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
