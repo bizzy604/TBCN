@@ -21,7 +21,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="mx-auto max-w-md text-center">
         {/* Error icon */}
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/30">
@@ -29,18 +29,18 @@ export default function Error({
         </div>
 
         {/* Title */}
-        <h1 className="mb-2 text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">
           Something went wrong
         </h1>
 
         {/* Description */}
-        <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+        <p className="mb-6 text-muted-foreground">
           We encountered an unexpected error. Our team has been notified and is working on a fix.
         </p>
 
         {/* Error digest (for debugging) */}
         {error.digest && (
-          <p className="mb-6 font-mono text-xs text-neutral-400">
+          <p className="mb-6 font-mono text-xs text-muted-foreground">
             Error ID: {error.digest}
           </p>
         )}

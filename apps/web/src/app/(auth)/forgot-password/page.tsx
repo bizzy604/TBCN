@@ -49,8 +49,8 @@ export default function ForgotPasswordPage() {
         </div>
         
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Check your email</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Check your email</h1>
+          <p className="mt-2 text-muted-foreground">
             If an account with that email exists, we've sent you a password reset link.
             Please check your inbox and spam folder.
           </p>
@@ -68,8 +68,8 @@ export default function ForgotPasswordPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center lg:text-left">
-        <h1 className="text-3xl font-bold text-gray-900">Forgot password?</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Forgot password?</h1>
+        <p className="mt-2 text-muted-foreground">
           Enter your email and we'll send you a reset link
         </p>
       </div>
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
             Email address
           </label>
           <input
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
       <p className="text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-500 font-medium"
+          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
         >
           <ArrowLeft size={16} />
           Back to login

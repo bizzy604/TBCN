@@ -23,9 +23,8 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
 } from './dto';
-import { Public } from '@/common/decorators';
-import { JwtAuthGuard } from '@/common/guards';
-import { CurrentUser } from '@/common/decorators';
+import { Public, CurrentUser } from '../../common/decorators';
+import { JwtAuthGuard } from '../../common/guards';
 
 @ApiTags('Auth')
 @Controller('auth')

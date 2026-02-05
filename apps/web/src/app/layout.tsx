@@ -103,7 +103,7 @@ export default function RootLayout({
       className={`${inter.variable} ${poppins.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-neutral-50 font-sans antialiased dark:bg-neutral-950">
+      <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
           {children}
         </Providers>

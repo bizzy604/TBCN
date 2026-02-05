@@ -25,7 +25,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -35,8 +35,8 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-500">Manage your account settings and preferences</p>
+          <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
+          <p className="text-muted-foreground">Manage your account settings and preferences</p>
         </div>
         <Link href="/dashboard/profile/edit" className="btn-primary">
           <Edit2 size={16} className="mr-2" />
@@ -45,20 +45,20 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         {/* Cover */}
-        <div className="h-32 bg-gradient-to-r from-primary-600 to-purple-600"></div>
+        <div className="h-32 bg-gradient-to-r from-primary to-secondary"></div>
         
         {/* Avatar and Info */}
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="absolute -top-12 left-6">
-            <div className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden">
+            <div className="w-24 h-24 rounded-full bg-card border-4 border-card overflow-hidden">
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <User size={32} className="text-gray-400" />
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <User size={32} className="text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -66,12 +66,12 @@ export default function ProfilePage() {
           
           {/* User Info */}
           <div className="pt-16">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-foreground">
               {user?.firstName} {user?.lastName}
             </h2>
-            <p className="text-gray-500">{user?.email}</p>
+            <p className="text-muted-foreground">{user?.email}</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 capitalize">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                 {user?.role?.replace('_', ' ')}
               </span>
               {user?.emailVerified && (
@@ -87,8 +87,8 @@ export default function ProfilePage() {
       {/* Profile Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Personal Info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Personal Information</h3>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold text-foreground mb-4">Personal Information</h3>
           <div className="space-y-4">
             <InfoRow icon={<User size={18} />} label="Full Name" value={`${user?.firstName} ${user?.lastName}`} />
             <InfoRow icon={<Mail size={18} />} label="Email" value={user?.email || '-'} />
@@ -99,8 +99,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Professional Info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Professional Details</h3>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold text-foreground mb-4">Professional Details</h3>
           <div className="space-y-4">
             <InfoRow icon={<Briefcase size={18} />} label="Company" value="Not set" />
             <InfoRow icon={<Briefcase size={18} />} label="Job Title" value="Not set" />
@@ -112,7 +112,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Settings Links */}
-      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+      <div className="bg-card rounded-xl border border-border divide-y divide-border">
         <SettingsLink
           href="/dashboard/profile/edit"
           icon={<Edit2 size={20} />}
@@ -159,10 +159,10 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="text-gray-400">{icon}</div>
+      <div className="text-muted-foreground">{icon}</div>
       <div className="flex-1">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-gray-900">{value}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-foreground">{value}</p>
       </div>
     </div>
   );
@@ -182,12 +182,12 @@ function SettingsLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+      className="flex items-center gap-4 p-4 hover:bg-muted transition-colors"
     >
-      <div className="p-2 rounded-lg bg-gray-100 text-gray-600">{icon}</div>
+      <div className="p-2 rounded-lg bg-muted text-muted-foreground">{icon}</div>
       <div>
-        <p className="font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-500">{description}</p>
+        <p className="font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </Link>
   );

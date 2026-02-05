@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
-import { BaseEntity } from '@/common/entities';
+import { BaseEntity } from '../../../common/entities';
 
 /**
  * User roles in the system

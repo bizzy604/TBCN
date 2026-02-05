@@ -10,7 +10,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -18,18 +18,18 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-primary-foreground">
         <h1 className="text-3xl font-bold">
           Welcome back, {user?.firstName || 'Coach'}!
         </h1>
-        <p className="mt-2 text-white/80 max-w-2xl">
+        <p className="mt-2 text-primary-foreground/80 max-w-2xl">
           Continue your learning journey or explore new programs to grow your coaching business.
         </p>
         <div className="mt-6 flex gap-4">
-          <Link href="/dashboard/programs" className="btn-secondary bg-white text-primary-600 hover:bg-gray-100">
+          <Link href="/dashboard/programs" className="btn-secondary bg-background text-primary hover:bg-muted">
             Browse Programs
           </Link>
-          <Link href="/dashboard/profile" className="text-white/90 hover:text-white flex items-center gap-2">
+          <Link href="/dashboard/profile" className="text-primary-foreground/90 hover:text-primary-foreground flex items-center gap-2">
             Complete your profile <ArrowRight size={16} />
           </Link>
         </div>
@@ -38,13 +38,13 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          icon={<BookOpen className="text-primary-600" />}
+          icon={<BookOpen className="text-primary" />}
           label="Programs Enrolled"
           value="3"
           change="+1 this month"
         />
         <StatCard
-          icon={<Users className="text-purple-600" />}
+          icon={<Users className="text-secondary" />}
           label="Community Members"
           value="2,847"
           change="Active today"
@@ -56,7 +56,7 @@ export default function DashboardPage() {
           change="Next: Tomorrow"
         />
         <StatCard
-          icon={<TrendingUp className="text-orange-600" />}
+          icon={<TrendingUp className="text-accent" />}
           label="Learning Progress"
           value="67%"
           change="Keep going!"
@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <QuickAction
             href="/dashboard/programs"
@@ -90,8 +90,8 @@ export default function DashboardPage() {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
+        <div className="bg-card rounded-xl border border-border divide-y divide-border">
           <ActivityItem
             title="Completed: Module 3 - Brand Positioning"
             time="2 hours ago"
@@ -130,13 +130,13 @@ function StatCard({
   change: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-card rounded-xl border border-border p-6">
       <div className="flex items-center gap-4">
-        <div className="p-3 rounded-lg bg-gray-50">{icon}</div>
+        <div className="p-3 rounded-lg bg-muted">{icon}</div>
         <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          <p className="text-xs text-gray-400">{change}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-xs text-muted-foreground">{change}</p>
         </div>
       </div>
     </div>
@@ -157,14 +157,14 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 bg-white rounded-xl border border-gray-200 p-4 hover:border-primary-500 hover:shadow-md transition-all group"
+      className="flex items-center gap-4 bg-card rounded-xl border border-border p-4 hover:border-primary hover:shadow-md transition-all group"
     >
-      <div className="p-3 rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100">
+      <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20">
         {icon}
       </div>
       <div>
-        <p className="font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-500">{description}</p>
+        <p className="font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </Link>
   );
@@ -180,18 +180,18 @@ function ActivityItem({
   type: 'lesson' | 'message' | 'event' | 'enrollment';
 }) {
   const icons = {
-    lesson: <BookOpen size={16} className="text-primary-600" />,
-    message: <MessageSquare size={16} className="text-purple-600" />,
+    lesson: <BookOpen size={16} className="text-primary" />,
+    message: <MessageSquare size={16} className="text-secondary" />,
     event: <Calendar size={16} className="text-green-600" />,
-    enrollment: <TrendingUp size={16} className="text-orange-600" />,
+    enrollment: <TrendingUp size={16} className="text-accent" />,
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-gray-50">
-      <div className="p-2 rounded-full bg-gray-100">{icons[type]}</div>
+    <div className="flex items-center gap-4 p-4 hover:bg-muted">
+      <div className="p-2 rounded-full bg-muted">{icons[type]}</div>
       <div className="flex-1">
-        <p className="text-gray-900">{title}</p>
-        <p className="text-sm text-gray-500">{time}</p>
+        <p className="text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{time}</p>
       </div>
     </div>
   );

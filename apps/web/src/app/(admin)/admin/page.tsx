@@ -19,8 +19,8 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground">
           Welcome back, {user?.firstName}. Here's what's happening today.
         </p>
       </div>
@@ -28,14 +28,14 @@ export default function AdminDashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          icon={<Users className="text-primary-600" />}
+          icon={<Users className="text-primary" />}
           label="Total Users"
           value="5,234"
           change="+12.5%"
           trend="up"
         />
         <StatCard
-          icon={<BookOpen className="text-purple-600" />}
+          icon={<BookOpen className="text-secondary" />}
           label="Active Programs"
           value="24"
           change="+4"
@@ -49,7 +49,7 @@ export default function AdminDashboardPage() {
           trend="up"
         />
         <StatCard
-          icon={<TrendingUp className="text-orange-600" />}
+          icon={<TrendingUp className="text-accent" />}
           label="Conversion Rate"
           value="3.2%"
           change="-0.4%"
@@ -60,10 +60,10 @@ export default function AdminDashboardPage() {
       {/* Recent Activity & Quick Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Sign-ups */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Sign-ups</h2>
-            <a href="/admin/users" className="text-sm text-primary-600 hover:text-primary-700">
+            <h2 className="text-lg font-semibold text-foreground">Recent Sign-ups</h2>
+            <a href="/admin/users" className="text-sm text-primary hover:text-primary/80">
               View all
             </a>
           </div>
@@ -76,24 +76,24 @@ export default function AdminDashboardPage() {
               { name: 'Lisa Anderson', email: 'lisa@example.com', time: '5 hours ago' },
             ].map((user, index) => (
               <div key={index} className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                  <UserPlus size={16} className="text-gray-400" />
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                  <UserPlus size={16} className="text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
-                <span className="text-xs text-gray-400">{user.time}</span>
+                <span className="text-xs text-muted-foreground">{user.time}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-            <a href="/admin/analytics" className="text-sm text-primary-600 hover:text-primary-700">
+            <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+            <a href="/admin/analytics" className="text-sm text-primary hover:text-primary/80">
               View all
             </a>
           </div>
@@ -108,13 +108,13 @@ export default function AdminDashboardPage() {
               <div key={index} className="flex items-center gap-4">
                 <div className={`w-2 h-2 rounded-full ${
                   activity.type === 'success' ? 'bg-green-500' :
-                  activity.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                  activity.type === 'warning' ? 'bg-yellow-500' : 'bg-destructive'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                  <p className="text-xs text-gray-500 truncate">{activity.details}</p>
+                  <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                  <p className="text-xs text-muted-foreground truncate">{activity.details}</p>
                 </div>
-                <span className="text-xs text-gray-400">{activity.time}</span>
+                <span className="text-xs text-muted-foreground">{activity.time}</span>
               </div>
             ))}
           </div>
@@ -122,8 +122,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="bg-card rounded-xl border border-border p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <QuickAction href="/admin/users/new" icon={<UserPlus />} label="Add User" />
           <QuickAction href="/admin/programs/new" icon={<BookOpen />} label="Create Program" />
@@ -149,18 +149,18 @@ function StatCard({
   trend: 'up' | 'down';
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-card rounded-xl border border-border p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="p-2 rounded-lg bg-gray-50">{icon}</div>
+        <div className="p-2 rounded-lg bg-muted">{icon}</div>
         <div className={`flex items-center gap-1 text-sm ${
-          trend === 'up' ? 'text-green-600' : 'text-red-600'
+          trend === 'up' ? 'text-green-600' : 'text-destructive'
         }`}>
           {trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
           {change}
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-sm text-gray-500">{label}</p>
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -177,12 +177,12 @@ function QuickAction({
   return (
     <a
       href={href}
-      className="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition-colors group"
+      className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors group"
     >
-      <div className="p-3 rounded-lg bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-600">
+      <div className="p-3 rounded-lg bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary">
         {icon}
       </div>
-      <span className="text-sm font-medium text-gray-700 group-hover:text-primary-600">
+      <span className="text-sm font-medium text-foreground group-hover:text-primary">
         {label}
       </span>
     </a>

@@ -128,25 +128,25 @@ export default function EditProfilePage() {
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/profile"
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-muted transition-colors"
         >
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
-          <p className="text-gray-500">Update your personal and professional information</p>
+          <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
+          <p className="text-muted-foreground">Update your personal and professional information</p>
         </div>
       </div>
 
       {/* Avatar Upload */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center gap-6">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-muted">
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   <Camera size={32} />
                 </div>
               )}
@@ -155,7 +155,7 @@ export default function EditProfilePage() {
               type="button"
               onClick={handleAvatarClick}
               disabled={isUploadingAvatar}
-              className="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full text-white hover:bg-primary-700 transition-colors"
+              className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               {isUploadingAvatar ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -172,8 +172,8 @@ export default function EditProfilePage() {
             />
           </div>
           <div>
-            <p className="font-medium text-gray-900">Profile Photo</p>
-            <p className="text-sm text-gray-500">JPG, PNG or GIF. Max 5MB.</p>
+            <p className="font-medium text-foreground">Profile Photo</p>
+            <p className="text-sm text-muted-foreground">JPG, PNG or GIF. Max 5MB.</p>
           </div>
         </div>
       </div>
@@ -181,40 +181,40 @@ export default function EditProfilePage() {
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Personal Info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900">Personal Information</h3>
+        <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+          <h3 className="font-semibold text-foreground">Personal Information</h3>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 First Name
               </label>
               <input
                 type="text"
-                className={`input ${errors.firstName ? 'border-red-500' : ''}`}
+                className={`input ${errors.firstName ? 'border-destructive' : ''}`}
                 {...register('firstName')}
               />
               {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                <p className="mt-1 text-sm text-destructive">{errors.firstName.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Last Name
               </label>
               <input
                 type="text"
-                className={`input ${errors.lastName ? 'border-red-500' : ''}`}
+                className={`input ${errors.lastName ? 'border-destructive' : ''}`}
                 {...register('lastName')}
               />
               {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                <p className="mt-1 text-sm text-destructive">{errors.lastName.message}</p>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Phone Number
             </label>
             <input
@@ -226,7 +226,7 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Timezone
             </label>
             <select className="input" {...register('timezone')}>
@@ -242,7 +242,7 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Bio
             </label>
             <textarea
@@ -252,17 +252,17 @@ export default function EditProfilePage() {
               {...register('bio')}
             />
             {errors.bio && (
-              <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.bio.message}</p>
             )}
           </div>
         </div>
 
         {/* Professional Info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900">Professional Details</h3>
+        <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+          <h3 className="font-semibold text-foreground">Professional Details</h3>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Headline
             </label>
             <input
@@ -275,7 +275,7 @@ export default function EditProfilePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Company
               </label>
               <input
@@ -285,7 +285,7 @@ export default function EditProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Job Title
               </label>
               <input
@@ -297,7 +297,7 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Location
             </label>
             <input
@@ -310,43 +310,43 @@ export default function EditProfilePage() {
         </div>
 
         {/* Social Links */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900">Social Links</h3>
+        <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+          <h3 className="font-semibold text-foreground">Social Links</h3>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Website
             </label>
             <input
               type="url"
-              className={`input ${errors.website ? 'border-red-500' : ''}`}
+              className={`input ${errors.website ? 'border-destructive' : ''}`}
               placeholder="https://yourwebsite.com"
               {...register('website')}
             />
             {errors.website && (
-              <p className="mt-1 text-sm text-red-600">{errors.website.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.website.message}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               LinkedIn
             </label>
             <input
               type="url"
-              className={`input ${errors.linkedinUrl ? 'border-red-500' : ''}`}
+              className={`input ${errors.linkedinUrl ? 'border-destructive' : ''}`}
               placeholder="https://linkedin.com/in/yourprofile"
               {...register('linkedinUrl')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Twitter / X
             </label>
             <input
               type="url"
-              className={`input ${errors.twitterUrl ? 'border-red-500' : ''}`}
+              className={`input ${errors.twitterUrl ? 'border-destructive' : ''}`}
               placeholder="https://twitter.com/yourhandle"
               {...register('twitterUrl')}
             />

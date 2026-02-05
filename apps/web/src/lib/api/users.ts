@@ -1,5 +1,11 @@
-import { apiClient } from './client';
+import apiClient from './client';
 import type { User, UserProfile, PaginatedResponse, PaginationParams } from '@/types';
+
+// Backend wraps responses in { data: T, timestamp: string }
+interface ApiResponse<T> {
+  data: T;
+  timestamp: string;
+}
 
 export interface UpdateProfileData {
   bio?: string;
@@ -34,24 +40,24 @@ export const usersApi = {
    * Get current user with profile
    */
   async getMe(): Promise<User & { profile: UserProfile }> {
-    const response = await apiClient.get<User & { profile: UserProfile }>('/users/me');
-    return response.data;
+    const response = await apiClient.get<ApiResponse<User & { profile: UserProfile }>>('/users/me');
+    return response.data.data;
   },
 
   /**
    * Update current user
    */
   async updateMe(data: UpdateUserData): Promise<User> {
-    const response = await apiClient.put<User>('/users/me', data);
-    return response.data;
+    const response = await apiClient.put<ApiResponse<User>>('/users/me', data);
+    return response.data.data;
   },
 
   /**
    * Update current user profile
    */
   async updateMyProfile(data: UpdateProfileData): Promise<UserProfile> {
-    const response = await apiClient.put<UserProfile>('/users/me/profile', data);
-    return response.data;
+    const response = await apiClient.put<ApiResponse<UserProfile>>('/users/me/profile', data);
+    return response.data.data;
   },
 
   /**
@@ -61,12 +67,12 @@ export const usersApi = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await apiClient.post<{ avatarUrl: string }>('/users/me/avatar', formData, {
+    const response = await apiClient.post<ApiResponse<{ avatarUrl: string }>>('/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data.data;
   },
 
   // ============================================
@@ -81,16 +87,16 @@ export const usersApi = {
     role?: string;
     status?: string;
   }): Promise<PaginatedResponse<User>> {
-    const response = await apiClient.get<PaginatedResponse<User>>('/users', { params });
-    return response.data;
+    const response = await apiClient.get<ApiResponse<PaginatedResponse<User>>>('/users', { params });
+    return response.data.data;
   },
 
   /**
    * Get user by ID (admin)
    */
   async getById(id: string): Promise<User & { profile: UserProfile }> {
-    const response = await apiClient.get<User & { profile: UserProfile }>(`/users/${id}`);
-    return response.data;
+    const response = await apiClient.get<ApiResponse<User & { profile: UserProfile }>>(`/users/${id}`);
+    return response.data.data;
   },
 
   /**
@@ -101,8 +107,8 @@ export const usersApi = {
     status?: string;
     emailVerified?: boolean;
   }): Promise<User> {
-    const response = await apiClient.patch<User>(`/users/${id}`, data);
-    return response.data;
+    const response = await apiClient.patch<ApiResponse<User>>(`/users/${id}`, data);
+    return response.data.data;
   },
 
   /**
@@ -116,7 +122,7 @@ export const usersApi = {
    * Get user stats (admin)
    */
   async getStats(): Promise<Record<string, number>> {
-    const response = await apiClient.get<Record<string, number>>('/users/stats');
-    return response.data;
+    const response = await apiClient.get<ApiResponse<Record<string, number>>>('/users/stats');
+    return response.data.data;
   },
 };

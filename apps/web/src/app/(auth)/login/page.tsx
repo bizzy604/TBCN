@@ -70,8 +70,8 @@ export default function LoginPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center lg:text-left">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
+        <p className="mt-2 text-muted-foreground">
           Sign in to continue to your dashboard
         </p>
       </div>
@@ -80,25 +80,25 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
             Email address
           </label>
           <input
             id="email"
             type="email"
             autoComplete="email"
-            className={`input ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+            className={`input ${errors.email ? 'border-destructive focus:ring-destructive' : ''}`}
             placeholder="you@example.com"
             {...register('email')}
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
             Password
           </label>
           <div className="relative">
@@ -106,20 +106,20 @@ export default function LoginPage() {
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
-              className={`input pr-10 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+              className={`input pr-10 ${errors.password ? 'border-destructive focus:ring-destructive' : ''}`}
               placeholder="Enter your password"
               {...register('password')}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.password.message}</p>
           )}
         </div>
 
@@ -128,15 +128,15 @@ export default function LoginPage() {
           <label className="flex items-center">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               {...register('rememberMe')}
             />
-            <span className="ml-2 text-sm text-gray-600">Remember me</span>
+            <span className="ml-2 text-sm text-muted-foreground">Remember me</span>
           </label>
           
           <Link
             href="/forgot-password"
-            className="text-sm font-medium text-primary-600 hover:text-primary-500"
+            className="text-sm font-medium text-primary hover:text-primary/80"
           >
             Forgot password?
           </Link>
@@ -162,10 +162,10 @@ export default function LoginPage() {
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300" />
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          <span className="px-2 bg-background text-muted-foreground">Or continue with</span>
         </div>
       </div>
 
@@ -218,11 +218,11 @@ export default function LoginPage() {
       </div>
 
       {/* Register link */}
-      <p className="text-center text-gray-600">
+      <p className="text-center text-muted-foreground">
         Don't have an account?{' '}
         <Link
           href="/register"
-          className="font-medium text-primary-600 hover:text-primary-500"
+          className="font-medium text-primary hover:text-primary/80"
         >
           Sign up for free
         </Link>

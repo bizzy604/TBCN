@@ -9,29 +9,29 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800">
+      <section className="relative overflow-hidden bg-gradient-to-br from-card via-card to-muted">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-[url('/images/grid-pattern.svg')] opacity-5" />
         
         <div className="container-app relative py-24 lg:py-32">
           <div className="mx-auto max-w-4xl text-center">
             {/* Badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-2 text-sm text-brand-400">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
               #ABillionLivesGlobally
             </div>
 
             {/* Headline */}
-            <h1 className="mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               Build Your Brand.{' '}
               <span className="text-gradient">Transform Your Life.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="mx-auto mb-10 max-w-2xl text-lg text-neutral-300 sm:text-xl">
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
               Join Africa's premier coaching platform. Discover your brand, build visibility, 
               and create measurable impact through structured coaching, community, and commerce.
             </p>
@@ -42,14 +42,14 @@ export default function HomePage() {
                 Start Your Journey
                 <ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <button className="btn-ghost btn-lg text-white hover:bg-white/10">
+              <button className="btn-ghost btn-lg text-foreground hover:bg-muted">
                 <PlayCircleIcon className="h-6 w-6" />
                 Watch Demo
               </button>
             </div>
 
             {/* Social Proof */}
-            <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-neutral-400">
+            <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <UsersIcon className="h-5 w-5" />
                 <span>5,000+ Members</span>
@@ -68,13 +68,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="section-padding bg-neutral-50 dark:bg-neutral-950">
+      <section className="section-padding bg-background">
         <div className="container-app">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
               Everything You Need to Build Your Brand
             </h2>
-            <p className="text-lg text-neutral-600 dark:text-neutral-400">
+            <p className="text-lg text-muted-foreground">
               A complete ecosystem designed to help African entrepreneurs discover, 
               build, and scale their personal and business brands.
             </p>
@@ -83,11 +83,11 @@ export default function HomePage() {
           <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <div key={feature.title} className="card-hover p-6">
-                <div className="mb-4 inline-flex rounded-lg bg-brand-100 p-3 dark:bg-brand-900/30">
-                  <feature.icon className="h-6 w-6 text-brand-600 dark:text-brand-400" />
+                <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3">
+                  <feature.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-muted-foreground">
                   {feature.description}
                 </p>
               </div>
@@ -97,16 +97,16 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="section-padding bg-brand-500">
+      <section className="section-padding bg-primary">
         <div className="container-app text-center">
-          <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold text-primary-foreground sm:text-4xl">
             Ready to Transform Your Brand?
           </h2>
-          <p className="mx-auto mb-8 max-w-xl text-lg text-brand-100">
+          <p className="mx-auto mb-8 max-w-xl text-lg text-primary-foreground/80">
             Join thousands of entrepreneurs who are building their brands and 
             creating lasting impact with The Brand Coach Network.
           </p>
-          <Link href="/register" className="btn btn-lg bg-white text-brand-600 hover:bg-neutral-100">
+          <Link href="/register" className="btn btn-lg bg-background text-primary hover:bg-muted">
             Get Started Free
             <ArrowRightIcon className="h-5 w-5" />
           </Link>

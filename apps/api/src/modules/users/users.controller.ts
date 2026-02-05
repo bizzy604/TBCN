@@ -31,8 +31,8 @@ import {
   AdminUpdateUserDto,
   UserQueryDto,
 } from './dto';
-import { JwtAuthGuard, RolesGuard } from '@/common/guards';
-import { CurrentUser, Roles, Role } from '@/common/decorators';
+import { JwtAuthGuard, RolesGuard } from '../../common/guards';
+import { CurrentUser, Roles, Role } from '../../common/decorators';
 
 @ApiTags('Users')
 @Controller('users')

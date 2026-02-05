@@ -92,8 +92,8 @@ export default function RegisterPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center lg:text-left">
-        <h1 className="text-3xl font-bold text-gray-900">Create your account</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Create your account</h1>
+        <p className="mt-2 text-muted-foreground">
           Start your coaching transformation journey today
         </p>
       </div>
@@ -103,61 +103,61 @@ export default function RegisterPage() {
         {/* Name Row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-1">
               First name
             </label>
             <input
               id="firstName"
               type="text"
               autoComplete="given-name"
-              className={`input ${errors.firstName ? 'border-red-500 focus:ring-red-500' : ''}`}
+              className={`input ${errors.firstName ? 'border-destructive focus:ring-destructive' : ''}`}
               placeholder="John"
               {...register('firstName')}
             />
             {errors.firstName && (
-              <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.firstName.message}</p>
             )}
           </div>
           
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-1">
               Last name
             </label>
             <input
               id="lastName"
               type="text"
               autoComplete="family-name"
-              className={`input ${errors.lastName ? 'border-red-500 focus:ring-red-500' : ''}`}
+              className={`input ${errors.lastName ? 'border-destructive focus:ring-destructive' : ''}`}
               placeholder="Doe"
               {...register('lastName')}
             />
             {errors.lastName && (
-              <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.lastName.message}</p>
             )}
           </div>
         </div>
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
             Email address
           </label>
           <input
             id="email"
             type="email"
             autoComplete="email"
-            className={`input ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+            className={`input ${errors.email ? 'border-destructive focus:ring-destructive' : ''}`}
             placeholder="you@example.com"
             {...register('email')}
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
             Password
           </label>
           <div className="relative">
@@ -165,14 +165,14 @@ export default function RegisterPage() {
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              className={`input pr-10 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+              className={`input pr-10 ${errors.password ? 'border-destructive focus:ring-destructive' : ''}`}
               placeholder="Create a strong password"
               {...register('password')}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -188,9 +188,9 @@ export default function RegisterPage() {
                     {met ? (
                       <Check size={14} className="text-green-500" />
                     ) : (
-                      <X size={14} className="text-gray-400" />
+                      <X size={14} className="text-muted-foreground" />
                     )}
-                    <span className={met ? 'text-green-600' : 'text-gray-500'}>
+                    <span className={met ? 'text-green-600' : 'text-muted-foreground'}>
                       {req.label}
                     </span>
                   </div>
@@ -202,7 +202,7 @@ export default function RegisterPage() {
 
         {/* Confirm Password */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1">
             Confirm password
           </label>
           <div className="relative">
@@ -210,20 +210,20 @@ export default function RegisterPage() {
               id="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              className={`input pr-10 ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
+              className={`input pr-10 ${errors.confirmPassword ? 'border-destructive focus:ring-destructive' : ''}`}
               placeholder="Confirm your password"
               {...register('confirmPassword')}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.confirmPassword.message}</p>
           )}
         </div>
 
@@ -233,18 +233,18 @@ export default function RegisterPage() {
             <input
               id="acceptTerms"
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               {...register('acceptTerms')}
             />
           </div>
           <div className="ml-3 text-sm">
-            <label htmlFor="acceptTerms" className="text-gray-600">
+            <label htmlFor="acceptTerms" className="text-muted-foreground">
               I agree to the{' '}
-              <Link href="/terms" className="text-primary-600 hover:text-primary-500">
+              <Link href="/terms" className="text-primary hover:text-primary/80">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="/privacy" className="text-primary-600 hover:text-primary-500">
+              <Link href="/privacy" className="text-primary hover:text-primary/80">
                 Privacy Policy
               </Link>
             </label>
@@ -274,10 +274,10 @@ export default function RegisterPage() {
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300" />
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+          <span className="px-2 bg-background text-muted-foreground">Or sign up with</span>
         </div>
       </div>
 
@@ -330,11 +330,11 @@ export default function RegisterPage() {
       </div>
 
       {/* Login link */}
-      <p className="text-center text-gray-600">
+      <p className="text-center text-muted-foreground">
         Already have an account?{' '}
         <Link
           href="/login"
-          className="font-medium text-primary-600 hover:text-primary-500"
+          className="font-medium text-primary hover:text-primary/80"
         >
           Sign in
         </Link>

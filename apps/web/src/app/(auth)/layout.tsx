@@ -6,7 +6,7 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-purple-600 p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-secondary p-12 flex-col justify-between">
         <div>
           <h1 className="text-white text-3xl font-bold">Brand Coach Network</h1>
         </div>
