@@ -13,6 +13,7 @@ import { CacheModule } from './common/cache/cache.module';
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { EmailModule } from './modules/email/email.module';
 import { ProgramsModule } from './modules/programs/programs.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { CoachingModule } from './modules/coaching/coaching.module';
@@ -105,6 +106,7 @@ import { configValidationSchema } from './common/config/config.schema';
     // ============================================
     AuthModule,
     UsersModule,
+    EmailModule,
     ProgramsModule,
     EnrollmentsModule,
     CoachingModule,

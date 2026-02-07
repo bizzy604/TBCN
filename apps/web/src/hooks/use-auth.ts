@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/lib/store';
 import { authApi, usersApi } from '@/lib/api';
 import type { LoginCredentials, RegisterCredentials, User, UserProfile } from '@/types';
+import { UserRole, getRedirectForRole } from '@/types';
 import toast from 'react-hot-toast';
 
 /**
@@ -49,12 +50,12 @@ export function useAuth() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
-    onSuccess: async (tokens) => {
-      setTokens(tokens.accessToken, tokens.refreshToken);
+    onSuccess: async (response) => {
+      setTokens(response.accessToken, response.refreshToken);
       
-      // Fetch user info
-      const user = await usersApi.getMe();
-      setUser(user);
+      // Fetch full user profile from /users/me
+      const fullUser = await usersApi.getMe();
+      setUser(fullUser);
       
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['auth'] });
@@ -160,7 +161,7 @@ export function useRequireAuth(redirectTo = '/login') {
  * useRequireRole hook
  * Redirects if user doesn't have required role
  */
-export function useRequireRole(roles: string[], redirectTo = '/dashboard') {
+export function useRequireRole(roles: UserRole[], redirectTo = '/dashboard') {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuth();
 

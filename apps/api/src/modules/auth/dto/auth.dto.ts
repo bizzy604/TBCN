@@ -7,6 +7,7 @@ import {
   Matches,
   IsBoolean,
   IsOptional,
+  IsIn,
 } from 'class-validator';
 
 /**
@@ -182,4 +183,35 @@ export class ChangePasswordDto {
   })
   @IsString()
   confirmPassword: string;
+}
+
+/**
+ * Social Login Profile (validated from OAuth callback)
+ */
+export class SocialLoginProfileDto {
+  @ApiProperty({ description: 'OAuth provider', example: 'google' })
+  @IsString()
+  @IsIn(['google', 'facebook', 'linkedin'])
+  provider: string;
+
+  @ApiProperty({ description: 'Provider user ID' })
+  @IsString()
+  providerId: string;
+
+  @ApiProperty({ description: 'User email from provider' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ description: 'First name from provider' })
+  @IsString()
+  firstName: string;
+
+  @ApiProperty({ description: 'Last name from provider' })
+  @IsString()
+  lastName: string;
+
+  @ApiProperty({ description: 'Avatar URL from provider', required: false })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string | null;
 }

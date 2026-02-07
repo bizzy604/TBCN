@@ -24,3 +24,10 @@ npm-debug.log*
 
 # Coverage
 coverage
+
+# tests
+__tests__/coverage
+__tests__/reports
+tests/coverage
+tests/reports
+test

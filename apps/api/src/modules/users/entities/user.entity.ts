@@ -10,27 +10,10 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
 import { BaseEntity } from '../../../common/entities';
+import { UserRole, UserStatus } from '@tbcn/shared';
 
-/**
- * User roles in the system
- */
-export enum UserRole {
-  SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  COACH = 'coach',
-  PARTNER = 'partner',
-  MEMBER = 'member',
-}
-
-/**
- * User account status
- */
-export enum UserStatus {
-  PENDING = 'pending',       // Awaiting email verification
-  ACTIVE = 'active',         // Full access
-  SUSPENDED = 'suspended',   // Temporarily suspended
-  DEACTIVATED = 'deactivated', // User-requested deactivation
-}
+// Re-export so existing imports like `import { UserRole } from './entities'` keep working
+export { UserRole, UserStatus };
 
 /**
  * User Entity
@@ -42,9 +25,9 @@ export class User extends BaseEntity {
   @Index('idx_users_email')
   email: string;
 
-  @Column({ type: 'varchar', length: 255, select: false })
+  @Column({ type: 'varchar', length: 255, select: false, nullable: true })
   @Exclude()
-  password: string;
+  password: string | null;
 
   @Column({ name: 'first_name', type: 'varchar', length: 100 })
   firstName: string;
@@ -121,6 +104,14 @@ export class User extends BaseEntity {
   @Column({ name: 'email_verification_token', type: 'varchar', length: 255, nullable: true })
   @Exclude()
   emailVerificationToken: string | null;
+
+  // OAuth fields
+  @Column({ name: 'oauth_provider', type: 'varchar', length: 50, nullable: true })
+  @Index('idx_users_oauth')
+  oauthProvider: string | null;
+
+  @Column({ name: 'oauth_provider_id', type: 'varchar', length: 255, nullable: true })
+  oauthProviderId: string | null;
 
   // Soft delete
   @Column({ name: 'deleted_at', type: 'timestamp', nullable: true })

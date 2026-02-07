@@ -1,5 +1,7 @@
 import apiClient from './client';
-import type { User, AuthTokens, LoginCredentials, RegisterCredentials } from '@/types';
+import type { User, AuthTokens, LoginCredentials, RegisterCredentials, LoginResponse, OAuthProvider } from '@/types';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 // Backend wraps responses in { data: T, timestamp: string }
 interface ApiResponse<T> {
@@ -15,8 +17,8 @@ export const authApi = {
   /**
    * Login with email and password
    */
-  async login(credentials: LoginCredentials): Promise<AuthTokens> {
-    const response = await apiClient.post<ApiResponse<AuthTokens>>('/auth/login', credentials);
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
     return response.data.data;
   },
 
@@ -101,5 +103,20 @@ export const authApi = {
   async resendVerification(): Promise<{ message: string }> {
     const response = await apiClient.post<ApiResponse<{ message: string }>>('/auth/resend-verification');
     return response.data.data;
+  },
+
+  /**
+   * Get the OAuth redirect URL for a provider
+   * Redirects the browser to the API's OAuth endpoint
+   */
+  getOAuthUrl(provider: OAuthProvider): string {
+    return `${API_BASE_URL}/auth/${provider}`;
+  },
+
+  /**
+   * Initiate OAuth login by redirecting to the provider
+   */
+  initiateOAuth(provider: OAuthProvider): void {
+    window.location.href = `${API_BASE_URL}/auth/${provider}`;
   },
 };

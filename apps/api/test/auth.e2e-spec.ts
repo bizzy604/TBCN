@@ -275,4 +275,91 @@ describe('AuthController (e2e)', () => {
         .expect(401);
     });
   });
+
+  // ==================================================
+  // Email Verification E2E
+  // ==================================================
+  describe('/auth/verify-email (POST)', () => {
+    it('should return 400 for invalid verification token', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/verify-email`)
+        .send({ token: 'nonexistent-token' })
+        .expect(400)
+        .expect((res: Response) => {
+          expect(res.body.message).toContain('Invalid or expired');
+        });
+    });
+
+    it('should fail with empty token', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/verify-email`)
+        .send({ token: '' })
+        .expect(400);
+    });
+
+    it('should fail without token field', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/verify-email`)
+        .send({})
+        .expect(400);
+    });
+  });
+
+  describe('/auth/resend-verification (POST)', () => {
+    it('should return success even for nonexistent email (anti-enumeration)', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/resend-verification`)
+        .send({ email: 'nobody-here@example.com' })
+        .expect(200)
+        .expect((res: Response) => {
+          expect(res.body.message).toContain('not yet verified');
+        });
+    });
+
+    it('should return success for the registered test user', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/resend-verification`)
+        .send({ email: testUser.email })
+        .expect(200);
+    });
+
+    it('should fail with invalid email format', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/resend-verification`)
+        .send({ email: 'bad-email' })
+        .expect(400);
+    });
+  });
+
+  // ==================================================
+  // OAuth Redirect E2E (no real OAuth creds - tests redirect behavior)
+  // ==================================================
+  describe('OAuth redirect endpoints', () => {
+    it('GET /auth/google should redirect to Google OAuth', () => {
+      return request(app.getHttpServer())
+        .get(`${API_PREFIX}/auth/google`)
+        .expect(302)
+        .expect((res: Response) => {
+          expect(res.headers.location).toContain('accounts.google.com');
+        });
+    });
+
+    it('GET /auth/facebook should redirect to Facebook OAuth', () => {
+      return request(app.getHttpServer())
+        .get(`${API_PREFIX}/auth/facebook`)
+        .expect(302)
+        .expect((res: Response) => {
+          expect(res.headers.location).toContain('facebook.com');
+        });
+    });
+
+    it('GET /auth/linkedin should redirect to LinkedIn OAuth', () => {
+      return request(app.getHttpServer())
+        .get(`${API_PREFIX}/auth/linkedin`)
+        .expect(302)
+        .expect((res: Response) => {
+          expect(res.headers.location).toContain('linkedin.com');
+        });
+    });
+  });
 });

@@ -62,7 +62,18 @@ export const configValidationSchema = Joi.object({
   AWS_S3_ENDPOINT: Joi.string().optional(), // For LocalStack
 
   // ============================================
-  // Email (SendGrid)
+  // Email (SMTP)
+  // ============================================
+  SMTP_HOST: Joi.string().optional(),
+  SMTP_PORT: Joi.number().default(587),
+  SMTP_USER: Joi.string().optional(),
+  SMTP_PASS: Joi.string().optional(),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_FROM_EMAIL: Joi.string().email().optional(),
+  SMTP_FROM_NAME: Joi.string().default('The Brand Coach Network'),
+
+  // ============================================
+  // Email (SendGrid) — legacy, optional
   // ============================================
   SENDGRID_API_KEY: Joi.string().optional(),
   SENDGRID_FROM_EMAIL: Joi.string().email().optional(),
@@ -132,9 +143,14 @@ export interface AwsConfig {
 }
 
 export interface EmailConfig {
-  sendgridApiKey?: string;
+  smtpHost?: string;
+  smtpPort: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpSecure: boolean;
   fromEmail?: string;
   fromName: string;
+  sendgridApiKey?: string;
 }
 
 export interface PaymentsConfig {

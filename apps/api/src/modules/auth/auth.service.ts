@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
+import { UserRole, ROLE_REDIRECT_MAP } from '@tbcn/shared';
 import {
   LoginDto,
   RegisterDto,
@@ -11,6 +13,8 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   ChangePasswordDto,
+  VerifyEmailDto,
+  SocialLoginProfileDto,
 } from './dto';
 import { UsersService } from '../users/users.service';
 
@@ -18,6 +22,7 @@ import { UsersService } from '../users/users.service';
 export const AUTH_EVENTS = {
   USER_REGISTERED: 'auth.user.registered',
   USER_LOGGED_IN: 'auth.user.loggedIn',
+  USER_SOCIAL_LOGIN: 'auth.user.socialLogin',
   PASSWORD_RESET_REQUESTED: 'auth.password.resetRequested',
   PASSWORD_CHANGED: 'auth.password.changed',
 };
@@ -26,17 +31,27 @@ export const AUTH_EVENTS = {
 export interface JwtPayload {
   sub: string; // User ID
   email: string;
-  role: string;
+  role: UserRole;
   iat?: number;
   exp?: number;
 }
 
 // Token response interface
+export interface LoginUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+}
+
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
+  user?: LoginUser;
+  redirectTo?: string;
 }
 
 /**
@@ -45,6 +60,7 @@ export interface TokenResponse {
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly SALT_ROUNDS = 12;
 
   constructor(
@@ -81,12 +97,19 @@ export class AuthService {
       lastName: dto.lastName,
     });
 
-    // Emit registration event
+    // Generate verification token and store it
+    const verificationToken = this.generateSecureToken();
+    await this.usersService.setEmailVerificationToken(user.id, verificationToken);
+
+    // Emit registration event (email listener will send verification email)
     this.eventEmitter.emit(AUTH_EVENTS.USER_REGISTERED, {
       userId: user.id,
       email: dto.email,
       firstName: dto.firstName,
+      verificationToken,
     });
+
+    this.logger.log(`User registered: ${dto.email} — verification email queued`);
 
     return {
       message: 'Registration successful. Please check your email to verify your account.',
@@ -118,7 +141,17 @@ export class AuthService {
       email: user.email,
     });
 
-    return tokens;
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+      },
+      redirectTo: ROLE_REDIRECT_MAP[user.role] || '/dashboard',
+    };
   }
 
   /**
@@ -141,20 +174,22 @@ export class AuthService {
    * Request password reset
    */
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
-    // TODO: Find user by email
-    // const user = await this.usersService.findByEmail(dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
 
-    // Always return success (don't reveal if email exists)
-    // if (user) {
-    //   const resetToken = this.generateResetToken();
-    //   // Store reset token in database
-    //   // Emit event to send email
-    //   this.eventEmitter.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, {
-    //     userId: user.id,
-    //     email: user.email,
-    //     resetToken,
-    //   });
-    // }
+    // Always return success message (don't reveal if email exists)
+    if (user) {
+      const resetToken = this.generateSecureToken();
+      await this.usersService.setPasswordResetToken(user.id, resetToken);
+
+      this.eventEmitter.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, {
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        resetToken,
+      });
+
+      this.logger.log(`Password reset requested for: ${dto.email}`);
+    }
 
     return {
       message: 'If an account with that email exists, we have sent a password reset link.',
@@ -169,9 +204,22 @@ export class AuthService {
       throw new BadRequestException('Passwords do not match');
     }
 
-    // TODO: Validate reset token
-    // TODO: Update user password
-    // TODO: Invalidate reset token
+    // Find user by reset token
+    const user = await this.usersService.findByPasswordResetToken(dto.token);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    // Check token expiration
+    if (user.passwordResetExpires && user.passwordResetExpires < new Date()) {
+      throw new BadRequestException('Reset token has expired. Please request a new one.');
+    }
+
+    // Hash new password and update
+    const hashedPassword = await this.hashPassword(dto.password);
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
+    this.logger.log(`Password reset completed for: ${user.email}`);
 
     return {
       message: 'Password has been reset successfully.',
@@ -186,12 +234,123 @@ export class AuthService {
       throw new BadRequestException('New passwords do not match');
     }
 
-    // TODO: Verify current password
-    // TODO: Update password
-    // TODO: Emit event
+    // Get user with password
+    const user = await this.usersService.findById(userId);
+    const userWithPassword = await this.usersService.findByEmailWithPassword(user.email);
+
+    if (!userWithPassword || !userWithPassword.password) {
+      throw new BadRequestException('Cannot change password for social login accounts');
+    }
+
+    // Verify current password
+    const isCurrentValid = await this.verifyPassword(dto.currentPassword, userWithPassword.password);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash and update password
+    const hashedPassword = await this.hashPassword(dto.newPassword);
+    await this.usersService.updatePassword(userId, hashedPassword);
+
+    // Emit event (sends confirmation email)
+    this.eventEmitter.emit(AUTH_EVENTS.PASSWORD_CHANGED, {
+      userId,
+      email: user.email,
+      firstName: user.firstName,
+    });
+
+    this.logger.log(`Password changed for user: ${user.email}`);
 
     return {
       message: 'Password has been changed successfully.',
+    };
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmailVerificationToken(dto.token);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    // Mark email as verified
+    await this.usersService.verifyEmail(user.id);
+
+    this.logger.log(`Email verified for user: ${user.email}`);
+
+    return {
+      message: 'Email verified successfully. You can now log in.',
+    };
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (user && !user.emailVerified) {
+      const verificationToken = this.generateSecureToken();
+      await this.usersService.setEmailVerificationToken(user.id, verificationToken);
+
+      this.eventEmitter.emit(AUTH_EVENTS.USER_REGISTERED, {
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        verificationToken,
+      });
+
+      this.logger.log(`Verification email resent to: ${email}`);
+    }
+
+    return {
+      message: 'If your account exists and is not yet verified, a new verification email has been sent.',
+    };
+  }
+
+  /**
+   * Social login / signup via OAuth provider
+   * Finds existing user or creates new one from provider profile
+   */
+  async socialLogin(profile: SocialLoginProfileDto): Promise<TokenResponse> {
+    if (!profile.email) {
+      throw new BadRequestException(
+        'Email is required for social login. Please ensure your social account has an email address.',
+      );
+    }
+
+    // Find or create user from social profile
+    const user = await this.usersService.findOrCreateFromSocial({
+      provider: profile.provider,
+      providerId: profile.providerId,
+      email: profile.email,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      avatarUrl: profile.avatarUrl || null,
+    });
+
+    // Generate tokens
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+    // Emit social login event
+    this.eventEmitter.emit(AUTH_EVENTS.USER_SOCIAL_LOGIN, {
+      userId: user.id,
+      email: user.email,
+      provider: profile.provider,
+    });
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+      },
+      redirectTo: ROLE_REDIRECT_MAP[user.role] || '/dashboard',
     };
   }
 
@@ -217,7 +376,7 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
-    role: string,
+    role: UserRole,
   ): Promise<TokenResponse> {
     const payload: JwtPayload = {
       sub: userId,
@@ -264,10 +423,10 @@ export class AuthService {
   }
 
   /**
-   * Generate a random reset token
+   * Generate a cryptographically secure random token
    */
-  private generateResetToken(): string {
-    return uuidv4().replace(/-/g, '') + uuidv4().replace(/-/g, '');
+  private generateSecureToken(): string {
+    return crypto.randomBytes(32).toString('hex');
   }
 
   /**

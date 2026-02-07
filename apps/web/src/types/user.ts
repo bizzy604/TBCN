@@ -2,6 +2,11 @@
 // User Types
 // ============================================
 
+import { UserRole, UserStatus, ROLE_REDIRECT_MAP, ADMIN_ROLES, COACH_ROLES } from '@tbcn/shared';
+
+// Re-export shared enums so all frontend code imports from @/types
+export { UserRole, UserStatus, ROLE_REDIRECT_MAP, ADMIN_ROLES, COACH_ROLES };
+
 export interface User {
   id: string;
   email: string;
@@ -12,8 +17,10 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   emailVerified: boolean;
-  phoneNumber: string | null;
+  phone: string | null;
   phoneVerified: boolean;
+  timezone?: string;
+  locale?: string;
   createdAt: string;
   updatedAt: string;
   profile?: UserProfile;
@@ -37,17 +44,23 @@ export interface UserProfile {
   interests: string[];
 }
 
-export enum UserRole {
-  ADMIN = 'admin',
-  COACH = 'coach',
-  MEMBER = 'member',
-  PARTNER = 'partner',
-  VISITOR = 'visitor',
+/**
+ * Helper: check if a role can access admin panel
+ */
+export function isAdminRole(role: UserRole): boolean {
+  return ADMIN_ROLES.includes(role);
 }
 
-export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  SUSPENDED = 'suspended',
-  PENDING_VERIFICATION = 'pending_verification',
+/**
+ * Helper: check if a role can manage coaching
+ */
+export function isCoachRole(role: UserRole): boolean {
+  return COACH_ROLES.includes(role);
+}
+
+/**
+ * Get the correct redirect path for a user role
+ */
+export function getRedirectForRole(role: UserRole): string {
+  return ROLE_REDIRECT_MAP[role] || '/dashboard';
 }

@@ -212,6 +212,86 @@ export class UsersService {
   }
 
   /**
+   * Find or create user from social OAuth provider
+   * If user exists by email, link the OAuth provider
+   * If user exists by provider + providerId, return them
+   * Otherwise create a new user
+   */
+  async findOrCreateFromSocial(data: {
+    provider: string;
+    providerId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl: string | null;
+  }): Promise<User> {
+    // 1. Try to find by OAuth provider + providerId
+    const existingByProvider = await this.userRepository.findOne({
+      where: {
+        oauthProvider: data.provider,
+        oauthProviderId: data.providerId,
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (existingByProvider) {
+      // Update avatar if we have a new one
+      if (data.avatarUrl && !existingByProvider.avatarUrl) {
+        existingByProvider.avatarUrl = data.avatarUrl;
+        await this.userRepository.save(existingByProvider);
+      }
+      return existingByProvider;
+    }
+
+    // 2. Try to find by email (user registered with email, now logging in with social)
+    const existingByEmail = await this.findByEmail(data.email);
+
+    if (existingByEmail) {
+      // Link OAuth provider to existing account
+      existingByEmail.oauthProvider = data.provider;
+      existingByEmail.oauthProviderId = data.providerId;
+      if (data.avatarUrl && !existingByEmail.avatarUrl) {
+        existingByEmail.avatarUrl = data.avatarUrl;
+      }
+      // Social login auto-verifies email
+      if (!existingByEmail.emailVerified) {
+        existingByEmail.emailVerified = true;
+        existingByEmail.emailVerifiedAt = new Date();
+        existingByEmail.status = UserStatus.ACTIVE;
+      }
+      return this.userRepository.save(existingByEmail);
+    }
+
+    // 3. Create new user from social profile
+    const newUser = this.userRepository.create({
+      email: data.email.toLowerCase().trim(),
+      password: null, // No password for social users
+      firstName: data.firstName,
+      lastName: data.lastName,
+      role: UserRole.MEMBER,
+      status: UserStatus.ACTIVE, // Social signup = auto-verified
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      oauthProvider: data.provider,
+      oauthProviderId: data.providerId,
+      avatarUrl: data.avatarUrl,
+    });
+
+    const savedUser = await this.userRepository.save(newUser);
+
+    // Create empty profile
+    const profile = this.profileRepository.create({
+      userId: savedUser.id,
+    });
+    await this.profileRepository.save(profile);
+
+    // Emit event
+    this.eventEmitter.emit(USER_EVENTS.CREATED, { userId: savedUser.id });
+
+    return savedUser;
+  }
+
+  /**
    * Update user
    */
   async update(id: string, dto: UpdateUserDto): Promise<User> {
@@ -351,6 +431,24 @@ export class UsersService {
   async setEmailVerificationToken(userId: string, token: string): Promise<void> {
     await this.userRepository.update(userId, {
       emailVerificationToken: token,
+    });
+  }
+
+  /**
+   * Find user by email verification token
+   */
+  async findByEmailVerificationToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { emailVerificationToken: token, deletedAt: IsNull() },
+    });
+  }
+
+  /**
+   * Find user by password reset token (not expired)
+   */
+  async findByPasswordResetToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { passwordResetToken: token, deletedAt: IsNull() },
     });
   }
 

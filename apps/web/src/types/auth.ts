@@ -2,11 +2,29 @@
 // Auth Types
 // ============================================
 
+import type { UserRole } from './user';
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
+}
+
+export interface LoginUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+}
+
+/**
+ * Full login/socialLogin response — includes tokens + inline user + redirect
+ */
+export interface LoginResponse extends AuthTokens {
+  user?: LoginUser;
+  redirectTo?: string;
 }
 
 export interface LoginCredentials {

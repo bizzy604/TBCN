@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { AuthCookieSync } from '@/components/auth';
 
 // Font configuration
 const inter = Inter({
@@ -105,6 +106,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
+          <AuthCookieSync />
           {children}
         </Providers>
       </body>

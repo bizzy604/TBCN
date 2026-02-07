@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
+import { UserRole, ADMIN_ROLES, COACH_ROLES } from '@/types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: string[];
+  requiredRoles?: UserRole[];
   redirectTo?: string;
 }
 
@@ -36,7 +37,7 @@ export function ProtectedRoute({
 
     // Check roles if required
     if (requiredRoles && requiredRoles.length > 0 && user) {
-      if (!requiredRoles.includes(user.role)) {
+      if (!requiredRoles.includes(user.role as UserRole)) {
         router.push('/dashboard');
       }
     }
@@ -57,7 +58,7 @@ export function ProtectedRoute({
   }
 
   // Show nothing if wrong role (redirect will happen)
-  if (requiredRoles && requiredRoles.length > 0 && user && !requiredRoles.includes(user.role)) {
+  if (requiredRoles && requiredRoles.length > 0 && user && !requiredRoles.includes(user.role as UserRole)) {
     return null;
   }
 
@@ -70,7 +71,7 @@ export function ProtectedRoute({
  */
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute requiredRoles={['super_admin', 'admin']}>
+    <ProtectedRoute requiredRoles={ADMIN_ROLES}>
       {children}
     </ProtectedRoute>
   );
@@ -82,7 +83,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
  */
 export function CoachRoute({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute requiredRoles={['super_admin', 'admin', 'coach']}>
+    <ProtectedRoute requiredRoles={COACH_ROLES}>
       {children}
     </ProtectedRoute>
   );
