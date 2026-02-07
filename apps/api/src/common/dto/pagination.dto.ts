@@ -106,12 +106,10 @@ export function createPaginationMeta(
  */
 export function createPaginatedResult<T>(
   items: T[],
-  page: number,
-  limit: number,
-  total: number,
+  meta: PaginationMeta,
 ): PaginatedResult<T> {
   return {
     items,
-    meta: createPaginationMeta(page, limit, total),
+    meta,
   };
 }

@@ -90,11 +90,19 @@ apiClient.interceptors.response.use(
 
 export const api = {
   /**
-   * GET request
+   * GET request (auto-unwraps ApiResponse wrapper)
    */
   get: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     const response = await apiClient.get<ApiResponse<T>>(url, config);
     return response.data.data;
+  },
+
+  /**
+   * GET request returning the raw response body (for paginated endpoints)
+   */
+  getRaw: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    const response = await apiClient.get<T>(url, config);
+    return response.data;
   },
 
   /**

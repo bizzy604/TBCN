@@ -22,13 +22,16 @@ export default function DashboardLayout({
                 <a href="/dashboard" className="text-foreground hover:text-primary font-medium">
                   Dashboard
                 </a>
-                <a href="/dashboard/programs" className="text-muted-foreground hover:text-primary">
+                <a href="/programs" className="text-muted-foreground hover:text-primary">
                   Programs
                 </a>
-                <a href="/dashboard/community" className="text-muted-foreground hover:text-primary">
+                <a href="/enrollments" className="text-muted-foreground hover:text-primary">
+                  My Learning
+                </a>
+                <a href="/community" className="text-muted-foreground hover:text-primary">
                   Community
                 </a>
-                <a href="/dashboard/coaching" className="text-muted-foreground hover:text-primary">
+                <a href="/coaching" className="text-muted-foreground hover:text-primary">
                   Coaching
                 </a>
               </nav>
@@ -36,7 +39,7 @@ export default function DashboardLayout({
               {/* User menu placeholder */}
               <div className="flex items-center gap-4">
                 <a
-                  href="/dashboard/profile"
+                  href="/settings"
                   className="flex items-center gap-2 text-foreground hover:text-primary"
                 >
                   <div className="w-8 h-8 rounded-full bg-muted"></div>

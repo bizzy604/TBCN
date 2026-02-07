@@ -5,10 +5,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
 
 // Common modules
 import { DatabaseModule } from './common/database/database.module';
 import { CacheModule } from './common/cache/cache.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -24,6 +27,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PartnersModule } from './modules/partners/partners.module';
+import { AssessmentsModule } from './modules/assessments/assessments.module';
 
 // Configuration validation
 import { configValidationSchema } from './common/config/config.schema';
@@ -117,6 +121,19 @@ import { configValidationSchema } from './common/config/config.schema';
     NotificationsModule,
     AnalyticsModule,
     PartnersModule,
+    AssessmentsModule,
+  ],
+  providers: [
+    // Global guards — every route requires JWT auth by default.
+    // Use @Public() decorator to opt-out specific routes.
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}

@@ -45,8 +45,13 @@ export class JwtAuthGuard implements CanActivate {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
 
-      // Attach user payload to request
-      request.user = payload;
+      // Attach user payload to request, mapping 'sub' to 'id' for convenience
+      request.user = {
+        id: payload.sub,
+        sub: payload.sub,
+        email: payload.email,
+        role: payload.role,
+      };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Access token has expired');
