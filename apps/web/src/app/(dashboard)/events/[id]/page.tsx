@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Card } from '@/components/ui/Card';
 
 export const metadata: Metadata = {
   title: 'Event Details | Brand Coach Network',
@@ -7,7 +8,8 @@ export const metadata: Metadata = {
 
 export default function EventDetailPage({ params }: { params: { id: string } }) {
   return (
-    <div className="space-y-8">
+    <Card className="p-6">
+      <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Event Details</h1>
         <p className="mt-2 text-muted-foreground">
@@ -24,6 +26,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </Card>
   );
 }

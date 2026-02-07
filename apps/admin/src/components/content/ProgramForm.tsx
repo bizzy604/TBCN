@@ -1,10 +1,35 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DraggableAttributes,
+} from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { adminProgramsApi, type Program } from '@/lib/api/admin-api';
+import { AssessmentEditor } from '@/components/assessments/AssessmentEditor';
 
 interface ProgramFormProps {
   program?: Program;
@@ -15,6 +40,7 @@ const DIFFICULTY_OPTIONS = ['beginner', 'intermediate', 'advanced'];
 const CONTENT_TYPE_OPTIONS = ['video', 'text', 'quiz', 'assignment', 'resource'];
 
 interface ModuleForm {
+  clientId: string;
   id?: string;
   title: string;
   description: string;
@@ -24,6 +50,7 @@ interface ModuleForm {
 }
 
 interface LessonForm {
+  clientId: string;
   id?: string;
   title: string;
   description: string;
@@ -35,8 +62,16 @@ interface LessonForm {
   estimatedDuration: number;
 }
 
+function makeClientId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function emptyLesson(sortOrder: number): LessonForm {
   return {
+    clientId: makeClientId(),
     title: '',
     description: '',
     contentType: 'video',
@@ -50,6 +85,7 @@ function emptyLesson(sortOrder: number): LessonForm {
 
 function emptyModule(sortOrder: number): ModuleForm {
   return {
+    clientId: makeClientId(),
     title: '',
     description: '',
     sortOrder,
@@ -58,10 +94,65 @@ function emptyModule(sortOrder: number): ModuleForm {
   };
 }
 
+function SortableModule({
+  id,
+  children,
+}: {
+  id: string;
+  children: (props: { attributes: DraggableAttributes; listeners: SyntheticListenerMap | undefined; style: React.CSSProperties }) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ attributes, listeners, style })}
+    </div>
+  );
+}
+
+function SortableLesson({
+  id,
+  children,
+}: {
+  id: string;
+  children: (props: { attributes: DraggableAttributes; listeners: SyntheticListenerMap | undefined; style: React.CSSProperties }) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ attributes, listeners, style })}
+    </div>
+  );
+}
+
 export function ProgramForm({ program, mode }: ProgramFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assessmentLesson, setAssessmentLesson] = useState<{ id: string; title: string } | null>(null);
 
   // Basic fields
   const [title, setTitle] = useState(program?.title || '');
@@ -84,12 +175,14 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
   const [modules, setModules] = useState<ModuleForm[]>(() => {
     if (program?.modules?.length) {
       return program.modules.map((mod) => ({
+        clientId: mod.id || makeClientId(),
         id: mod.id,
         title: mod.title,
         description: mod.description || '',
         sortOrder: mod.sortOrder,
         estimatedDuration: mod.estimatedDuration || 0,
         lessons: mod.lessons?.map((l) => ({
+          clientId: l.id || makeClientId(),
           id: l.id,
           title: l.title,
           description: l.description || '',
@@ -104,6 +197,14 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
     }
     return [emptyModule(0)];
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+
+  const moduleIds = useMemo(() => modules.map((m) => m.clientId), [modules]);
 
   const addModule = useCallback(() => {
     setModules((prev) => [...prev, emptyModule(prev.length)]);
@@ -153,6 +254,42 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
         const lessons = [...copy[moduleIdx].lessons];
         lessons[lessonIdx] = { ...lessons[lessonIdx], [field]: value };
         copy[moduleIdx] = { ...copy[moduleIdx], lessons };
+        return copy;
+      });
+    },
+    [],
+  );
+
+  const handleModuleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      setModules((prev) => {
+        const oldIndex = prev.findIndex((m) => m.clientId === active.id);
+        const newIndex = prev.findIndex((m) => m.clientId === over.id);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    },
+    [],
+  );
+
+  const handleLessonDragEnd = useCallback(
+    (moduleIdx: number, event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      setModules((prev) => {
+        const copy = [...prev];
+        const lessonList = copy[moduleIdx].lessons;
+        const oldIndex = lessonList.findIndex((l) => l.clientId === active.id);
+        const newIndex = lessonList.findIndex((l) => l.clientId === over.id);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        copy[moduleIdx] = {
+          ...copy[moduleIdx],
+          lessons: arrayMove(lessonList, oldIndex, newIndex),
+        };
         return copy;
       });
     },
@@ -213,7 +350,7 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-8">
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive px-4 py-3 text-sm">
           {error}
@@ -354,23 +491,45 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
           </Button>
         </div>
 
-        {modules.map((mod, mi) => (
-          <div key={mi} className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="bg-muted/30 px-6 py-4 flex items-center justify-between">
-              <h3 className="font-medium">Module {mi + 1}</h3>
-              {modules.length > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeModule(mi)}
-                  className="text-destructive"
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
-            <div className="p-6 space-y-4">
+        <DndContext id="modules-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleModuleDragEnd}>
+          <SortableContext items={moduleIds} strategy={verticalListSortingStrategy}>
+            {modules.map((mod, mi) => (
+              <SortableModule key={mod.clientId} id={mod.clientId}>
+                {({ attributes, listeners }) => (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="bg-muted/30 px-6 py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="cursor-grab text-muted-foreground hover:text-foreground"
+                          aria-label="Drag module"
+                          {...attributes}
+                          {...listeners}
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="9" cy="6" r="1.5" />
+                            <circle cx="9" cy="12" r="1.5" />
+                            <circle cx="9" cy="18" r="1.5" />
+                            <circle cx="15" cy="6" r="1.5" />
+                            <circle cx="15" cy="12" r="1.5" />
+                            <circle cx="15" cy="18" r="1.5" />
+                          </svg>
+                        </button>
+                        <h3 className="font-medium">Module {mi + 1}</h3>
+                      </div>
+                      {modules.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeModule(mi)}
+                          className="text-destructive"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Module Title *</label>
@@ -400,113 +559,166 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
                 />
               </div>
 
-              {/* Lessons */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-muted-foreground">
-                    Lessons ({mod.lessons.length})
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => addLesson(mi)}
-                  >
-                    + Add Lesson
-                  </Button>
-                </div>
+                      {/* Lessons */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-semibold text-muted-foreground">
+                            Lessons ({mod.lessons.length})
+                          </label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addLesson(mi)}
+                          >
+                            + Add Lesson
+                          </Button>
+                        </div>
 
-                {mod.lessons.map((lesson, li) => (
-                  <div
-                    key={li}
-                    className="rounded-lg border border-border/60 p-4 space-y-3 bg-background"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">
-                        Lesson {li + 1}
-                      </span>
-                      {mod.lessons.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeLesson(mi, li)}
-                          className="text-xs text-destructive hover:underline"
+                        <DndContext
+                          id={`lessons-dnd-${mi}`}
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={(event) => handleLessonDragEnd(mi, event)}
                         >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="sm:col-span-2 space-y-1">
-                        <label className="text-xs font-medium">Title *</label>
-                        <Input
-                          value={lesson.title}
-                          onChange={(e) => updateLesson(mi, li, 'title', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Type</label>
-                        <select
-                          value={lesson.contentType}
-                          onChange={(e) =>
-                            updateLesson(mi, li, 'contentType', e.target.value)
-                          }
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        >
-                          {CONTENT_TYPE_OPTIONS.map((ct) => (
-                            <option key={ct} value={ct}>
-                              {ct.charAt(0).toUpperCase() + ct.slice(1)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    {lesson.contentType === 'video' && (
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Video URL</label>
-                        <Input
-                          value={lesson.videoUrl}
-                          onChange={(e) => updateLesson(mi, li, 'videoUrl', e.target.value)}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={lesson.isFree}
-                          onChange={(e) =>
-                            updateLesson(mi, li, 'isFree', e.target.checked)
-                          }
-                          className="rounded"
-                        />
-                        Free preview
-                      </label>
-                      <div className="flex items-center gap-1">
-                        <label className="text-xs font-medium">Duration (min)</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          className="w-20 h-7 text-xs"
-                          value={lesson.estimatedDuration || ''}
-                          onChange={(e) =>
-                            updateLesson(
-                              mi,
-                              li,
-                              'estimatedDuration',
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
-                        />
+                          <SortableContext
+                            items={mod.lessons.map((l) => l.clientId)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {mod.lessons.map((lesson, li) => (
+                              <SortableLesson key={lesson.clientId} id={lesson.clientId}>
+                                {({ attributes: lessonAttributes, listeners: lessonListeners }) => (
+                                  <div
+                                    className="rounded-lg border border-border/60 p-4 space-y-3 bg-background"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          className="cursor-grab text-muted-foreground hover:text-foreground"
+                                          aria-label="Drag lesson"
+                                          {...lessonAttributes}
+                                          {...lessonListeners}
+                                        >
+                                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                            <circle cx="9" cy="6" r="1.5" />
+                                            <circle cx="9" cy="12" r="1.5" />
+                                            <circle cx="9" cy="18" r="1.5" />
+                                            <circle cx="15" cy="6" r="1.5" />
+                                            <circle cx="15" cy="12" r="1.5" />
+                                            <circle cx="15" cy="18" r="1.5" />
+                                          </svg>
+                                        </button>
+                                        <span className="text-sm font-medium text-muted-foreground">
+                                          Lesson {li + 1}
+                                        </span>
+                                      </div>
+                                      {mod.lessons.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeLesson(mi, li)}
+                                          className="text-xs text-destructive hover:underline"
+                                        >
+                                          Remove
+                                        </button>
+                                      )}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                      <div className="sm:col-span-2 space-y-1">
+                                        <label className="text-xs font-medium">Title *</label>
+                                        <Input
+                                          value={lesson.title}
+                                          onChange={(e) => updateLesson(mi, li, 'title', e.target.value)}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-medium">Type</label>
+                                        <select
+                                          value={lesson.contentType}
+                                          onChange={(e) =>
+                                            updateLesson(mi, li, 'contentType', e.target.value)
+                                          }
+                                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        >
+                                          {CONTENT_TYPE_OPTIONS.map((ct) => (
+                                            <option key={ct} value={ct}>
+                                              {ct.charAt(0).toUpperCase() + ct.slice(1)}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+                                    {lesson.contentType === 'video' && (
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-medium">Video URL</label>
+                                        <Input
+                                          value={lesson.videoUrl}
+                                          onChange={(e) => updateLesson(mi, li, 'videoUrl', e.target.value)}
+                                          placeholder="https://..."
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-4">
+                                      <label className="flex items-center gap-2 text-xs">
+                                        <input
+                                          type="checkbox"
+                                          checked={lesson.isFree}
+                                          onChange={(e) =>
+                                            updateLesson(mi, li, 'isFree', e.target.checked)
+                                          }
+                                          className="rounded"
+                                        />
+                                        Free preview
+                                      </label>
+                                      <div className="flex items-center gap-1">
+                                        <label className="text-xs font-medium">Duration (min)</label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          className="w-20 h-7 text-xs"
+                                          value={lesson.estimatedDuration || ''}
+                                          onChange={(e) =>
+                                            updateLesson(
+                                              mi,
+                                              li,
+                                              'estimatedDuration',
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                      {/* Assessment button */}
+                                      {lesson.id ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setAssessmentLesson({ id: lesson.id!, title: lesson.title || `Lesson ${li + 1}` })}
+                                          className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition"
+                                        >
+                                          📝 Assessment
+                                        </button>
+                                      ) : (
+                                        (lesson.contentType === 'quiz' || lesson.contentType === 'assignment') && (
+                                          <span className="ml-auto text-xs text-muted-foreground italic">
+                                            Save first to add assessment
+                                          </span>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </SortableLesson>
+                            ))}
+                          </SortableContext>
+                        </DndContext>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
+                )}
+              </SortableModule>
+            ))}
+          </SortableContext>
+        </DndContext>
       </section>
 
       {/* Submit */}
@@ -522,6 +734,30 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
               : 'Save Changes'}
         </Button>
       </div>
+
+      {/* Assessment Editor Sheet */}
+      <Sheet
+        open={!!assessmentLesson}
+        onOpenChange={(open) => { if (!open) setAssessmentLesson(null); }}
+      >
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Assessment Editor</SheetTitle>
+            <SheetDescription>
+              Create or edit the assessment and questions for this lesson.
+            </SheetDescription>
+          </SheetHeader>
+          {assessmentLesson && (
+            <div className="mt-6">
+              <AssessmentEditor
+                lessonId={assessmentLesson.id}
+                lessonTitle={assessmentLesson.title}
+                onClose={() => setAssessmentLesson(null)}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </form>
   );
 }

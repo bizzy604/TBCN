@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useMyEnrollments } from '@/hooks/use-enrollments';
 import { ProgressBar } from '@/components/programs/ProgressBar';
+import { Card } from '@/components/ui/Card';
 import type { Enrollment } from '@/lib/api/enrollments';
 
 function StatusBadge({ status }: { status: string }) {
@@ -118,7 +119,8 @@ export default function EnrollmentsClient() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
+      <Card className="p-6">
+        <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Learning</h1>
           <p className="mt-2 text-muted-foreground">Track your active enrollments and course progress.</p>
@@ -128,12 +130,14 @@ export default function EnrollmentsClient() {
             <div key={i} className="rounded-xl border border-border bg-card animate-pulse h-36" />
           ))}
         </div>
-      </div>
+        </div>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <Card className="p-6">
+      <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Learning</h1>
@@ -212,6 +216,7 @@ export default function EnrollmentsClient() {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </Card>
   );
 }

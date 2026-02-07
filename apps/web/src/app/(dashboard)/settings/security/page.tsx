@@ -1,8 +1,11 @@
 'use client';
 
+import { Card } from '@/components/ui/Card';
+
 export default function SecuritySettingsPage() {
   return (
-    <div className="space-y-8">
+    <Card className="p-6">
+      <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Security Settings</h1>
         <p className="mt-2 text-muted-foreground">
@@ -46,6 +49,7 @@ export default function SecuritySettingsPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Card>
   );
 }

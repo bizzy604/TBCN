@@ -4,7 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useProgramBySlug } from '@/hooks/use-programs';
+import { useMyEnrollments } from '@/hooks/use-enrollments';
 import { EnrollmentButton } from '@/components/programs/EnrollmentButton';
+import { Card } from '@/components/ui/Card';
 import type { Lesson, ProgramModule } from '@/lib/api/programs';
 
 function DifficultyBadge({ level }: { level: string }) {
@@ -20,9 +22,20 @@ function DifficultyBadge({ level }: { level: string }) {
   );
 }
 
-function LessonRow({ lesson, index }: { lesson: Lesson; index: number }) {
+function LessonRow({
+  lesson,
+  index,
+  programSlug,
+}: {
+  lesson: Lesson;
+  index: number;
+  programSlug: string;
+}) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition rounded-lg">
+    <Link
+      href={`/programs/${programSlug}/lessons/${lesson.id}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition rounded-lg"
+    >
       <span className="flex items-center justify-center w-7 h-7 rounded-full bg-muted text-xs font-medium shrink-0">
         {index + 1}
       </span>
@@ -50,11 +63,19 @@ function LessonRow({ lesson, index }: { lesson: Lesson; index: number }) {
           </span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
-function ModuleAccordion({ module, index }: { module: ProgramModule; index: number }) {
+function ModuleAccordion({
+  module,
+  index,
+  programSlug,
+}: {
+  module: ProgramModule;
+  index: number;
+  programSlug: string;
+}) {
   const [isOpen, setIsOpen] = useState(index === 0);
   const lessonCount = module.lessons?.length || 0;
 
@@ -88,7 +109,7 @@ function ModuleAccordion({ module, index }: { module: ProgramModule; index: numb
       {isOpen && module.lessons?.length > 0 && (
         <div className="border-t border-border divide-y divide-border/50 px-2 py-1">
           {module.lessons.map((lesson, i) => (
-            <LessonRow key={lesson.id} lesson={lesson} index={i} />
+            <LessonRow key={lesson.id} lesson={lesson} index={i} programSlug={programSlug} />
           ))}
         </div>
       )}
@@ -98,6 +119,13 @@ function ModuleAccordion({ module, index }: { module: ProgramModule; index: numb
 
 export default function ProgramDetailClient({ slug }: { slug: string }) {
   const { data: program, isLoading, error } = useProgramBySlug(slug);
+  const { data: enrollmentsData } = useMyEnrollments(1, 100);
+
+  // Check if the user is already enrolled in this program
+  const enrollment = enrollmentsData?.data?.find(
+    (e: any) => e.programId === program?.id && e.status === 'active',
+  );
+  const isEnrolled = !!enrollment;
 
   if (isLoading) {
     return (
@@ -138,18 +166,8 @@ export default function ProgramDetailClient({ slug }: { slug: string }) {
   ) || program.estimatedDuration || 0;
 
   return (
-    <div className="space-y-8">
-      {/* Back link */}
-      <Link
-        href="/programs"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Programs
-      </Link>
-
+    <Card className="p-6">
+      <div className="space-y-8">
       {/* Banner */}
       {program.bannerUrl && (
         <div className="relative h-48 md:h-64 rounded-xl overflow-hidden">
@@ -259,7 +277,7 @@ export default function ProgramDetailClient({ slug }: { slug: string }) {
               <h2 className="text-xl font-semibold mb-4">Curriculum</h2>
               <div className="space-y-3">
                 {program.modules.map((mod, i) => (
-                  <ModuleAccordion key={mod.id} module={mod} index={i} />
+                  <ModuleAccordion key={mod.id} module={mod} index={i} programSlug={program.slug} />
                 ))}
               </div>
             </div>
@@ -300,6 +318,8 @@ export default function ProgramDetailClient({ slug }: { slug: string }) {
               isFree={program.isFree}
               price={Number(program.price)}
               currency={program.currency || 'KES'}
+              isEnrolled={isEnrolled}
+              enrollmentId={enrollment?.id}
             />
 
             {/* Stats */}
@@ -342,6 +362,7 @@ export default function ProgramDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Card>
   );
 }

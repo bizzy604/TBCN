@@ -4,7 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { adminProgramsApi, type Program } from '@/lib/api/admin-api';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { adminProgramsApi, type Program, type Lesson } from '@/lib/api/admin-api';
+import { AssessmentEditor } from '@/components/assessments/AssessmentEditor';
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -24,6 +32,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
   useEffect(() => {
     adminProgramsApi
@@ -208,11 +217,11 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
                     key={lesson.id}
                     className="flex items-center justify-between px-4 py-2.5 text-sm"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="text-xs text-muted-foreground w-5">{li + 1}.</span>
-                      <span>{lesson.title}</span>
+                      <span className="truncate">{lesson.title}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                       <span className="capitalize">{lesson.contentType}</span>
                       {lesson.isFree && (
                         <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
@@ -220,6 +229,13 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
                         </span>
                       )}
                       {lesson.estimatedDuration && <span>{lesson.estimatedDuration}m</span>}
+                      <button
+                        onClick={() => setSelectedLesson(lesson)}
+                        className="ml-1 px-2 py-1 rounded-md border border-border text-xs font-medium hover:bg-muted transition"
+                        title="Manage assessment for this lesson"
+                      >
+                        📝 Assessment
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -238,6 +254,30 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
         <p>Slug: {program.slug}</p>
         <p>ID: {program.id}</p>
       </div>
+
+      {/* Assessment Editor Sheet */}
+      <Sheet
+        open={!!selectedLesson}
+        onOpenChange={(open) => { if (!open) setSelectedLesson(null); }}
+      >
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Assessment Editor</SheetTitle>
+            <SheetDescription>
+              Create or edit the assessment for this lesson.
+            </SheetDescription>
+          </SheetHeader>
+          {selectedLesson && (
+            <div className="mt-6">
+              <AssessmentEditor
+                lessonId={selectedLesson.id}
+                lessonTitle={selectedLesson.title}
+                onClose={() => setSelectedLesson(null)}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

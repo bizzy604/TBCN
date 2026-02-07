@@ -1,17 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Poppins } from 'next/font/google';
+import { Outfit, Space_Mono } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider } from '@/components/theme/theme-provider';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { Toaster } from 'react-hot-toast';
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 });
 
-const poppins = Poppins({
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-poppins',
+  weight: ['400', '700'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -38,9 +41,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${poppins.variable} font-sans`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${outfit.variable} ${spaceMono.variable} font-sans`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+          <ThemeToggle />
+          <Toaster position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

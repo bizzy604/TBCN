@@ -40,8 +40,18 @@ function getAdjacentLessons(modules: ProgramModule[], lessonId: string) {
 }
 
 export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlayerProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: program, isLoading: programLoading } = useProgramBySlug(programSlug);
+
+  // Open sidebar by default on desktop, closed on mobile
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    setSidebarOpen(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setSidebarOpen(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { data: enrollmentsData } = useMyEnrollments(1, 100);
   const updateProgress = useUpdateProgress();
 
@@ -133,58 +143,71 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
 
   return (
     <div className="flex h-[calc(100vh-5rem)] -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
-      {/* Sidebar */}
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — overlay on mobile, inline on desktop */}
       <div
-        className={`shrink-0 border-r border-border bg-card overflow-y-auto transition-all ${
-          sidebarOpen ? 'w-80' : 'w-0'
-        }`}
+        className={`
+          fixed inset-y-0 left-0 z-40 w-80 border-r border-border bg-card overflow-y-auto transition-transform duration-300 ease-in-out
+          lg:static lg:z-auto lg:transition-all lg:duration-200 lg:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:w-0 lg:border-r-0'}
+          ${sidebarOpen ? 'lg:w-80' : ''}
+        `}
       >
-        {sidebarOpen && (
-          <div className="p-4 space-y-4">
-            {/* Program title */}
-            <div>
-              <Link
-                href={`/programs/${programSlug}`}
-                className="text-xs text-muted-foreground hover:text-foreground transition flex items-center gap-1"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Program
-              </Link>
-              <h2 className="text-sm font-semibold mt-2 text-foreground">{program.title}</h2>
-            </div>
+        {/* Close button — mobile only */}
+        <div className="flex items-center justify-end p-2 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-muted transition"
+            aria-label="Close sidebar"
+          >
+            <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-            {/* Progress tracker */}
-            {enrollment && <ProgressTracker enrollment={enrollment} compact />}
-
-            {/* Lesson navigation */}
-            <LessonNavigation
-              modules={program.modules || []}
-              currentLessonId={lessonId}
-              programSlug={programSlug}
-              progressMap={progressMap}
-            />
+        <div className="p-4 space-y-4">
+          {/* Program title */}
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">{program.title}</h2>
           </div>
-        )}
+
+          {/* Progress tracker */}
+          {enrollment && <ProgressTracker enrollment={enrollment} compact />}
+
+          {/* Lesson navigation */}
+          <LessonNavigation
+            modules={program.modules || []}
+            currentLessonId={lessonId}
+            programSlug={programSlug}
+            progressMap={progressMap}
+          />
+        </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-lg hover:bg-muted transition"
+              className="p-1.5 rounded-lg hover:bg-muted transition shrink-0"
               title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             >
               <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">{lesson.title}</h1>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold text-foreground truncate">{lesson.title}</h1>
               <p className="text-xs text-muted-foreground">
                 Lesson {currentIndex + 1} of {total}
               </p>
@@ -196,7 +219,7 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
             <button
               onClick={handleMarkComplete}
               disabled={isCompleted || updateProgress.isPending}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+              className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition shrink-0 ${
                 isCompleted
                   ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   : 'border border-border text-muted-foreground hover:bg-muted'
@@ -217,7 +240,7 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
         </div>
 
         {/* Lesson body */}
-        <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
           {/* Description */}
           {lesson.description && (
             <p className="text-muted-foreground">{lesson.description}</p>
@@ -226,6 +249,8 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
           {/* Content */}
           <LessonContent
             lesson={lesson}
+            programSlug={programSlug}
+            lessonId={lessonId}
             startPosition={progressMap[lessonId]?.lastPosition}
             onVideoTimeUpdate={handleVideoTimeUpdate}
             onVideoComplete={handleVideoComplete}

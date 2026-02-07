@@ -2,9 +2,12 @@
 
 import { VideoPlayer } from './VideoPlayer';
 import type { Lesson } from '@/lib/api/programs';
+import Link from 'next/link';
 
 interface LessonContentProps {
   lesson: Lesson;
+  programSlug?: string;
+  lessonId?: string;
   startPosition?: number;
   onVideoTimeUpdate?: (time: number) => void;
   onVideoComplete?: () => void;
@@ -12,6 +15,8 @@ interface LessonContentProps {
 
 export function LessonContent({
   lesson,
+  programSlug,
+  lessonId,
   startPosition,
   onVideoTimeUpdate,
   onVideoComplete,
@@ -49,6 +54,11 @@ export function LessonContent({
   }
 
   if (lesson.contentType === 'quiz') {
+    const assessmentPath =
+      programSlug && lessonId
+        ? `/programs/${programSlug}/lessons/${lessonId}/assessment`
+        : null;
+
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center">
         <div className="text-3xl mb-3">📝</div>
@@ -56,9 +66,22 @@ export function LessonContent({
         <p className="text-sm text-muted-foreground mb-4">
           This lesson includes an assessment. Complete it to track your progress.
         </p>
-        <button className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition">
-          Start Assessment
-        </button>
+        {assessmentPath ? (
+          <Link
+            href={assessmentPath}
+            className="inline-flex px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition"
+          >
+            Start Assessment
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="px-6 py-2.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium"
+          >
+            Start Assessment
+          </button>
+        )}
       </div>
     );
   }

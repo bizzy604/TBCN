@@ -28,6 +28,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { MediaModule } from './modules/media/media.module';
 
 // Configuration validation
 import { configValidationSchema } from './common/config/config.schema';
@@ -122,6 +123,7 @@ import { configValidationSchema } from './common/config/config.schema';
     AnalyticsModule,
     PartnersModule,
     AssessmentsModule,
+    MediaModule,
   ],
   providers: [
     // Global guards — every route requires JWT auth by default.

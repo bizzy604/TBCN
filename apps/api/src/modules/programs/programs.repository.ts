@@ -66,7 +66,9 @@ export class ProgramsRepository {
   }
 
   async updateProgram(id: string, data: Partial<Program>): Promise<Program> {
-    await this.programRepo.update(id, data);
+    // Strip out relation properties that cannot be passed to .update()
+    const { modules, instructor, ...columnData } = data as any;
+    await this.programRepo.update(id, columnData);
     return this.findProgramById(id, ['modules', 'modules.lessons', 'instructor']);
   }
 

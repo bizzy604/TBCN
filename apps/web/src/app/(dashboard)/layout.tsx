@@ -1,58 +1,67 @@
+'use client';
+
+import { useState } from 'react';
 import { ProtectedRoute } from '@/components/auth';
+import Link from 'next/link';
+import Sidebar from '@/components/layout/Sidebar';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-card border-b border-border sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Logo */}
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-bold text-primary">BCN</h1>
-              </div>
-              
-              {/* Nav */}
-              <nav className="hidden md:flex items-center gap-6">
-                <a href="/dashboard" className="text-foreground hover:text-primary font-medium">
-                  Dashboard
-                </a>
-                <a href="/programs" className="text-muted-foreground hover:text-primary">
-                  Programs
-                </a>
-                <a href="/enrollments" className="text-muted-foreground hover:text-primary">
-                  My Learning
-                </a>
-                <a href="/community" className="text-muted-foreground hover:text-primary">
-                  Community
-                </a>
-                <a href="/coaching" className="text-muted-foreground hover:text-primary">
-                  Coaching
-                </a>
-              </nav>
-              
-              {/* User menu placeholder */}
-              <div className="flex items-center gap-4">
-                <a
-                  href="/settings"
-                  className="flex items-center gap-2 text-foreground hover:text-primary"
+      <div className="flex min-h-screen bg-background">
+        {/* Sidebar Navigation */}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((prev) => !prev)}
+          mobileOpen={mobileOpen}
+          onMobileClose={() => setMobileOpen(false)}
+        />
+
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col overflow-y-auto h-screen">
+          {/* Top bar with breadcrumbs */}
+          <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
+            <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                {/* Mobile hamburger */}
+                <button
+                  onClick={() => setMobileOpen(true)}
+                  className="flex lg:hidden h-9 w-9 items-center justify-center rounded-lg text-foreground hover:bg-muted transition-colors"
+                  aria-label="Open navigation"
                 >
-                  <div className="w-8 h-8 rounded-full bg-muted"></div>
-                </a>
+                  <Bars3Icon className="h-5 w-5" />
+                </button>
+                <Breadcrumbs />
+              </div>
+
+              {/* User menu */}
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/settings/profile"
+                  className="flex items-center gap-2 text-foreground hover:text-primary"
+                  title="Account settings"
+                >
+                  <div className="h-8 w-8 rounded-full bg-muted" />
+                  <span className="sr-only">Account settings</span>
+                </Link>
               </div>
             </div>
-          </div>
-        </header>
-        
-        {/* Main content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
+          </header>
+
+          {/* Page content */}
+          <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
+            {children}
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   );

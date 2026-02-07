@@ -1,13 +1,44 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+// Use the Next.js rewrite proxy (/api/:path* → API server) to avoid CORS.
+// Only fall back to the full URL for server-side requests where the proxy isn't available.
+const API_BASE =
+  typeof window !== 'undefined'
+    ? '/api/v1'
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1');
 
-async function getTokenFromCookie(): Promise<string | null> {
+// ════════════════════════════════════════════════
+// Cookie helpers
+// ════════════════════════════════════════════════
+
+function getTokenFromCookie(): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function setTokenCookie(token: string): void {
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  document.cookie = `admin_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+function removeTokenCookie(): void {
+  document.cookie = 'admin_token=; path=/; max-age=0';
+}
+
+function setUserCookie(user: AuthUser): void {
+  const maxAge = 60 * 60 * 24 * 7;
+  document.cookie = `admin_user=${encodeURIComponent(JSON.stringify(user))}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+function removeUserCookie(): void {
+  document.cookie = 'admin_user=; path=/; max-age=0';
+}
+
+// ════════════════════════════════════════════════
+// Generic request helper
+// ════════════════════════════════════════════════
+
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = await getTokenFromCookie();
+  const token = getTokenFromCookie();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -17,11 +48,71 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `Request failed: ${res.status}`);
+    throw new Error(body.message || body.data?.message || `Request failed: ${res.status}`);
   }
   if (res.status === 204) return undefined as T;
-  return res.json();
+
+  const json = await res.json();
+  // The API wraps non-paginated responses in { data: T, timestamp }.
+  // Paginated responses are { data: [...], meta: {...}, timestamp } and should NOT be unwrapped
+  // (the caller expects { data, meta } to access both the items and pagination info).
+  if (json.timestamp && json.data !== undefined && !json.meta) {
+    return json.data as T;
+  }
+  return json as T;
 }
+
+// ════════════════════════════════════════════════
+// Auth types & API
+// ════════════════════════════════════════════════
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+  redirectTo?: string;
+}
+
+const ALLOWED_ADMIN_ROLES = ['super_admin', 'admin'];
+
+export const adminAuthApi = {
+  /** Login with email/password. Rejects non-admin roles. */
+  login: async (email: string, password: string): Promise<AuthUser> => {
+    const data = await request<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!ALLOWED_ADMIN_ROLES.includes(data.user.role)) {
+      throw new Error('Access denied. Admin privileges required.');
+    }
+
+    setTokenCookie(data.accessToken);
+    setUserCookie(data.user);
+    return data.user;
+  },
+
+  /** Get current authenticated user from the API. */
+  me: () => request<AuthUser>('/auth/me'),
+
+  /** Clear auth cookies and reload. */
+  logout: (): void => {
+    removeTokenCookie();
+    removeUserCookie();
+    window.location.href = '/login';
+  },
+
+  /** Check if the user is currently authenticated (cookie exists). */
+  isAuthenticated: (): boolean => !!getTokenFromCookie(),
+};
 
 // ════════════════════════════════════════════════
 // Types
@@ -73,6 +164,7 @@ export interface Program extends ProgramSummary {
   learningOutcomes: string[];
   maxEnrollments: number | null;
   estimatedDuration: number | null;
+  totalRatings: number;
   modules: ProgramModule[];
 }
 
@@ -168,6 +260,82 @@ export const adminProgramsApi = {
 };
 
 // ════════════════════════════════════════════════
+// Assessment types
+// ════════════════════════════════════════════════
+
+export interface AssessmentQuestion {
+  id?: string;
+  text: string;
+  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
+  options?: string[];
+  correctAnswer?: string;
+  points: number;
+  sortOrder: number;
+}
+
+export interface Assessment {
+  id: string;
+  lessonId: string;
+  title: string;
+  description: string | null;
+  type: 'quiz' | 'assignment' | 'peer_review' | 'capstone';
+  passingScore: number;
+  maxAttempts: number;
+  timeLimitMinutes: number | null;
+  questions: AssessmentQuestion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAssessmentPayload {
+  lessonId: string;
+  title: string;
+  description?: string;
+  type?: Assessment['type'];
+  passingScore?: number;
+  maxAttempts?: number;
+  timeLimitMinutes?: number | null;
+  questions: Omit<AssessmentQuestion, 'id'>[];
+}
+
+export interface UpdateAssessmentPayload {
+  title?: string;
+  description?: string;
+  type?: Assessment['type'];
+  passingScore?: number;
+  maxAttempts?: number;
+  timeLimitMinutes?: number | null;
+  questions?: AssessmentQuestion[];
+}
+
+// ════════════════════════════════════════════════
+// Admin Assessments API
+// ════════════════════════════════════════════════
+
+export const adminAssessmentsApi = {
+  getByLesson: (lessonId: string) =>
+    request<Assessment | null>(`/assessments/lesson/${lessonId}`),
+
+  getFull: (id: string) =>
+    request<Assessment>(`/assessments/${id}/full`),
+
+  create: (data: CreateAssessmentPayload) =>
+    request<Assessment>('/assessments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: UpdateAssessmentPayload) =>
+    request<Assessment>(`/assessments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    request<void>(`/assessments/${id}`, { method: 'DELETE' }),
+};
+
+// ════════════════════════════════════════════════
 // Admin Enrollments API
 // ════════════════════════════════════════════════
 
@@ -192,4 +360,17 @@ export const adminEnrollmentsApi = {
     request<{ totalActive: number; totalCompleted: number; totalDropped: number }>(
       '/enrollments/stats/overview',
     ),
+};
+
+// ════════════════════════════════════════════════
+// Admin Users API
+// ════════════════════════════════════════════════
+
+export interface UserStats {
+  [role: string]: number;
+}
+
+export const adminUsersApi = {
+  getStats: () =>
+    request<UserStats>('/users/stats'),
 };

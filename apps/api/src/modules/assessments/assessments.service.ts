@@ -71,6 +71,34 @@ export class AssessmentsService {
     return this.repository.findByLessonId(lessonId);
   }
 
+  async update(id: string, dto: any): Promise<Assessment> {
+    const existing = await this.findById(id);
+
+    // If questions are provided, assign IDs to new questions (those without an id)
+    let questions = existing.questions;
+    if (dto.questions) {
+      questions = dto.questions.map((q: any, idx: number) => ({
+        id: q.id || uuidv4(),
+        text: q.text,
+        type: q.type,
+        options: q.options || null,
+        correctAnswer: q.correctAnswer || null,
+        points: q.points || 10,
+        sortOrder: q.sortOrder ?? idx,
+      }));
+    }
+
+    return this.repository.update(id, {
+      ...(dto.title !== undefined && { title: dto.title }),
+      ...(dto.description !== undefined && { description: dto.description }),
+      ...(dto.type !== undefined && { type: dto.type }),
+      ...(dto.passingScore !== undefined && { passingScore: dto.passingScore }),
+      ...(dto.maxAttempts !== undefined && { maxAttempts: dto.maxAttempts }),
+      ...(dto.timeLimitMinutes !== undefined && { timeLimitMinutes: dto.timeLimitMinutes }),
+      ...(dto.questions && { questions }),
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.findById(id);
     await this.repository.delete(id);

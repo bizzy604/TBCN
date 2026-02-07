@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useProgramCatalog } from '@/hooks/use-programs';
 import { ProgramList } from '@/components/programs/ProgramList';
+import { Card } from '@/components/ui/Card';
 
 const DIFFICULTY_OPTIONS = [
   { label: 'All Levels', value: '' },
@@ -34,11 +35,12 @@ export default function ProgramsCatalogClient() {
   const meta = data?.meta;
 
   return (
-    <div className="space-y-8">
+    <Card className="p-4 sm:p-6">
+      <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Programs</h1>
-        <p className="mt-2 text-muted-foreground text-lg">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Programs</h1>
+        <p className="mt-1 sm:mt-2 text-muted-foreground text-base sm:text-lg">
           Discover transformational programs designed to build your brand, skills, and impact.
         </p>
       </div>
@@ -117,7 +119,7 @@ export default function ProgramsCatalogClient() {
 
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (
-        <div className="flex justify-center gap-2 pt-4">
+        <div className="flex flex-wrap justify-center gap-2 pt-4">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={!meta.hasPreviousPage}
@@ -160,6 +162,7 @@ export default function ProgramsCatalogClient() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </Card>
   );
 }

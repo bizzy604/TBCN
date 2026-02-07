@@ -1,20 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Poppins } from 'next/font/google';
+import { Outfit, Space_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { AuthCookieSync } from '@/components/auth';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 // Font configuration
-const inter = Inter({
+const outfit = Outfit({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 });
 
-const poppins = Poppins({
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-poppins',
+  weight: ['400', '700'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -101,13 +102,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${poppins.variable}`}
+      className={`${outfit.variable} ${spaceMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
           <AuthCookieSync />
           {children}
+          <ThemeToggle />
         </Providers>
       </body>
     </html>

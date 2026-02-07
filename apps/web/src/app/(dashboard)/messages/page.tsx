@@ -1,8 +1,11 @@
 'use client';
 
+import { Card } from '@/components/ui/Card';
+
 export default function MessagesPage() {
   return (
-    <div className="space-y-8">
+    <Card className="p-6">
+      <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
         <p className="mt-2 text-muted-foreground">
@@ -19,6 +22,7 @@ export default function MessagesPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </Card>
   );
 }

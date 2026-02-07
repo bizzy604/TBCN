@@ -42,13 +42,7 @@ export default function EditProgramPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href={`/programs/${resolvedParams.id}`}
-          className="text-xs text-muted-foreground hover:text-foreground transition"
-        >
-          ← Back to Program
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground mt-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Edit: {program.title}
         </h1>
         <p className="text-muted-foreground mt-1">

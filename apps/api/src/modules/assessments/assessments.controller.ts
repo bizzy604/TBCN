@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { AssessmentsService } from './assessments.service';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
+import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 import { SubmitAssessmentDto } from './dto/submit-assessment.dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { UserRole } from '@tbcn/shared';
@@ -37,6 +38,17 @@ export class AssessmentsController {
   @ApiResponse({ status: 201, description: 'Assessment created' })
   async create(@Body() dto: CreateAssessmentDto) {
     return this.assessmentsService.create(dto);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COACH)
+  @ApiOperation({ summary: 'Update an assessment' })
+  @ApiResponse({ status: 200, description: 'Assessment updated' })
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAssessmentDto,
+  ) {
+    return this.assessmentsService.update(id, dto);
   }
 
   @Delete(':id')
