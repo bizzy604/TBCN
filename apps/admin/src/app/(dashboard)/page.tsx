@@ -62,6 +62,8 @@ export default function DashboardPage() {
     ? Object.values(userStats).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)
     : 0;
 
+  const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString() : '0');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -85,15 +87,15 @@ export default function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <DashboardCard
             title="Total Users"
-            value={totalUsers.toLocaleString()}
-            description={`${userStats?.coach ?? 0} coaches · ${userStats?.member ?? 0} members`}
+            value={fmt(totalUsers)}
+            description={`${fmt(userStats?.coach ?? 0)} coaches · ${fmt(userStats?.member ?? 0)} members`}
             icon={Users}
             variant="primary"
           />
           <DashboardCard
             title="Active Enrollments"
-            value={enrollmentStats?.totalActive?.toLocaleString() ?? '0'}
-            description={`${enrollmentStats?.totalCompleted ?? 0} completed`}
+            value={fmt(enrollmentStats?.totalActive)}
+            description={`${fmt(enrollmentStats?.totalCompleted)} completed`}
             icon={GraduationCap}
             variant="secondary"
           />
@@ -106,7 +108,7 @@ export default function DashboardPage() {
           />
           <DashboardCard
             title="Total Enrollments"
-            value={programStats?.totalEnrollments?.toLocaleString() ?? '0'}
+            value={fmt(programStats?.totalEnrollments)}
             description={`${enrollmentStats?.totalDropped ?? 0} dropped`}
             icon={BarChart3}
             variant="default"
@@ -151,7 +153,7 @@ export default function DashboardPage() {
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-16 text-right">{count.toLocaleString()}</span>
+                        <span className="text-sm font-medium w-16 text-right">{fmt(count)}</span>
                       </div>
                     );
                   })}
@@ -177,7 +179,7 @@ export default function DashboardPage() {
                 href="/users"
                 icon={<UserPlus size={18} />}
                 title="Manage Users"
-                description={`${totalUsers.toLocaleString()} registered users`}
+                description={`${fmt(totalUsers)} registered users`}
               />
               <QuickAction
                 href="/content-moderation"
@@ -266,17 +268,17 @@ export default function DashboardPage() {
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-16 text-right">{value.toLocaleString()}</span>
+                        <span className="text-sm font-medium w-16 text-right">{fmt(value)}</span>
                       </div>
                     );
                   })}
                   <div className="pt-2 border-t border-border text-center">
                     <p className="text-sm text-muted-foreground">
-                      {(
+                      {fmt(
                         enrollmentStats.totalActive +
-                        enrollmentStats.totalCompleted +
-                        (enrollmentStats.totalDropped ?? 0)
-                      ).toLocaleString()}{' '}
+                          enrollmentStats.totalCompleted +
+                          (enrollmentStats.totalDropped ?? 0)
+                      )}{' '}
                       total enrollments
                     </p>
                   </div>

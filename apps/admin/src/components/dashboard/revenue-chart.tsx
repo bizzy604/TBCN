@@ -105,7 +105,7 @@ export function RevenueChart({ data = sampleData, className }: RevenueChartProps
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}
               labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+              formatter={(value: number) => [`$${(value ?? 0).toLocaleString()}`, '']}
             />
             <Area
               type="monotone"
