@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 import { useProgramBySlug } from '@/hooks/use-programs';
-import { useAssessmentByLesson, useMyEnrollments } from '@/hooks/use-enrollments';
+import {
+  useAssessmentByLesson,
+  useMyAssessmentSubmissions,
+  useMyEnrollments,
+} from '@/hooks/use-enrollments';
 import { QuizPlayer } from '@/components/assessments/QuizPlayer';
 import { Card } from '@/components/ui/Card';
 import type { Enrollment } from '@/lib/api/enrollments';
@@ -16,6 +20,7 @@ export default function AssessmentClient({ programSlug, lessonId }: AssessmentCl
   const { data: program, isLoading: programLoading } = useProgramBySlug(programSlug);
   const { data: enrollmentsData } = useMyEnrollments(1, 100);
   const { data: assessment, isLoading: assessmentLoading } = useAssessmentByLesson(lessonId);
+  const { data: submissions } = useMyAssessmentSubmissions(assessment?.id || '');
 
   const enrollment: Enrollment | undefined = program && enrollmentsData?.data
     ? enrollmentsData.data.find((e: Enrollment) => e.programId === program.id)
@@ -102,7 +107,11 @@ export default function AssessmentClient({ programSlug, lessonId }: AssessmentCl
         </div>
       </div>
 
-      <QuizPlayer assessment={assessment} enrollmentId={enrollment.id} />
+      <QuizPlayer
+        assessment={assessment}
+        enrollmentId={enrollment.id}
+        existingAttempts={submissions?.length || 0}
+      />
       </div>
     </Card>
   );

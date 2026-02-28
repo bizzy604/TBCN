@@ -74,6 +74,19 @@ export interface AssessmentResult {
   }>;
 }
 
+export interface AssessmentSubmission {
+  id: string;
+  assessmentId: string;
+  enrollmentId: string;
+  userId: string;
+  score: number | null;
+  passed: boolean | null;
+  status: string;
+  attemptNumber: number;
+  feedback: string | null;
+  submittedAt: string;
+}
+
 export const enrollmentsApi = {
   // Enroll
   enroll: (programId: string) =>
@@ -111,5 +124,5 @@ export const enrollmentsApi = {
     api.post<AssessmentResult>(`/assessments/${assessmentId}/submit`, data),
 
   getMySubmissions: (assessmentId: string) =>
-    api.get(`/assessments/${assessmentId}/submissions`),
+    api.get<AssessmentSubmission[]>(`/assessments/${assessmentId}/submissions`),
 };

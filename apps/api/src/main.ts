@@ -98,6 +98,7 @@ async function bootstrap() {
       .addTag('Community', 'Community Forums & Posts')
       .addTag('Events', 'Events & Masterclasses')
       .addTag('Payments', 'Payments & Subscriptions')
+      .addTag('Certificates', 'Learning Certificates & Verification')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

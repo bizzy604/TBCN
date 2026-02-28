@@ -11,6 +11,8 @@ export const enrollmentKeys = {
   progress: (id: string) => ['enrollments', id, 'progress'] as const,
   assessment: (id: string) => ['assessments', id] as const,
   assessmentByLesson: (lessonId: string) => ['assessments', 'lesson', lessonId] as const,
+  assessmentSubmissions: (assessmentId: string) =>
+    ['assessments', assessmentId, 'submissions'] as const,
 };
 
 export function useMyEnrollments(page = 1, limit = 10) {
@@ -110,5 +112,13 @@ export function useSubmitAssessment() {
         queryKey: enrollmentKeys.assessment(variables.assessmentId),
       });
     },
+  });
+}
+
+export function useMyAssessmentSubmissions(assessmentId: string) {
+  return useQuery({
+    queryKey: enrollmentKeys.assessmentSubmissions(assessmentId),
+    queryFn: () => enrollmentsApi.getMySubmissions(assessmentId),
+    enabled: !!assessmentId,
   });
 }

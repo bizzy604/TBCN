@@ -153,8 +153,9 @@ src/
 ## API Documentation
 
 When the server is running, access:
-- **Swagger UI**: http://localhost:4000/api/docs
+- **Swagger UI**: http://localhost:4000/api
 - **OpenAPI JSON**: http://localhost:4000/api/docs-json
+- **Redoc**: http://localhost/redoc
 
 ## Authentication
 

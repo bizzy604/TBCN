@@ -16,34 +16,37 @@ export interface SendEmailOptions {
   text?: string;
 }
 
-/**
- * Email Service
- * Handles sending emails via SMTP (Nodemailer)
- * Supports Gmail, Mailtrap, Resend SMTP, and any standard SMTP provider
- */
 @Injectable()
 export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: Transporter;
+  private transporter: Transporter | null = null;
   private readonly fromEmail: string;
   private readonly fromName: string;
   private readonly frontendUrl: string;
   private readonly isEnabled: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    this.fromEmail = this.configService.get<string>('SMTP_FROM_EMAIL', 'noreply@brandcoachnetwork.com');
-    this.fromName = this.configService.get<string>('SMTP_FROM_NAME', 'The Brand Coach Network');
-    this.frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    this.isEnabled = !!this.configService.get<string>('SMTP_HOST');
+    this.fromEmail = this.configService.get<string>(
+      'SMTP_FROM_EMAIL',
+      'noreply@brandcoachnetwork.com',
+    );
+    this.fromName = this.configService.get<string>(
+      'SMTP_FROM_NAME',
+      'The Brand Coach Network',
+    );
+    this.frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+
+    const host = this.configService.get<string>('SMTP_HOST');
+    this.isEnabled = this.isUsableSmtpHost(host);
   }
 
   async onModuleInit() {
     await this.createTransporter();
   }
 
-  /**
-   * Create SMTP transporter from environment config
-   */
   private async createTransporter(): Promise<void> {
     const host = this.configService.get<string>('SMTP_HOST');
     const port = this.configService.get<number>('SMTP_PORT', 587);
@@ -51,9 +54,9 @@ export class EmailService implements OnModuleInit {
     const pass = this.configService.get<string>('SMTP_PASS');
     const secure = this.configService.get<boolean>('SMTP_SECURE', false);
 
-    if (!host) {
+    if (!this.isEnabled || !host) {
       this.logger.warn(
-        'SMTP_HOST not configured — emails will be logged to console instead of sent.',
+        'SMTP host is not configured for real delivery. Emails will be logged to console.',
       );
       return;
     }
@@ -61,7 +64,7 @@ export class EmailService implements OnModuleInit {
     this.transporter = nodemailer.createTransport({
       host,
       port,
-      secure, // true for 465, false for 587
+      secure,
       auth: user && pass ? { user, pass } : undefined,
     });
 
@@ -69,16 +72,13 @@ export class EmailService implements OnModuleInit {
       await this.transporter.verify();
       this.logger.log(`Email service connected to SMTP server: ${host}:${port}`);
     } catch (error) {
-      this.logger.error(`Failed to connect to SMTP server: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to connect to SMTP server: ${message}`);
       this.logger.warn('Emails will be logged to console as fallback.');
       this.transporter = null;
     }
   }
 
-  /**
-   * Send an email
-   * Falls back to console logging if SMTP is not configured
-   */
   async sendEmail(options: SendEmailOptions): Promise<boolean> {
     const { to, subject, html, text } = options;
 
@@ -97,21 +97,15 @@ export class EmailService implements OnModuleInit {
         text: text || this.stripHtml(html),
       });
 
-      this.logger.log(`Email sent to ${to} — messageId: ${result.messageId}`);
+      this.logger.log(`Email sent to ${to} - messageId: ${result.messageId}`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send email to ${to}: ${message}`);
       return false;
     }
   }
 
-  // ============================================
-  // Pre-built Email Methods
-  // ============================================
-
-  /**
-   * Send email verification email
-   */
   async sendVerificationEmail(
     to: string,
     firstName: string,
@@ -121,7 +115,7 @@ export class EmailService implements OnModuleInit {
 
     return this.sendEmail({
       to,
-      subject: 'Verify your email — Brand Coach Network',
+      subject: 'Verify your email - Brand Coach Network',
       html: getEmailVerificationTemplate({
         firstName,
         verificationUrl,
@@ -130,9 +124,6 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  /**
-   * Send password reset email
-   */
   async sendPasswordResetEmail(
     to: string,
     firstName: string,
@@ -142,7 +133,7 @@ export class EmailService implements OnModuleInit {
 
     return this.sendEmail({
       to,
-      subject: 'Reset your password — Brand Coach Network',
+      subject: 'Reset your password - Brand Coach Network',
       html: getPasswordResetTemplate({
         firstName,
         resetUrl,
@@ -151,9 +142,6 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  /**
-   * Send welcome email after verification
-   */
   async sendWelcomeEmail(
     to: string,
     firstName: string,
@@ -169,16 +157,13 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  /**
-   * Send password changed confirmation
-   */
   async sendPasswordChangedEmail(
     to: string,
     firstName: string,
   ): Promise<boolean> {
     return this.sendEmail({
       to,
-      subject: 'Your password has been changed — Brand Coach Network',
+      subject: 'Your password has been changed - Brand Coach Network',
       html: getPasswordChangedTemplate({
         firstName,
         supportEmail: this.fromEmail,
@@ -186,10 +171,6 @@ export class EmailService implements OnModuleInit {
       }),
     });
   }
-
-  // ============================================
-  // Helpers
-  // ============================================
 
   private stripHtml(html: string): string {
     return html
@@ -202,4 +183,21 @@ export class EmailService implements OnModuleInit {
       .replace(/&gt;/g, '>')
       .trim();
   }
+
+  private isUsableSmtpHost(host?: string): boolean {
+    if (!host) {
+      return false;
+    }
+
+    const normalized = host.trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+
+    const placeholderFragments = ['placeholder', 'example', 'changeme', '<smtp'];
+    return !placeholderFragments.some((fragment) =>
+      normalized.includes(fragment),
+    );
+  }
 }
+

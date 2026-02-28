@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSubmitAssessment } from '@/hooks/use-enrollments';
-import type { Assessment, AssessmentResult, AssessmentQuestion } from '@/lib/api/enrollments';
+import type { Assessment, AssessmentQuestion, AssessmentResult } from '@/lib/api/enrollments';
 
 interface QuizPlayerProps {
   assessment: Assessment;
   enrollmentId: string;
+  existingAttempts?: number;
 }
 
 function getOptions(question: AssessmentQuestion): string[] {
@@ -18,21 +19,70 @@ function getOptions(question: AssessmentQuestion): string[] {
   return question.options || [];
 }
 
-export function QuizPlayer({ assessment, enrollmentId }: QuizPlayerProps) {
+function getErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object' && 'error' in error) {
+    const apiError = error as { error?: { message?: string } };
+    return apiError.error?.message || 'Unable to submit assessment';
+  }
+  return 'Unable to submit assessment';
+}
+
+export function QuizPlayer({
+  assessment,
+  enrollmentId,
+  existingAttempts = 0,
+}: QuizPlayerProps) {
   const submitAssessment = useSubmitAssessment();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState(existingAttempts);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAttemptsUsed(existingAttempts);
+  }, [existingAttempts]);
+
+  const attemptsRemaining = useMemo(
+    () => Math.max(assessment.maxAttempts - attemptsUsed, 0),
+    [assessment.maxAttempts, attemptsUsed],
+  );
+  const maxAttemptsReached = attemptsRemaining <= 0;
 
   const handleSelect = (questionId: string, value: string) => {
+    if (submitError) {
+      setSubmitError(null);
+    }
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = async () => {
-    const res = await submitAssessment.mutateAsync({
-      assessmentId: assessment.id,
-      data: { enrollmentId, answers },
-    });
-    setResult(res);
+    if (maxAttemptsReached) {
+      setSubmitError('No attempts remaining. Please contact a coach for support.');
+      return;
+    }
+
+    if (Object.keys(answers).length === 0) {
+      setSubmitError('Answer at least one question before submitting.');
+      return;
+    }
+
+    try {
+      setSubmitError(null);
+      const res = await submitAssessment.mutateAsync({
+        assessmentId: assessment.id,
+        data: { enrollmentId, answers },
+      });
+      setResult(res);
+      setAttemptsUsed((prev) => Math.max(prev, res.attemptNumber));
+    } catch (error) {
+      setSubmitError(getErrorMessage(error));
+    }
+  };
+
+  const handleRetake = () => {
+    setResult(null);
+    setAnswers({});
+    setSubmitError(null);
   };
 
   if (result) {
@@ -43,6 +93,9 @@ export function QuizPlayer({ assessment, enrollmentId }: QuizPlayerProps) {
             <h2 className="text-lg font-semibold">Results</h2>
             <p className="text-sm text-muted-foreground">
               Score: {result.score}/{result.totalPoints} ({Math.round(result.percentage)}%)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Attempt {result.attemptNumber} of {assessment.maxAttempts}
             </p>
           </div>
           <div
@@ -56,25 +109,45 @@ export function QuizPlayer({ assessment, enrollmentId }: QuizPlayerProps) {
           </div>
         </div>
 
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm">
+          Attempts remaining: <strong>{result.attemptsRemaining}</strong>
+        </div>
+
         <div className="space-y-3">
           {result.results.map((r) => (
             <div key={r.questionId} className="rounded-lg border border-border/60 p-4">
               <p className="text-sm font-medium mb-2">{r.questionText}</p>
               <p className="text-sm text-muted-foreground">
-                Your answer: <span className="text-foreground">{r.userAnswer || '—'}</span>
+                Your answer: <span className="text-foreground">{r.userAnswer || '-'}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                {r.correct ? 'Correct' : 'Incorrect'} • {r.earnedPoints}/{r.points} points
+                {r.correct ? 'Correct' : 'Incorrect'} - {r.earnedPoints}/{r.points} points
               </p>
             </div>
           ))}
         </div>
+
+        {result.attemptsRemaining > 0 && !result.passed && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleRetake}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Retake Assessment
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+        Attempts used: {attemptsUsed}/{assessment.maxAttempts} | Remaining: {attemptsRemaining}
+      </div>
+
       {assessment.questions.map((q, idx) => (
         <div key={q.id} className="rounded-xl border border-border bg-card p-6 space-y-3">
           <div className="flex items-center justify-between">
@@ -120,12 +193,21 @@ export function QuizPlayer({ assessment, enrollmentId }: QuizPlayerProps) {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitAssessment.isPending}
-          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition"
+          disabled={submitAssessment.isPending || maxAttemptsReached}
+          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition disabled:opacity-60"
         >
-          {submitAssessment.isPending ? 'Submitting...' : 'Submit Assessment'}
+          {submitAssessment.isPending
+            ? 'Submitting...'
+            : maxAttemptsReached
+              ? 'No Attempts Left'
+              : 'Submit Assessment'}
         </button>
       </div>
+
+      {submitError && (
+        <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+      )}
     </div>
   );
 }
+

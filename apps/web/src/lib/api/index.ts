@@ -4,3 +4,5 @@ export * from './auth';
 export * from './users';
 export * from './programs';
 export * from './enrollments';
+export * from './certificates';
+export * from './media';

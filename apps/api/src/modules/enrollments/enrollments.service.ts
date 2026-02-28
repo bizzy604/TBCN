@@ -77,7 +77,7 @@ export class EnrollmentsService {
     });
 
     // Increment program enrollment count
-    await this.programsService['repository'].incrementEnrollmentCount(dto.programId);
+    await this.programsService.incrementEnrollmentCount(dto.programId);
 
     this.eventEmitter.emit(ENROLLMENT_EVENTS.CREATED, {
       enrollment,
@@ -128,7 +128,7 @@ export class EnrollmentsService {
       status: EnrollmentStatus.DROPPED,
     });
 
-    await this.programsService['repository'].decrementEnrollmentCount(enrollment.programId);
+    await this.programsService.decrementEnrollmentCount(enrollment.programId);
 
     this.eventEmitter.emit(ENROLLMENT_EVENTS.DROPPED, {
       enrollment: updated,
@@ -140,6 +140,17 @@ export class EnrollmentsService {
 
   async getStats(): Promise<{ total: number; active: number; completed: number }> {
     return this.repository.getEnrollmentStats();
+  }
+
+  async attachCertificate(enrollmentId: string, certificateId: string): Promise<Enrollment> {
+    const enrollment = await this.repository.findById(enrollmentId);
+    if (!enrollment) {
+      throw new NotFoundException(`Enrollment with ID "${enrollmentId}" not found`);
+    }
+
+    return this.repository.update(enrollmentId, {
+      certificateId,
+    });
   }
 
   // ═══════════════════════════════════════════════

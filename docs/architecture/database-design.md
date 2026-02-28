@@ -10,7 +10,7 @@
 
 ---
 
-## **1\. EXECUTIVE SUMMARY**
+## **1. EXECUTIVE SUMMARY**
 
 The Brand Coach Network requires a robust, scalable database architecture to support a multi-sided platform serving individuals, coaches, partners, and administrators. The system must handle:
 
@@ -52,35 +52,35 @@ The Brand Coach Network requires a robust, scalable database architecture to sup
 
 ---
 
-## **2\. DATA DOMAIN OVERVIEW**
+## **2. DATA DOMAIN OVERVIEW**
 
 ### **Core Business Domains**
 
-**1\. Identity & Access Management**
+**1. Identity & Access Management**
 
 * User accounts, authentication, authorization  
 * Profile management and brand portfolios  
 * Role-based permissions
 
-**2\. Learning & Development**
+**2. Learning & Development**
 
 * Programs, courses, modules, lessons  
 * Assessments, quizzes, assignments  
 * Progress tracking and certifications
 
-**3\. Coaching & Mentorship**
+**3. Coaching & Mentorship**
 
 * Coach profiles and availability  
 * Session scheduling and management  
 * Feedback and ratings
 
-**4\. Community & Collaboration**
+**4. Community & Collaboration**
 
 * Discussion forums and posts  
 * Direct messaging  
 * Project submissions and collaborations
 
-**5\. Commerce & Monetization**
+**5. Commerce & Monetization**
 
 * Membership subscriptions  
 * Course enrollments and purchases  
@@ -88,25 +88,25 @@ The Brand Coach Network requires a robust, scalable database architecture to sup
 * Merchandise sales  
 * Payment processing
 
-**6\. Events & Experiences**
+**6. Events & Experiences**
 
 * Event creation and management  
 * Registration and attendance tracking  
 * Virtual and physical event logistics
 
-**7\. Partnerships & Institutions**
+**7. Partnerships & Institutions**
 
 * Partner profiles and management  
 * Bulk enrollments and cohorts  
 * Impact reporting and analytics
 
-**8\. Content Management**
+**8. Content Management**
 
 * Content creation and approval workflows  
 * Media asset management  
 * SEO and metadata
 
-**9\. Analytics & Reporting**
+**9. Analytics & Reporting**
 
 * User behavior tracking  
 * Business metrics  
@@ -114,7 +114,7 @@ The Brand Coach Network requires a robust, scalable database architecture to sup
 
 ---
 
-## **3\. KEY ENTITIES & RELATIONSHIPS**
+## **3. KEY ENTITIES & RELATIONSHIPS**
 
 ### **3.1 Entity Relationship Diagram (Conceptual)**
 
@@ -186,21 +186,21 @@ The Brand Coach Network requires a robust, scalable database architecture to sup
 
 **Supporting Entities (15 Secondary Tables):**
 
-16. **user\_skills** \- Skills tagged to users  
-17. **user\_connections** \- Follower/following relationships  
-18. **lesson\_progress** \- Granular progress tracking  
-19. **assessment\_submissions** \- User assessment attempts  
-20. **comments** \- Replies to posts  
-21. **reactions** \- Likes, bookmarks, endorsements  
-22. **projects** \- Innovation Hub submissions  
-23. **event\_registrations** \- Event attendance tracking  
-24. **partners** \- Organizational partner profiles  
-25. **partner\_cohorts** \- Bulk enrollment groups  
-26. **coupons** \- Discount codes and promotions  
-27. **notifications** \- User notification queue  
-28. **audit\_logs** \- System activity tracking  
-29. **content\_approvals** \- Workflow state management  
-30. **media\_assets** \- File metadata and references
+1. **user\_skills** \- Skills tagged to users  
+2. **user\_connections** \- Follower/following relationships  
+3. **lesson\_progress** \- Granular progress tracking  
+4. **assessment\_submissions** \- User assessment attempts  
+5. **comments** \- Replies to posts  
+6. **reactions** \- Likes, bookmarks, endorsements  
+7. **projects** \- Innovation Hub submissions  
+8. **event\_registrations** \- Event attendance tracking  
+9. **partners** \- Organizational partner profiles  
+10. **partner\_cohorts** \- Bulk enrollment groups  
+11. **coupons** \- Discount codes and promotions  
+12. **notifications** \- User notification queue  
+13. **audit\_logs** \- System activity tracking  
+14. **content\_approvals** \- Workflow state management  
+15. **media\_assets** \- File metadata and references
 
 ---
 
@@ -271,7 +271,7 @@ ORDER BY avg\_rating DESC, session\_count DESC;
 
 \-- Frequency: 200+ times/day  
 \-- Latency requirement: \<300ms  
-SELECT e.\*,   
+SELECT e.\*,
        COUNT(er.registration\_id) as registration\_count,  
        e.capacity\_limit \- COUNT(er.registration\_id) as spots\_remaining  
 FROM events e  
@@ -288,10 +288,10 @@ GROUP BY e.event\_id;
 BEGIN;  
   INSERT INTO transactions (user\_id, amount, type, reference\_id, ...)  
   VALUES ($1, $2, $3, $4, ...);  
-    
+
   UPDATE subscriptions SET status \= 'active', renewed\_at \= NOW()  
   WHERE subscription\_id \= $5;  
-    
+
   INSERT INTO audit\_logs (action, user\_id, entity\_type, entity\_id, ...)  
   VALUES ('subscription\_renewed', $1, 'subscription', $5, ...);  
 COMMIT;
@@ -302,8 +302,8 @@ COMMIT;
 \-- Consistency: Eventual consistency acceptable  
 INSERT INTO lesson\_progress (user\_id, lesson\_id, progress\_percent, time\_spent, ...)  
 VALUES ($1, $2, $3, $4, ...)  
-ON CONFLICT (user\_id, lesson\_id)   
-DO UPDATE SET   
+ON CONFLICT (user\_id, lesson\_id)
+DO UPDATE SET
   progress\_percent \= GREATEST(lesson\_progress.progress\_percent, $3),  
   time\_spent \= lesson\_progress.time\_spent \+ $4,  
   updated\_at \= NOW();
@@ -325,7 +325,7 @@ UPDATE users SET post\_count \= post\_count \+ 1 WHERE user\_id \= $1;
 
 \-- Frequency: Hourly background job  
 \-- Latency requirement: \<10 seconds acceptable  
-SELECT   
+SELECT
   COUNT(DISTINCT user\_id) FILTER (WHERE created\_at \>= NOW() \- INTERVAL '30 days') as new\_users\_30d,  
   COUNT(DISTINCT user\_id) FILTER (WHERE last\_login \>= NOW() \- INTERVAL '7 days') as active\_users\_7d,  
   SUM(amount) FILTER (WHERE created\_at \>= NOW() \- INTERVAL '1 month') as revenue\_monthly  
@@ -569,21 +569,21 @@ CREATE TABLE users (
   full\_name VARCHAR(255) NOT NULL,  
   phone\_number VARCHAR(50),  
   phone\_verified BOOLEAN DEFAULT FALSE,  
-  status VARCHAR(20) NOT NULL DEFAULT 'active',   
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
     \-- active, suspended, deleted, pending\_verification  
-    
+
   \-- Authentication  
   last\_login TIMESTAMPTZ,  
   failed\_login\_attempts INT DEFAULT 0,  
   locked\_until TIMESTAMPTZ,  
   two\_factor\_enabled BOOLEAN DEFAULT FALSE,  
   two\_factor\_secret VARCHAR(255),  
-    
+
   \-- Metadata  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
   deleted\_at TIMESTAMPTZ, \-- Soft delete  
-    
+
   \-- Constraints  
   CONSTRAINT valid\_email CHECK (email \~\* '^\[A-Za-z0-9.\_%+-\]+@\[A-Za-z0-9.-\]+\\.\[A-Z|a-z\]{2,}$'),  
   CONSTRAINT valid\_status CHECK (status IN ('active', 'suspended', 'deleted', 'pending\_verification'))  
@@ -605,13 +605,13 @@ CREATE TABLE user\_roles (
   granted\_at TIMESTAMPTZ DEFAULT NOW(),  
   expires\_at TIMESTAMPTZ, \-- NULL \= permanent  
   revoked\_at TIMESTAMPTZ,  
-    
+
   CONSTRAINT valid\_role CHECK (role\_name IN ('member', 'coach', 'partner', 'admin', 'super\_admin')),  
   CONSTRAINT active\_role CHECK (revoked\_at IS NULL OR revoked\_at \> granted\_at)  
 );
 
 CREATE INDEX idx\_user\_roles\_user ON user\_roles(user\_id);  
-CREATE INDEX idx\_user\_roles\_active ON user\_roles(user\_id, role\_name)   
+CREATE INDEX idx\_user\_roles\_active ON user\_roles(user\_id, role\_name)
   WHERE revoked\_at IS NULL AND (expires\_at IS NULL OR expires\_at \> NOW());
 
 \-- \============================================================================  
@@ -620,49 +620,49 @@ CREATE INDEX idx\_user\_roles\_active ON user\_roles(user\_id, role\_name)
 CREATE TABLE user\_profiles (  
   profile\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID UNIQUE NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   \-- Brand Identity  
   brand\_name VARCHAR(255),  
   tagline VARCHAR(500),  
   bio TEXT,  
   mission\_statement TEXT,  
-    
+
   \-- Professional Details  
   occupation VARCHAR(255),  
   industry VARCHAR(100),  
   years\_experience INT,  
-    
+
   \-- Location  
   location JSONB, \-- {country, city, timezone}  
-    
+
   \-- Contact Visibility  
   show\_email BOOLEAN DEFAULT FALSE,  
   show\_phone BOOLEAN DEFAULT FALSE,  
-    
+
   \-- Social Links  
   social\_links JSONB, \-- {linkedin, twitter, instagram, youtube, website}  
-    
+
   \-- Skills & Expertise (for coaches/professionals)  
   skills JSONB, \-- \["Personal Branding", "SME Development", ...\]  
   certifications JSONB, \-- \[{name, issuer, date, credential\_id}, ...\]  
-    
+
   \-- Coach-Specific  
   hourly\_rate DECIMAL(10,2),  
   currency VARCHAR(3) DEFAULT 'USD',  
   availability\_status VARCHAR(20), \-- available, busy, away  
   coaching\_specialties JSONB,  
-    
+
   \-- Media  
   profile\_photo\_url VARCHAR(500),  
   cover\_photo\_url VARCHAR(500),  
   portfolio\_urls JSONB, \-- \[{title, url, type}, ...\]  
-    
+
   \-- Profile Completion & Engagement  
   profile\_completion\_percent INT DEFAULT 0,  
   post\_count INT DEFAULT 0,  
   follower\_count INT DEFAULT 0,  
   following\_count INT DEFAULT 0,  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW()  
@@ -671,7 +671,7 @@ CREATE TABLE user\_profiles (
 CREATE INDEX idx\_profiles\_user ON user\_profiles(user\_id);  
 CREATE INDEX idx\_profiles\_skills ON user\_profiles USING GIN (skills);  
 CREATE INDEX idx\_profiles\_location ON user\_profiles USING GIN (location);  
-CREATE INDEX idx\_profiles\_coach\_status ON user\_profiles(availability\_status)   
+CREATE INDEX idx\_profiles\_coach\_status ON user\_profiles(availability\_status)
   WHERE hourly\_rate IS NOT NULL;
 
 \-- \============================================================================  
@@ -682,7 +682,7 @@ CREATE TABLE user\_connections (
   follower\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   following\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT no\_self\_follow CHECK (follower\_id \!= following\_id),  
   UNIQUE(follower\_id, following\_id)  
 );
@@ -720,51 +720,51 @@ CREATE TABLE programs (
   slug VARCHAR(500) UNIQUE NOT NULL,  
   description TEXT,  
   long\_description TEXT,  
-    
+
   \-- Categorization  
   category VARCHAR(100), \-- Personal Branding, SME, Leadership, etc.  
   tags JSONB, \-- \["entrepreneurship", "digital skills", ...\]  
   difficulty\_level VARCHAR(20), \-- beginner, intermediate, advanced  
-    
+
   \-- Instructor  
   instructor\_id UUID NOT NULL REFERENCES users(user\_id),  
   co\_instructors JSONB, \-- Array of user\_ids  
-    
+
   \-- Pricing  
   pricing\_type VARCHAR(20) NOT NULL, \-- free, one\_time, subscription  
   price\_amount DECIMAL(10,2),  
   currency VARCHAR(3) DEFAULT 'USD',  
   tier\_access JSONB, \-- \["discover", "build", "thrive"\]  
-    
+
   \-- Structure  
   duration\_weeks INT,  
   estimated\_hours DECIMAL(5,2),  
   module\_count INT DEFAULT 0,  
   lesson\_count INT DEFAULT 0,  
-    
+
   \-- Engagement Metrics (denormalized for performance)  
   enrollment\_count INT DEFAULT 0,  
   completion\_count INT DEFAULT 0,  
   average\_rating DECIMAL(3,2),  
   review\_count INT DEFAULT 0,  
-    
+
   \-- Media  
   thumbnail\_url VARCHAR(500),  
   preview\_video\_url VARCHAR(500),  
-    
+
   \-- Status & Lifecycle  
   status VARCHAR(20) DEFAULT 'draft', \-- draft, published, archived  
   published\_at TIMESTAMPTZ,  
   archived\_at TIMESTAMPTZ,  
-    
+
   \-- SEO  
   meta\_description TEXT,  
   meta\_keywords JSONB,  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_status CHECK (status IN ('draft', 'published', 'archived')),  
   CONSTRAINT valid\_pricing\_type CHECK (pricing\_type IN ('free', 'one\_time', 'subscription'))  
 );
@@ -790,20 +790,20 @@ CREATE TABLE modules (
   title VARCHAR(500) NOT NULL,  
   description TEXT,  
   sequence\_order INT NOT NULL,  
-    
+
   \-- Unlock Logic  
   unlock\_after\_module\_id UUID REFERENCES modules(module\_id), \-- Sequential unlocking  
   unlock\_date TIMESTAMPTZ, \-- Date-based release  
-    
+
   \-- Metadata  
   estimated\_duration\_minutes INT,  
   lesson\_count INT DEFAULT 0,  
-    
+
   \-- Status  
   is\_published BOOLEAN DEFAULT TRUE,  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(program\_id, sequence\_order)  
 );
 
@@ -818,23 +818,23 @@ CREATE TABLE lessons (
   title VARCHAR(500) NOT NULL,  
   description TEXT,  
   sequence\_order INT NOT NULL,  
-    
+
   \-- Content  
   content\_type VARCHAR(20) NOT NULL, \-- video, text, quiz, assignment, resource  
   video\_url VARCHAR(500),  
   video\_duration\_seconds INT,  
   text\_content TEXT,  
   resource\_urls JSONB, \-- \[{title, url, type, size}, ...\]  
-    
+
   \-- Engagement  
   is\_preview BOOLEAN DEFAULT FALSE, \-- Free preview lesson  
   estimated\_minutes INT,  
-    
+
   \-- Status  
   is\_published BOOLEAN DEFAULT TRUE,  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(module\_id, sequence\_order),  
   CONSTRAINT valid\_content\_type CHECK (content\_type IN ('video', 'text', 'quiz', 'assignment', 'resource'))  
 );
@@ -849,30 +849,30 @@ CREATE TABLE enrollments (
   enrollment\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   program\_id UUID NOT NULL REFERENCES programs(program\_id) ON DELETE CASCADE,  
-    
+
   \-- Progress  
   enrollment\_date TIMESTAMPTZ DEFAULT NOW(),  
   last\_accessed\_at TIMESTAMPTZ,  
   progress\_percent INT DEFAULT 0,  
   current\_module\_id UUID REFERENCES modules(module\_id),  
   current\_lesson\_id UUID REFERENCES lessons(lesson\_id),  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'active', \-- active, completed, dropped, suspended  
   completion\_date TIMESTAMPTZ,  
-    
+
   \-- Payment  
   payment\_type VARCHAR(20), \-- subscription, one\_time, scholarship, free  
   transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Certificate  
   certificate\_issued BOOLEAN DEFAULT FALSE,  
   certificate\_issued\_at TIMESTAMPTZ,  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(user\_id, program\_id),  
   CONSTRAINT valid\_status CHECK (status IN ('active', 'completed', 'dropped', 'suspended')),  
   CONSTRAINT valid\_progress CHECK (progress\_percent \>= 0 AND progress\_percent \<= 100\)  
@@ -890,17 +890,17 @@ CREATE TABLE lesson\_progress (
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   lesson\_id UUID NOT NULL REFERENCES lessons(lesson\_id) ON DELETE CASCADE,  
   enrollment\_id UUID NOT NULL REFERENCES enrollments(enrollment\_id) ON DELETE CASCADE,  
-    
+
   \-- Progress  
   progress\_percent INT DEFAULT 0,  
   time\_spent\_seconds INT DEFAULT 0,  
   last\_position\_seconds INT, \-- For video lessons  
   completed\_at TIMESTAMPTZ,  
-    
+
   \-- Timestamps  
   first\_accessed\_at TIMESTAMPTZ DEFAULT NOW(),  
   last\_accessed\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(user\_id, lesson\_id),  
   CONSTRAINT valid\_progress CHECK (progress\_percent \>= 0 AND progress\_percent \<= 100\)  
 );
@@ -918,26 +918,26 @@ CREATE TABLE assessments (
   program\_id UUID REFERENCES programs(program\_id) ON DELETE CASCADE, \-- For program-level assessments  
   title VARCHAR(500) NOT NULL,  
   description TEXT,  
-    
+
   \-- Type & Configuration  
   assessment\_type VARCHAR(20) NOT NULL, \-- quiz, assignment, project, peer\_review  
   passing\_score INT, \-- Percentage required to pass  
   max\_attempts INT DEFAULT 3,  
   time\_limit\_minutes INT,  
-    
+
   \-- Content  
   questions JSONB, \-- Quiz questions with answers  
   instructions TEXT, \-- Assignment instructions  
   rubric JSONB, \-- Grading rubric  
-    
+
   \-- Auto-grading  
   is\_auto\_graded BOOLEAN DEFAULT TRUE,  
-    
+
   \-- Status  
   is\_published BOOLEAN DEFAULT TRUE,  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_type CHECK (assessment\_type IN ('quiz', 'assignment', 'project', 'peer\_review')),  
   CONSTRAINT has\_parent CHECK (lesson\_id IS NOT NULL OR program\_id IS NOT NULL)  
 );
@@ -953,27 +953,27 @@ CREATE TABLE assessment\_submissions (
   assessment\_id UUID NOT NULL REFERENCES assessments(assessment\_id) ON DELETE CASCADE,  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   enrollment\_id UUID NOT NULL REFERENCES enrollments(enrollment\_id) ON DELETE CASCADE,  
-    
+
   \-- Attempt  
   attempt\_number INT NOT NULL,  
   started\_at TIMESTAMPTZ DEFAULT NOW(),  
   submitted\_at TIMESTAMPTZ,  
   time\_taken\_seconds INT,  
-    
+
   \-- Content  
   answers JSONB, \-- User's answers  
   submission\_files JSONB, \-- \[{filename, url, size}, ...\]  
-    
+
   \-- Grading  
   score DECIMAL(5,2),  
   passed BOOLEAN,  
   graded\_by UUID REFERENCES users(user\_id), \-- Coach/instructor  
   graded\_at TIMESTAMPTZ,  
   feedback TEXT,  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'in\_progress', \-- in\_progress, submitted, graded, returned  
-    
+
   CONSTRAINT valid\_status CHECK (status IN ('in\_progress', 'submitted', 'graded', 'returned')),  
   UNIQUE(assessment\_id, user\_id, attempt\_number)  
 );
@@ -990,27 +990,27 @@ CREATE TABLE certificates (
   enrollment\_id UUID UNIQUE NOT NULL REFERENCES enrollments(enrollment\_id) ON DELETE CASCADE,  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   program\_id UUID NOT NULL REFERENCES programs(program\_id) ON DELETE CASCADE,  
-    
+
   \-- Certificate Details  
   certificate\_number VARCHAR(50) UNIQUE NOT NULL,  
   issued\_at TIMESTAMPTZ DEFAULT NOW(),  
   issued\_by UUID REFERENCES users(user\_id), \-- Admin or instructor  
-    
+
   \-- Content  
   title VARCHAR(500) NOT NULL,  
   description TEXT,  
   certificate\_url VARCHAR(500), \-- PDF URL in S3  
-    
+
   \-- Verification  
   verification\_code VARCHAR(100) UNIQUE NOT NULL,  
   is\_revoked BOOLEAN DEFAULT FALSE,  
   revoked\_at TIMESTAMPTZ,  
   revocation\_reason TEXT,  
-    
+
   \-- Metadata  
   completion\_score DECIMAL(5,2),  
   completion\_date TIMESTAMPTZ NOT NULL,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW()  
 );
 
@@ -1025,52 +1025,52 @@ CREATE INDEX idx\_certificates\_verification ON certificates(verification\_code)
 \-- \============================================================================  
 CREATE TABLE coaching\_sessions (  
   session\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Participants  
   coach\_id UUID NOT NULL REFERENCES users(user\_id),  
   mentee\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Scheduling  
   scheduled\_at TIMESTAMPTZ NOT NULL,  
   duration\_minutes INT NOT NULL DEFAULT 60,  
   timezone VARCHAR(50) NOT NULL,  
-    
+
   \-- Type  
   session\_type VARCHAR(20) NOT NULL, \-- one\_on\_one, group, discovery\_call  
   topic VARCHAR(500),  
   notes TEXT, \-- Pre-session notes from mentee  
-    
+
   \-- Virtual Meeting  
   meeting\_platform VARCHAR(20) DEFAULT 'zoom', \-- zoom, google\_meet, teams  
   meeting\_link VARCHAR(500),  
   meeting\_id VARCHAR(100),  
   meeting\_password VARCHAR(100),  
-    
+
   \-- Status  
-  status VARCHAR(20) DEFAULT 'scheduled',   
+  status VARCHAR(20) DEFAULT 'scheduled',
     \-- scheduled, confirmed, in\_progress, completed, cancelled, no\_show  
-    
+
   \-- Cancellation  
   cancelled\_at TIMESTAMPTZ,  
   cancelled\_by UUID REFERENCES users(user\_id),  
   cancellation\_reason TEXT,  
-    
+
   \-- Completion  
   completed\_at TIMESTAMPTZ,  
   coach\_notes TEXT, \-- Post-session notes  
   action\_items JSONB, \-- \[{item, due\_date, status}, ...\]  
-    
+
   \-- Payment  
   payment\_amount DECIMAL(10,2),  
   currency VARCHAR(3) DEFAULT 'USD',  
-  payment\_status VARCHAR(20) DEFAULT 'pending',   
+  payment\_status VARCHAR(20) DEFAULT 'pending',
     \-- pending, paid, refunded, cancelled  
   transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_session\_type CHECK (session\_type IN ('one\_on\_one', 'group', 'discovery\_call')),  
   CONSTRAINT valid\_status CHECK (status IN ('scheduled', 'confirmed', 'in\_progress', 'completed', 'cancelled', 'no\_show')),  
   CONSTRAINT valid\_payment\_status CHECK (payment\_status IN ('pending', 'paid', 'refunded', 'cancelled')),  
@@ -1080,7 +1080,7 @@ CREATE TABLE coaching\_sessions (
 CREATE INDEX idx\_sessions\_coach ON coaching\_sessions(coach\_id, scheduled\_at);  
 CREATE INDEX idx\_sessions\_mentee ON coaching\_sessions(mentee\_id, scheduled\_at);  
 CREATE INDEX idx\_sessions\_status ON coaching\_sessions(status);  
-CREATE INDEX idx\_sessions\_upcoming ON coaching\_sessions(scheduled\_at)   
+CREATE INDEX idx\_sessions\_upcoming ON coaching\_sessions(scheduled\_at)
   WHERE status IN ('scheduled', 'confirmed') AND scheduled\_at \> NOW();
 
 \-- \============================================================================  
@@ -1090,21 +1090,21 @@ CREATE TABLE session\_feedback (
   feedback\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   session\_id UUID UNIQUE NOT NULL REFERENCES coaching\_sessions(session\_id) ON DELETE CASCADE,  
   submitted\_by UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Rating  
   rating INT NOT NULL, \-- 1-5 stars  
   would\_recommend BOOLEAN,  
-    
+
   \-- Feedback  
   feedback\_text TEXT,  
   highlights JSONB, \-- \["Great insights", "Actionable advice", ...\]  
   improvements JSONB, \-- \["More structure", "Better time management", ...\]  
-    
+
   \-- Privacy  
   is\_public BOOLEAN DEFAULT FALSE, \-- Can be shown as testimonial  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_rating CHECK (rating BETWEEN 1 AND 5\)  
 );
 
@@ -1118,32 +1118,32 @@ CREATE INDEX idx\_feedback\_public ON session\_feedback(is\_public) WHERE is\_pu
 CREATE TABLE coach\_availability (  
   availability\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   coach\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   \-- Time Slot  
   day\_of\_week INT NOT NULL, \-- 0-6 (Sunday-Saturday)  
   start\_time TIME NOT NULL,  
   end\_time TIME NOT NULL,  
   timezone VARCHAR(50) NOT NULL,  
-    
+
   \-- Recurrence  
   effective\_from DATE NOT NULL,  
   effective\_until DATE, \-- NULL \= ongoing  
-    
+
   \-- Capacity  
   max\_sessions\_per\_slot INT DEFAULT 1,  
-    
+
   \-- Status  
   is\_active BOOLEAN DEFAULT TRUE,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_day CHECK (day\_of\_week BETWEEN 0 AND 6),  
   CONSTRAINT valid\_time CHECK (start\_time \< end\_time)  
 );
 
 CREATE INDEX idx\_availability\_coach ON coach\_availability(coach\_id, day\_of\_week);  
-CREATE INDEX idx\_availability\_active ON coach\_availability(coach\_id, is\_active)   
+CREATE INDEX idx\_availability\_active ON coach\_availability(coach\_id, is\_active)
   WHERE is\_active \= TRUE;
 
 \-- \============================================================================  
@@ -1152,13 +1152,13 @@ CREATE INDEX idx\_availability\_active ON coach\_availability(coach\_id, is\_act
 CREATE TABLE coach\_blocked\_times (  
   blocked\_time\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   coach\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   blocked\_from TIMESTAMPTZ NOT NULL,  
   blocked\_until TIMESTAMPTZ NOT NULL,  
   reason VARCHAR(500),  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_block CHECK (blocked\_from \< blocked\_until)  
 );
 
@@ -1173,41 +1173,41 @@ CREATE INDEX idx\_blocked\_times\_period ON coach\_blocked\_times(coach\_id, blo
 CREATE TABLE posts (  
   post\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   author\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Content  
   title VARCHAR(500),  
   content TEXT NOT NULL,  
   category VARCHAR(50) NOT NULL, \-- discussion, story, question, project, announcement  
   tags JSONB, \-- \["entrepreneurship", "branding", ...\]  
-    
+
   \-- Media  
   media\_urls JSONB, \-- \[{url, type, thumbnail}, ...\]  
-    
+
   \-- Engagement Metrics (denormalized)  
   view\_count INT DEFAULT 0,  
   like\_count INT DEFAULT 0,  
   comment\_count INT DEFAULT 0,  
   bookmark\_count INT DEFAULT 0,  
   share\_count INT DEFAULT 0,  
-    
+
   \-- Moderation  
   status VARCHAR(20) DEFAULT 'published', \-- draft, pending, published, flagged, removed  
   moderated\_by UUID REFERENCES users(user\_id),  
   moderation\_note TEXT,  
-    
+
   \-- Pinning & Featuring  
   is\_pinned BOOLEAN DEFAULT FALSE,  
   is\_featured BOOLEAN DEFAULT FALSE,  
   featured\_until TIMESTAMPTZ,  
-    
+
   \-- SEO  
   slug VARCHAR(500) UNIQUE,  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
   published\_at TIMESTAMPTZ,  
-    
+
   CONSTRAINT valid\_category CHECK (category IN ('discussion', 'story', 'question', 'project', 'announcement')),  
   CONSTRAINT valid\_status CHECK (status IN ('draft', 'pending', 'published', 'flagged', 'removed'))  
 );
@@ -1232,21 +1232,21 @@ CREATE TABLE comments (
   post\_id UUID NOT NULL REFERENCES posts(post\_id) ON DELETE CASCADE,  
   author\_id UUID NOT NULL REFERENCES users(user\_id),  
   parent\_comment\_id UUID REFERENCES comments(comment\_id) ON DELETE CASCADE, \-- For nested replies  
-    
+
   \-- Content  
   content TEXT NOT NULL,  
-    
+
   \-- Engagement  
   like\_count INT DEFAULT 0,  
-    
+
   \-- Moderation  
   status VARCHAR(20) DEFAULT 'published', \-- published, flagged, removed  
   moderated\_by UUID REFERENCES users(user\_id),  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_status CHECK (status IN ('published', 'flagged', 'removed'))  
 );
 
@@ -1259,16 +1259,16 @@ CREATE INDEX idx\_comments\_parent ON comments(parent\_comment\_id) WHERE parent
 CREATE TABLE reactions (  
   reaction\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   \-- Target (polymorphic)  
   entity\_type VARCHAR(20) NOT NULL, \-- post, comment, project, profile  
   entity\_id UUID NOT NULL,  
-    
+
   \-- Reaction Type  
   reaction\_type VARCHAR(20) NOT NULL, \-- like, love, bookmark, endorse  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(user\_id, entity\_type, entity\_id, reaction\_type),  
   CONSTRAINT valid\_entity\_type CHECK (entity\_type IN ('post', 'comment', 'project', 'profile')),  
   CONSTRAINT valid\_reaction\_type CHECK (reaction\_type IN ('like', 'love', 'bookmark', 'endorse'))  
@@ -1284,20 +1284,20 @@ CREATE TABLE messages (
   conversation\_id UUID NOT NULL, \-- Group messages by conversation  
   sender\_id UUID NOT NULL REFERENCES users(user\_id),  
   recipient\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Content  
   content TEXT NOT NULL,  
   attachments JSONB, \-- \[{filename, url, type, size}, ...\]  
-    
+
   \-- Status  
   is\_read BOOLEAN DEFAULT FALSE,  
   read\_at TIMESTAMPTZ,  
   is\_deleted\_by\_sender BOOLEAN DEFAULT FALSE,  
   is\_deleted\_by\_recipient BOOLEAN DEFAULT FALSE,  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT no\_self\_message CHECK (sender\_id \!= recipient\_id)  
 );
 
@@ -1343,46 +1343,46 @@ CREATE INDEX idx\_project\_collaborators\_project ON project\_collaborators(proj
 CREATE TABLE transactions (  
   transaction\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Amount  
   amount DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3) NOT NULL DEFAULT 'USD',  
-    
+
   \-- Type & Reference  
-  transaction\_type VARCHAR(30) NOT NULL,   
+  transaction\_type VARCHAR(30) NOT NULL,
     \-- subscription, course, event, merchandise, coaching, donation, refund  
   reference\_type VARCHAR(30), \-- program, event, coaching\_session, product  
   reference\_id UUID,  
-    
+
   \-- Payment Gateway  
   payment\_method VARCHAR(30) NOT NULL, \-- mpesa, stripe\_card, paypal, bank\_transfer  
   gateway\_name VARCHAR(50), \-- stripe, flutterwave, paystack  
   gateway\_transaction\_id VARCHAR(255),  
   gateway\_reference VARCHAR(255),  
-    
+
   \-- Status  
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',   
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
     \-- pending, processing, success, failed, refunded, cancelled  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   processed\_at TIMESTAMPTZ,  
   failed\_at TIMESTAMPTZ,  
   refunded\_at TIMESTAMPTZ,  
-    
+
   \-- Metadata  
   metadata JSONB, \-- Gateway-specific data, invoice info  
   failure\_reason TEXT,  
   refund\_reason TEXT,  
-    
+
   \-- Commission (for marketplace transactions)  
   platform\_fee\_percent DECIMAL(5,2),  
   platform\_fee\_amount DECIMAL(10,2),  
   seller\_payout\_amount DECIMAL(10,2),  
-    
-  CONSTRAINT valid\_transaction\_type CHECK (transaction\_type IN   
+
+  CONSTRAINT valid\_transaction\_type CHECK (transaction\_type IN
     ('subscription', 'course', 'event', 'merchandise', 'coaching', 'donation', 'refund')),  
-  CONSTRAINT valid\_status CHECK (status IN   
+  CONSTRAINT valid\_status CHECK (status IN
     ('pending', 'processing', 'success', 'failed', 'refunded', 'cancelled')),  
   CONSTRAINT valid\_amount CHECK (amount \>= 0\)  
 );
@@ -1400,49 +1400,49 @@ CREATE INDEX idx\_transactions\_success ON transactions(created\_at DESC) WHERE 
 CREATE TABLE subscriptions (  
   subscription\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Tier  
   tier VARCHAR(20) NOT NULL, \-- discover, build, thrive, impact  
-    
+
   \-- Billing  
   billing\_cycle VARCHAR(20) NOT NULL, \-- monthly, annual  
   amount DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3) NOT NULL DEFAULT 'USD',  
-    
+
   \-- Status  
-  status VARCHAR(20) NOT NULL DEFAULT 'active',   
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
     \-- active, cancelled, expired, suspended, past\_due  
-    
+
   \-- Dates  
   started\_at TIMESTAMPTZ DEFAULT NOW(),  
   current\_period\_start TIMESTAMPTZ NOT NULL,  
   current\_period\_end TIMESTAMPTZ NOT NULL,  
   cancelled\_at TIMESTAMPTZ,  
   ended\_at TIMESTAMPTZ,  
-    
+
   \-- Payment  
   payment\_method VARCHAR(30),  
   gateway\_subscription\_id VARCHAR(255), \-- Stripe subscription ID  
-    
+
   \-- Renewal  
   auto\_renew BOOLEAN DEFAULT TRUE,  
   next\_billing\_date TIMESTAMPTZ,  
   last\_payment\_transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Trial  
   trial\_start TIMESTAMPTZ,  
   trial\_end TIMESTAMPTZ,  
-    
+
   \-- Cancellation  
   cancellation\_reason VARCHAR(20), \-- user\_requested, payment\_failed, upgrade, downgrade  
   cancellation\_note TEXT,  
-    
+
   \-- Metadata  
   metadata JSONB,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_tier CHECK (tier IN ('discover', 'build', 'thrive', 'impact')),  
   CONSTRAINT valid\_cycle CHECK (billing\_cycle IN ('monthly', 'annual')),  
   CONSTRAINT valid\_status CHECK (status IN ('active', 'cancelled', 'expired', 'suspended', 'past\_due'))  
@@ -1451,7 +1451,7 @@ CREATE TABLE subscriptions (
 CREATE INDEX idx\_subscriptions\_user ON subscriptions(user\_id);  
 CREATE INDEX idx\_subscriptions\_status ON subscriptions(status);  
 CREATE INDEX idx\_subscriptions\_active ON subscriptions(user\_id) WHERE status \= 'active';  
-CREATE INDEX idx\_subscriptions\_renewal ON subscriptions(next\_billing\_date)   
+CREATE INDEX idx\_subscriptions\_renewal ON subscriptions(next\_billing\_date)
   WHERE status \= 'active' AND auto\_renew \= TRUE;
 
 \-- \============================================================================  
@@ -1460,37 +1460,37 @@ CREATE INDEX idx\_subscriptions\_renewal ON subscriptions(next\_billing\_date)
 CREATE TABLE coupons (  
   coupon\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   code VARCHAR(50) UNIQUE NOT NULL,  
-    
+
   \-- Discount  
   discount\_type VARCHAR(20) NOT NULL, \-- percentage, fixed\_amount  
   discount\_value DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3), \-- Required for fixed\_amount  
-    
+
   \-- Applicability  
   applies\_to VARCHAR(30) NOT NULL, \-- all, subscription, course, event, merchandise  
   applicable\_tiers JSONB, \-- \["build", "thrive"\] or null for all  
   applicable\_items JSONB, \-- Array of program\_ids, event\_ids, etc.  
-    
+
   \-- Usage Limits  
   max\_uses INT, \-- NULL \= unlimited  
   max\_uses\_per\_user INT DEFAULT 1,  
   current\_uses INT DEFAULT 0,  
-    
+
   \-- Validity  
   valid\_from TIMESTAMPTZ DEFAULT NOW(),  
   valid\_until TIMESTAMPTZ,  
   is\_active BOOLEAN DEFAULT TRUE,  
-    
+
   \-- Creator  
   created\_by UUID REFERENCES users(user\_id),  
-    
+
   \-- Metadata  
   description TEXT,  
   internal\_notes TEXT,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_discount\_type CHECK (discount\_type IN ('percentage', 'fixed\_amount')),  
   CONSTRAINT valid\_percentage CHECK (  
     discount\_type \!= 'percentage' OR (discount\_value \>= 0 AND discount\_value \<= 100\)  
@@ -1511,12 +1511,12 @@ CREATE TABLE coupon\_redemptions (
   coupon\_id UUID NOT NULL REFERENCES coupons(coupon\_id),  
   user\_id UUID NOT NULL REFERENCES users(user\_id),  
   transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Discount Applied  
   discount\_amount DECIMAL(10,2) NOT NULL,  
   original\_amount DECIMAL(10,2) NOT NULL,  
   final\_amount DECIMAL(10,2) NOT NULL,  
-    
+
   redeemed\_at TIMESTAMPTZ DEFAULT NOW()  
 );
 
@@ -1528,49 +1528,49 @@ CREATE INDEX idx\_redemptions\_user ON coupon\_redemptions(user\_id);
 \-- \============================================================================  
 CREATE TABLE products (  
   product\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Basic Info  
   name VARCHAR(500) NOT NULL,  
   slug VARCHAR(500) UNIQUE NOT NULL,  
   description TEXT,  
-    
+
   \-- Type  
   product\_type VARCHAR(20) NOT NULL, \-- physical, digital, bundle  
   category VARCHAR(100), \-- books, apparel, toolkits, etc.  
-    
+
   \-- Pricing  
   price DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3) DEFAULT 'USD',  
   compare\_at\_price DECIMAL(10,2), \-- Original price for sale display  
-    
+
   \-- Inventory (for physical products)  
   sku VARCHAR(100) UNIQUE,  
   track\_inventory BOOLEAN DEFAULT FALSE,  
   inventory\_quantity INT,  
   low\_stock\_threshold INT,  
-    
+
   \-- Digital Product  
   digital\_file\_url VARCHAR(500), \-- For digital downloads  
   download\_limit INT, \-- Max downloads per purchase  
-    
+
   \-- Shipping (for physical products)  
   requires\_shipping BOOLEAN DEFAULT FALSE,  
   weight\_grams INT,  
-    
+
   \-- Media  
   images JSONB, \-- \[{url, alt\_text, sequence}, ...\]  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'draft', \-- draft, active, archived  
   is\_featured BOOLEAN DEFAULT FALSE,  
-    
+
   \-- SEO  
   meta\_description TEXT,  
   meta\_keywords JSONB,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_product\_type CHECK (product\_type IN ('physical', 'digital', 'bundle')),  
   CONSTRAINT valid\_status CHECK (status IN ('draft', 'active', 'archived'))  
 );
@@ -1587,7 +1587,7 @@ CREATE TABLE orders (
   order\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id),  
   order\_number VARCHAR(50) UNIQUE NOT NULL,  
-    
+
   \-- Amounts  
   subtotal DECIMAL(10,2) NOT NULL,  
   discount\_amount DECIMAL(10,2) DEFAULT 0,  
@@ -1595,34 +1595,34 @@ CREATE TABLE orders (
   shipping\_amount DECIMAL(10,2) DEFAULT 0,  
   total\_amount DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3) DEFAULT 'USD',  
-    
+
   \-- Payment  
   payment\_status VARCHAR(20) DEFAULT 'pending', \-- pending, paid, refunded  
   transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Shipping  
   shipping\_address JSONB, \-- {name, street, city, country, postal\_code, phone}  
   shipping\_method VARCHAR(50),  
   tracking\_number VARCHAR(100),  
   tracking\_url VARCHAR(500),  
-    
+
   \-- Status  
-  fulfillment\_status VARCHAR(20) DEFAULT 'pending',   
+  fulfillment\_status VARCHAR(20) DEFAULT 'pending',
     \-- pending, processing, shipped, delivered, cancelled  
-    
+
   \-- Timestamps  
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   paid\_at TIMESTAMPTZ,  
   shipped\_at TIMESTAMPTZ,  
   delivered\_at TIMESTAMPTZ,  
   cancelled\_at TIMESTAMPTZ,  
-    
+
   \-- Metadata  
   notes TEXT,  
   metadata JSONB,  
-    
+
   CONSTRAINT valid\_payment\_status CHECK (payment\_status IN ('pending', 'paid', 'refunded')),  
-  CONSTRAINT valid\_fulfillment\_status CHECK (fulfillment\_status IN   
+  CONSTRAINT valid\_fulfillment\_status CHECK (fulfillment\_status IN
     ('pending', 'processing', 'shipped', 'delivered', 'cancelled'))  
 );
 
@@ -1637,23 +1637,23 @@ CREATE TABLE order\_items (
   order\_item\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   order\_id UUID NOT NULL REFERENCES orders(order\_id) ON DELETE CASCADE,  
   product\_id UUID REFERENCES products(product\_id),  
-    
+
   \-- Product snapshot (in case product changes/deleted)  
   product\_name VARCHAR(500) NOT NULL,  
   product\_sku VARCHAR(100),  
-    
+
   \-- Pricing  
   unit\_price DECIMAL(10,2) NOT NULL,  
   quantity INT NOT NULL DEFAULT 1,  
   subtotal DECIMAL(10,2) NOT NULL,  
   discount\_amount DECIMAL(10,2) DEFAULT 0,  
   total DECIMAL(10,2) NOT NULL,  
-    
+
   \-- Digital Download  
   download\_url VARCHAR(500),  
   download\_expires\_at TIMESTAMPTZ,  
   download\_count INT DEFAULT 0,  
-    
+
   CONSTRAINT valid\_quantity CHECK (quantity \> 0\)  
 );
 
@@ -1667,19 +1667,19 @@ CREATE INDEX idx\_order\_items\_product ON order\_items(product\_id);
 \-- \============================================================================  
 CREATE TABLE events (  
   event\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Basic Info  
   title VARCHAR(500) NOT NULL,  
   slug VARCHAR(500) UNIQUE NOT NULL,  
   description TEXT,  
   agenda TEXT,  
-    
+
   \-- Date & Time  
   event\_date TIMESTAMPTZ NOT NULL,  
   end\_date TIMESTAMPTZ,  
   timezone VARCHAR(50) NOT NULL,  
   duration\_minutes INT,  
-    
+
   \-- Location  
   location\_type VARCHAR(20) NOT NULL, \-- virtual, physical, hybrid  
   physical\_address TEXT,  
@@ -1687,37 +1687,37 @@ CREATE TABLE events (
   virtual\_link VARCHAR(500),  
   meeting\_id VARCHAR(100),  
   meeting\_password VARCHAR(100),  
-    
+
   \-- Organizer  
   organizer\_id UUID NOT NULL REFERENCES users(user\_id),  
   co\_organizers JSONB, \-- Array of user\_ids  
   speakers JSONB, \-- \[{user\_id, name, bio, photo\_url}, ...\]  
-    
+
   \-- Capacity  
   capacity\_limit INT,  
   registration\_count INT DEFAULT 0,  
   attendance\_count INT DEFAULT 0,  
-    
+
   \-- Media  
   banner\_image\_url VARCHAR(500),  
   recording\_url VARCHAR(500),  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'draft', \-- draft, published, in\_progress, completed, cancelled  
   is\_featured BOOLEAN DEFAULT FALSE,  
-    
+
   \-- Registration  
   registration\_opens\_at TIMESTAMPTZ,  
   registration\_closes\_at TIMESTAMPTZ,  
   requires\_approval BOOLEAN DEFAULT FALSE,  
-    
+
   \-- SEO  
   meta\_description TEXT,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
   published\_at TIMESTAMPTZ,  
-    
+
   CONSTRAINT valid\_location\_type CHECK (location\_type IN ('virtual', 'physical', 'hybrid')),  
   CONSTRAINT valid\_status CHECK (status IN ('draft', 'published', 'in\_progress', 'completed', 'cancelled'))  
 );
@@ -1725,7 +1725,7 @@ CREATE TABLE events (
 CREATE INDEX idx\_events\_slug ON events(slug);  
 CREATE INDEX idx\_events\_organizer ON events(organizer\_id);  
 CREATE INDEX idx\_events\_date ON events(event\_date) WHERE status \= 'published';  
-CREATE INDEX idx\_events\_upcoming ON events(event\_date)   
+CREATE INDEX idx\_events\_upcoming ON events(event\_date)
   WHERE status \= 'published' AND event\_date \> NOW();  
 CREATE INDEX idx\_events\_status ON events(status);
 
@@ -1735,31 +1735,31 @@ CREATE INDEX idx\_events\_status ON events(status);
 CREATE TABLE event\_tickets (  
   ticket\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   event\_id UUID NOT NULL REFERENCES events(event\_id) ON DELETE CASCADE,  
-    
+
   \-- Ticket Type  
   name VARCHAR(100) NOT NULL, \-- Early Bird, General, VIP, etc.  
   description TEXT,  
-    
+
   \-- Pricing  
   price DECIMAL(10,2) NOT NULL,  
   currency VARCHAR(3) DEFAULT 'USD',  
-    
+
   \-- Availability  
   quantity\_available INT,  
   quantity\_sold INT DEFAULT 0,  
-    
+
   \-- Sale Period  
   sale\_starts\_at TIMESTAMPTZ,  
   sale\_ends\_at TIMESTAMPTZ,  
-    
+
   \-- Access Level  
   perks JSONB, \-- \["Certificate", "Recordings", "VIP Seating"\]  
-    
+
   \-- Status  
   is\_active BOOLEAN DEFAULT TRUE,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_price CHECK (price \>= 0),  
   CONSTRAINT valid\_quantity CHECK (quantity\_sold \<= quantity\_available)  
 );
@@ -1775,35 +1775,35 @@ CREATE TABLE event\_registrations (
   event\_id UUID NOT NULL REFERENCES events(event\_id),  
   ticket\_id UUID REFERENCES event\_tickets(ticket\_id),  
   user\_id UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Registration  
   registration\_date TIMESTAMPTZ DEFAULT NOW(),  
-  status VARCHAR(20) DEFAULT 'registered',   
+  status VARCHAR(20) DEFAULT 'registered',
     \-- registered, waitlisted, cancelled, attended, no\_show  
-    
+
   \-- Payment  
   amount\_paid DECIMAL(10,2),  
   transaction\_id UUID REFERENCES transactions(transaction\_id),  
-    
+
   \-- Ticket  
   ticket\_code VARCHAR(100) UNIQUE,  
   qr\_code\_url VARCHAR(500),  
-    
+
   \-- Check-in  
   checked\_in BOOLEAN DEFAULT FALSE,  
   checked\_in\_at TIMESTAMPTZ,  
   checked\_in\_by UUID REFERENCES users(user\_id),  
-    
+
   \-- Cancellation  
   cancelled\_at TIMESTAMPTZ,  
   cancellation\_reason TEXT,  
   refund\_issued BOOLEAN DEFAULT FALSE,  
-    
+
   \-- Metadata  
   metadata JSONB, \-- Custom registration fields  
-    
+
   UNIQUE(event\_id, user\_id),  
-  CONSTRAINT valid\_status CHECK (status IN   
+  CONSTRAINT valid\_status CHECK (status IN
     ('registered', 'waitlisted', 'cancelled', 'attended', 'no\_show'))  
 );
 
@@ -1819,52 +1819,52 @@ CREATE INDEX idx\_registrations\_status ON event\_registrations(event\_id, statu
 \-- \============================================================================  
 CREATE TABLE partners (  
   partner\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Organization  
   organization\_name VARCHAR(500) NOT NULL,  
   slug VARCHAR(500) UNIQUE NOT NULL,  
   description TEXT,  
-    
+
   \-- Type  
-  partner\_type VARCHAR(30) NOT NULL,   
+  partner\_type VARCHAR(30) NOT NULL,
     \-- corporate, academic, ngo, government, cec\_franchise, sponsor  
-    
+
   \-- Contact  
   primary\_contact\_user\_id UUID REFERENCES users(user\_id),  
   contact\_email VARCHAR(255),  
   contact\_phone VARCHAR(50),  
   website\_url VARCHAR(500),  
-    
+
   \-- Location  
   headquarters\_location JSONB, \-- {country, city}  
   operating\_regions JSONB, \-- Array of countries/regions  
-    
+
   \-- Branding  
   logo\_url VARCHAR(500),  
   brand\_colors JSONB, \-- {primary, secondary, accent}  
-    
+
   \-- Partnership Details  
   partnership\_tier VARCHAR(20), \-- bronze, silver, gold, platinum  
   partnership\_start\_date DATE,  
   partnership\_end\_date DATE,  
-    
+
   \-- Programs  
   programs\_enrolled JSONB, \-- Array of program\_ids  
   custom\_programs JSONB, \-- Co-branded program details  
-    
+
   \-- Engagement Metrics  
   total\_participants INT DEFAULT 0,  
   active\_participants INT DEFAULT 0,  
   certifications\_issued INT DEFAULT 0,  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'active', \-- active, inactive, suspended  
   is\_featured BOOLEAN DEFAULT FALSE,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
-  CONSTRAINT valid\_partner\_type CHECK (partner\_type IN   
+
+  CONSTRAINT valid\_partner\_type CHECK (partner\_type IN
     ('corporate', 'academic', 'ngo', 'government', 'cec\_franchise', 'sponsor')),  
   CONSTRAINT valid\_status CHECK (status IN ('active', 'inactive', 'suspended'))  
 );
@@ -1880,29 +1880,29 @@ CREATE TABLE partner\_cohorts (
   cohort\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   partner\_id UUID NOT NULL REFERENCES partners(partner\_id) ON DELETE CASCADE,  
   program\_id UUID NOT NULL REFERENCES programs(program\_id),  
-    
+
   \-- Cohort Info  
   cohort\_name VARCHAR(255) NOT NULL,  
   description TEXT,  
-    
+
   \-- Schedule  
   start\_date DATE NOT NULL,  
   end\_date DATE,  
-    
+
   \-- Capacity  
   max\_participants INT,  
   enrolled\_count INT DEFAULT 0,  
-    
+
   \-- Customization  
   is\_white\_labeled BOOLEAN DEFAULT FALSE,  
   custom\_branding JSONB,  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'active', \-- active, completed, cancelled  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_status CHECK (status IN ('active', 'completed', 'cancelled'))  
 );
 
@@ -1918,18 +1918,18 @@ CREATE TABLE cohort\_members (
   cohort\_id UUID NOT NULL REFERENCES partner\_cohorts(cohort\_id) ON DELETE CASCADE,  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
   enrollment\_id UUID REFERENCES enrollments(enrollment\_id),  
-    
+
   \-- Employee/Participant Info  
   employee\_id VARCHAR(100), \-- Partner's internal ID  
   department VARCHAR(100),  
   role VARCHAR(100),  
-    
+
   \-- Status  
   status VARCHAR(20) DEFAULT 'active', \-- active, completed, dropped  
-    
+
   joined\_at TIMESTAMPTZ DEFAULT NOW(),  
   completed\_at TIMESTAMPTZ,  
-    
+
   UNIQUE(cohort\_id, user\_id),  
   CONSTRAINT valid\_status CHECK (status IN ('active', 'completed', 'dropped'))  
 );
@@ -1944,50 +1944,50 @@ CREATE INDEX idx\_cohort\_members\_user ON cohort\_members(user\_id);
 \-- \============================================================================  
 CREATE TABLE content\_approvals (  
   approval\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Content Reference (polymorphic)  
   content\_type VARCHAR(30) NOT NULL, \-- post, program, project, event  
   content\_id UUID NOT NULL,  
-    
+
   \-- Workflow  
-  current\_stage VARCHAR(30) NOT NULL,   
+  current\_stage VARCHAR(30) NOT NULL,
     \-- draft, editorial\_review, brand\_review, legal\_review, approved, rejected  
   submitted\_by UUID NOT NULL REFERENCES users(user\_id),  
   submitted\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   \-- Reviews  
   editorial\_reviewer\_id UUID REFERENCES users(user\_id),  
   editorial\_reviewed\_at TIMESTAMPTZ,  
   editorial\_notes TEXT,  
-    
+
   brand\_reviewer\_id UUID REFERENCES users(user\_id),  
   brand\_reviewed\_at TIMESTAMPTZ,  
   brand\_notes TEXT,  
-    
+
   final\_approver\_id UUID REFERENCES users(user\_id),  
   final\_approved\_at TIMESTAMPTZ,  
-    
+
   \-- Rejection  
   rejected\_by UUID REFERENCES users(user\_id),  
   rejected\_at TIMESTAMPTZ,  
   rejection\_reason TEXT,  
-    
+
   \-- Version Control  
   version INT DEFAULT 1,  
   previous\_approval\_id UUID REFERENCES content\_approvals(approval\_id),  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   updated\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   UNIQUE(content\_type, content\_id, version),  
   CONSTRAINT valid\_content\_type CHECK (content\_type IN ('post', 'program', 'project', 'event')),  
-  CONSTRAINT valid\_stage CHECK (current\_stage IN   
+  CONSTRAINT valid\_stage CHECK (current\_stage IN
     ('draft', 'editorial\_review', 'brand\_review', 'legal\_review', 'approved', 'rejected'))  
 );
 
 CREATE INDEX idx\_approvals\_content ON content\_approvals(content\_type, content\_id);  
 CREATE INDEX idx\_approvals\_stage ON content\_approvals(current\_stage);  
-CREATE INDEX idx\_approvals\_pending ON content\_approvals(current\_stage, submitted\_at)   
+CREATE INDEX idx\_approvals\_pending ON content\_approvals(current\_stage, submitted\_at)
   WHERE current\_stage IN ('editorial\_review', 'brand\_review', 'legal\_review');
 
 \-- \============================================================================  
@@ -1995,40 +1995,40 @@ CREATE INDEX idx\_approvals\_pending ON content\_approvals(current\_stage, submi
 \-- \============================================================================  
 CREATE TABLE media\_assets (  
   asset\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- File Info  
   filename VARCHAR(500) NOT NULL,  
   file\_type VARCHAR(50) NOT NULL, \-- image/jpeg, video/mp4, application/pdf  
   file\_size\_bytes BIGINT NOT NULL,  
-    
+
   \-- Storage  
   storage\_provider VARCHAR(30) DEFAULT 's3', \-- s3, cloudinary, local  
   storage\_bucket VARCHAR(255),  
   storage\_key VARCHAR(500) NOT NULL,  
   public\_url VARCHAR(1000),  
   cdn\_url VARCHAR(1000),  
-    
+
   \-- Ownership  
   uploaded\_by UUID NOT NULL REFERENCES users(user\_id),  
-    
+
   \-- Usage  
   usage\_type VARCHAR(30), \-- profile\_photo, course\_video, certificate, etc.  
   usage\_count INT DEFAULT 0,  
-    
+
   \-- Media Metadata  
   width\_px INT,  
   height\_px INT,  
   duration\_seconds INT, \-- For video/audio  
   thumbnail\_url VARCHAR(500),  
-    
+
   \-- Status  
-  processing\_status VARCHAR(20) DEFAULT 'uploaded',   
+  processing\_status VARCHAR(20) DEFAULT 'uploaded',
     \-- uploaded, processing, ready, failed  
-    
+
   uploaded\_at TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_file\_size CHECK (file\_size\_bytes \> 0),  
-  CONSTRAINT valid\_processing\_status CHECK (processing\_status IN   
+  CONSTRAINT valid\_processing\_status CHECK (processing\_status IN
     ('uploaded', 'processing', 'ready', 'failed'))  
 );
 
@@ -2042,38 +2042,38 @@ CREATE INDEX idx\_media\_status ON media\_assets(processing\_status);
 CREATE TABLE notifications (  
   notification\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   \-- Content  
-  notification\_type VARCHAR(50) NOT NULL,   
+  notification\_type VARCHAR(50) NOT NULL,
     \-- message, comment, mention, enrollment, certificate, session\_reminder, etc.  
   title VARCHAR(255) NOT NULL,  
   message TEXT NOT NULL,  
   action\_url VARCHAR(500),  
-    
+
   \-- Reference (optional)  
   reference\_type VARCHAR(30),  
   reference\_id UUID,  
-    
+
   \-- Actor (who triggered the notification)  
   actor\_id UUID REFERENCES users(user\_id),  
-    
+
   \-- Status  
   is\_read BOOLEAN DEFAULT FALSE,  
   read\_at TIMESTAMPTZ,  
-    
+
   \-- Delivery  
   delivery\_method VARCHAR(20) DEFAULT 'in\_app', \-- in\_app, email, sms, push  
   delivered BOOLEAN DEFAULT FALSE,  
   delivered\_at TIMESTAMPTZ,  
-    
+
   created\_at TIMESTAMPTZ DEFAULT NOW(),  
   expires\_at TIMESTAMPTZ  
 );
 
 CREATE INDEX idx\_notifications\_user ON notifications(user\_id, is\_read, created\_at DESC);  
-CREATE INDEX idx\_notifications\_unread ON notifications(user\_id, created\_at DESC)   
+CREATE INDEX idx\_notifications\_unread ON notifications(user\_id, created\_at DESC)
   WHERE is\_read \= FALSE;  
-CREATE INDEX idx\_notifications\_delivery ON notifications(delivery\_method, delivered)   
+CREATE INDEX idx\_notifications\_delivery ON notifications(delivery\_method, delivered)
   WHERE delivered \= FALSE;
 
 \-- \============================================================================  
@@ -2081,39 +2081,39 @@ CREATE INDEX idx\_notifications\_delivery ON notifications(delivery\_method, del
 \-- \============================================================================  
 CREATE TABLE audit\_logs (  
   log\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
-    
+
   \-- Actor  
   user\_id UUID REFERENCES users(user\_id), \-- NULL for system actions  
   impersonating\_user\_id UUID REFERENCES users(user\_id), \-- For admin impersonation  
-    
+
   \-- Action  
-  action VARCHAR(100) NOT NULL,   
+  action VARCHAR(100) NOT NULL,
     \-- user\_login, user\_created, payment\_processed, content\_published, etc.  
   entity\_type VARCHAR(50), \-- user, program, transaction, etc.  
   entity\_id UUID,  
-    
+
   \-- Details  
   description TEXT,  
   changes JSONB, \-- Before/after values for updates  
   metadata JSONB, \-- Additional context  
-    
+
   \-- Request Context  
   ip\_address INET,  
   user\_agent TEXT,  
   request\_id UUID,  
-    
+
   \-- Severity  
   severity VARCHAR(20) DEFAULT 'info', \-- debug, info, warning, error, critical  
-    
+
   timestamp TIMESTAMPTZ DEFAULT NOW(),  
-    
+
   CONSTRAINT valid\_severity CHECK (severity IN ('debug', 'info', 'warning', 'error', 'critical'))  
 );
 
 CREATE INDEX idx\_audit\_user ON audit\_logs(user\_id, timestamp DESC);  
 CREATE INDEX idx\_audit\_entity ON audit\_logs(entity\_type, entity\_id);  
 CREATE INDEX idx\_audit\_action ON audit\_logs(action, timestamp DESC);  
-CREATE INDEX idx\_audit\_severity ON audit\_logs(severity, timestamp DESC)   
+CREATE INDEX idx\_audit\_severity ON audit\_logs(severity, timestamp DESC)
   WHERE severity IN ('error', 'critical');
 
 \-- Partition by month for performance  
@@ -2127,26 +2127,26 @@ CREATE INDEX idx\_audit\_timestamp ON audit\_logs(timestamp DESC);
 CREATE TABLE user\_settings (  
   setting\_id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),  
   user\_id UUID UNIQUE NOT NULL REFERENCES users(user\_id) ON DELETE CASCADE,  
-    
+
   \-- Preferences  
   language VARCHAR(10) DEFAULT 'en', \-- en, sw, fr  
   timezone VARCHAR(50) DEFAULT 'Africa/Nairobi',  
   currency VARCHAR(3) DEFAULT 'KES',  
-    
+
   \-- Notifications  
   email\_notifications JSONB DEFAULT '{"all": true}'::jsonb,  
   sms\_notifications JSONB DEFAULT '{"all": false}'::jsonb,  
   push\_notifications JSONB DEFAULT '{"all": true}'::jsonb,  
-    
+
   \-- Privacy  
   profile\_visibility VARCHAR(20) DEFAULT 'public', \-- public, members\_only, private  
   show\_activity BOOLEAN DEFAULT TRUE,  
   allow\_messages VARCHAR(20) DEFAULT 'all', \-- all, connections\_only, off  
-    
+
   \-- UI Preferences  
   theme VARCHAR(10) DEFAULT 'light', \-- light, dark, auto  
   dashboard\_layout JSONB,  
-    
+
   updated\_at TIMESTAMPTZ DEFAULT NOW()  
 );
 
@@ -2263,11 +2263,11 @@ CREATE INDEX idx\_users\_email ON users(email) WHERE status \!= 'deleted';
 CREATE INDEX idx\_profiles\_user ON user\_profiles(user\_id);
 
 \-- Active subscription  
-CREATE INDEX idx\_subscriptions\_active ON subscriptions(user\_id)   
+CREATE INDEX idx\_subscriptions\_active ON subscriptions(user\_id)
   WHERE status \= 'active';
 
 \-- User roles  
-CREATE INDEX idx\_user\_roles\_active ON user\_roles(user\_id, role\_name)   
+CREATE INDEX idx\_user\_roles\_active ON user\_roles(user\_id, role\_name)
   WHERE revoked\_at IS NULL;
 
 **Course Content Delivery (P2):**
@@ -2287,7 +2287,7 @@ CREATE INDEX idx\_lesson\_progress\_enrollment ON lesson\_progress(enrollment\_i
 **Community Feed (P3):**
 
 \-- Published posts by category  
-CREATE INDEX idx\_posts\_published ON posts(published\_at DESC)   
+CREATE INDEX idx\_posts\_published ON posts(published\_at DESC)
   WHERE status \= 'published';
 
 \-- Category filtering  
@@ -2307,7 +2307,7 @@ CREATE INDEX idx\_profiles\_skills ON user\_profiles USING GIN (skills);
 CREATE INDEX idx\_profiles\_location ON user\_profiles USING GIN (location);
 
 \-- Coach availability  
-CREATE INDEX idx\_profiles\_coach\_status ON user\_profiles(availability\_status)   
+CREATE INDEX idx\_profiles\_coach\_status ON user\_profiles(availability\_status)
   WHERE hourly\_rate IS NOT NULL;
 
 \-- Session history for ratings  
@@ -2322,7 +2322,7 @@ CREATE INDEX idx\_transactions\_user ON transactions(user\_id, created\_at DESC)
 CREATE INDEX idx\_transactions\_gateway ON transactions(gateway\_transaction\_id);
 
 \-- Success tracking  
-CREATE INDEX idx\_transactions\_success ON transactions(created\_at DESC)   
+CREATE INDEX idx\_transactions\_success ON transactions(created\_at DESC)
   WHERE status \= 'success';
 
 ---
@@ -2714,7 +2714,7 @@ SETEX stats:user:{user\_id} 900 {metrics\_json}
 
 ### **10.1 Retention Policies**
 
-| Data Type | Active Retention | Archive Retention | Deletion Policy | |-----------|------------------|-------------------|----------------| | 
+| Data Type | Active Retention | Archive Retention | Deletion Policy | |-----------|------------------|-------------------|----------------| |
 
 User Accounts (Active) | Indefinite | N/A | Soft delete → 30 days → Hard delete | | User Accounts (Inactive \>24mo) | 24 months | Move to archive DB | After 36 months total | | Transactions | 7 years | Cold storage after 2 years | Never (legal requirement) | | Audit Logs | 12 months hot | 3 years cold storage | After 3 years | | Course Content | Indefinite | N/A | Only when program archived | | Community Posts | Indefinite | N/A | Only when user-deleted | | Messages | 12 months | N/A | Auto-delete after 12 months | | Notifications | 90 days | N/A | Auto-delete after 90 days | | Session Data | 24 hours | N/A | Auto-expire | | Media Assets (unused) | 6 months | Move to Glacier | After 12 months |
 
@@ -2726,7 +2726,7 @@ User Accounts (Active) | Indefinite | N/A | Soft delete → 30 days → Hard del
 
 \-- Users table soft delete
 
-UPDATE users 
+UPDATE users
 
 SET status \= 'deleted', deleted\_at \= NOW()
 
@@ -2738,9 +2738,9 @@ SELECT \* FROM users WHERE status \!= 'deleted';
 
 \-- Hard delete after grace period (cron job)
 
-DELETE FROM users 
+DELETE FROM users
 
-WHERE status \= 'deleted' 
+WHERE status \= 'deleted'
 
 AND deleted\_at \< NOW() \- INTERVAL '30 days';
 
@@ -2787,7 +2787,7 @@ CREATE INDEX CONCURRENTLY idx\_users\_email ON users(email);
 
 \-- Backfill in batches
 
-UPDATE users SET two\_factor\_enabled \= FALSE 
+UPDATE users SET two\_factor\_enabled \= FALSE
 
 WHERE user\_id IN (SELECT user\_id FROM users LIMIT 1000);
 
@@ -2885,7 +2885,7 @@ VALUES ($1, pgp\_sym\_encrypt($2, $encryption\_key));
 
 \-- Decrypt on read
 
-SELECT pgp\_sym\_decrypt(two\_factor\_secret::bytea, $encryption\_key) 
+SELECT pgp\_sym\_decrypt(two\_factor\_secret::bytea, $encryption\_key)
 
 FROM users WHERE user\_id \= $1;
 
@@ -2958,7 +2958,7 @@ USING (user\_id \= current\_setting('app.current\_user\_id')::uuid);
 
 CREATE VIEW analytics\_users AS
 
-SELECT 
+SELECT
 
   md5(user\_id::text) as hashed\_user\_id,
 
@@ -3007,7 +3007,7 @@ FROM users;
 
 INSERT INTO audit\_logs (action, user\_id, entity\_type, entity\_id, metadata)
 
-VALUES ('payment\_processed', $user\_id, 'transaction', $transaction\_id, 
+VALUES ('payment\_processed', $user\_id, 'transaction', $transaction\_id,
 
   json\_build\_object('amount', $amount, 'gateway', $gateway));
 
@@ -3243,7 +3243,7 @@ CREATE EXTENSION IF NOT EXISTS pg\_stat\_statements;
 
 \-- Find slow queries
 
-SELECT 
+SELECT
 
   query,
 
@@ -3261,7 +3261,7 @@ LIMIT 20;
 
 \-- Find queries causing most load
 
-SELECT 
+SELECT
 
   query,
 
@@ -3281,7 +3281,7 @@ LIMIT 10;
 
 \-- Find unused indexes
 
-SELECT 
+SELECT
 
   schemaname,
 
@@ -3299,7 +3299,7 @@ AND indexname NOT LIKE '%\_pkey';
 
 \-- Find missing indexes
 
-SELECT 
+SELECT
 
   schemaname,
 
@@ -3323,7 +3323,7 @@ LIMIT 20;
 
 **Table Bloat:**
 
-SELECT 
+SELECT
 
   schemaname,
 
@@ -3765,11 +3765,11 @@ FOR EACH ROW EXECUTE FUNCTION update\_program\_enrollment\_count();
 
 The Brand Coach Network database architecture is designed to:
 
-✅ **Scale gracefully** from 1K to 100K+ users with clear growth paths   
-✅ **Ensure data integrity** through ACID transactions and referential constraints   
-✅ **Optimize performance** via strategic indexing, caching, and read replicas   
-✅ **Maintain security** through encryption, access control, and audit logging   
-✅ **Enable compliance** with GDPR, Kenya Data Protection Act, and PCI DSS   
+✅ **Scale gracefully** from 1K to 100K+ users with clear growth paths
+✅ **Ensure data integrity** through ACID transactions and referential constraints
+✅ **Optimize performance** via strategic indexing, caching, and read replicas
+✅ **Maintain security** through encryption, access control, and audit logging
+✅ **Enable compliance** with GDPR, Kenya Data Protection Act, and PCI DSS
 ✅ **Support operations** with comprehensive backup, monitoring, and disaster recovery
 
 **Technology Stack:**
@@ -3861,19 +3861,19 @@ The Brand Coach Network database architecture is designed to:
 4. Implement seed data for development  
 5. Set up local development databases
 
-**Week 3-4: Integration & Testing** 
+**Week 3-4: Integration & Testing**
 
-6\. Integrate ORM/query builder with application   
-7\. Implement data access layer   
-8\. Write database integration tests   
-9\. Performance baseline testing   
+6\. Integrate ORM/query builder with application
+7\. Implement data access layer
+8\. Write database integration tests
+9\. Performance baseline testing
 10\. Security configuration hardening
 
-**Week 5-6: Migration Planning**   
-11\. Audit existing website data with Nightingale Mukasa   
-12\. Design data migration scripts   
-13\. Test migration on staging environment   
-14\. Document migration rollback procedures   
+**Week 5-6: Migration Planning**
+11\. Audit existing website data with Nightingale Mukasa
+12\. Design data migration scripts
+13\. Test migration on staging environment
+14\. Document migration rollback procedures
 15\. Schedule production migration window
 
 **Ongoing:**
@@ -3940,4 +3940,3 @@ The Brand Coach Network database architecture is designed to:
 ---
 
 **END OF DATABASE ARCHITECTURE DOCUMENT**
-

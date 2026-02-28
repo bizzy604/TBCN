@@ -144,8 +144,8 @@ export class ProgramsRepository {
     return this.lessonRepo.save(lesson);
   }
 
-  async findLessonById(id: string): Promise<Lesson | null> {
-    return this.lessonRepo.findOne({ where: { id } });
+  async findLessonById(id: string, relations: string[] = []): Promise<Lesson | null> {
+    return this.lessonRepo.findOne({ where: { id }, relations });
   }
 
   async findLessonsByModuleId(moduleId: string): Promise<Lesson[]> {

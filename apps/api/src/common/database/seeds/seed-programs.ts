@@ -239,11 +239,25 @@ export async function seedPrograms(dataSource: DataSource): Promise<void> {
     console.log('🌱 Seeding programs...');
 
     for (const program of PROGRAMS) {
-      // Insert program
-      await queryRunner.query(
+      // Upsert program and get canonical ID (existing or new)
+      const rows = await queryRunner.query(
         `INSERT INTO programs (id, title, slug, description, short_description, difficulty, price, currency, is_free, estimated_duration, tags, learning_outcomes, status, published_at, enrollment_count, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
-         ON CONFLICT (slug) DO NOTHING`,
+         ON CONFLICT (slug) DO UPDATE SET
+           title = EXCLUDED.title,
+           description = EXCLUDED.description,
+           short_description = EXCLUDED.short_description,
+           difficulty = EXCLUDED.difficulty,
+           price = EXCLUDED.price,
+           currency = EXCLUDED.currency,
+           is_free = EXCLUDED.is_free,
+           estimated_duration = EXCLUDED.estimated_duration,
+           tags = EXCLUDED.tags,
+           learning_outcomes = EXCLUDED.learning_outcomes,
+           status = EXCLUDED.status,
+           published_at = EXCLUDED.published_at,
+           updated_at = NOW()
+         RETURNING id`,
         [
           program.id, program.title, program.slug, program.description,
           program.short_description, program.difficulty, program.price,
@@ -253,21 +267,31 @@ export async function seedPrograms(dataSource: DataSource): Promise<void> {
         ],
       );
 
-      // Insert modules and lessons
-      const modules = generateModules(program.id, program.slug);
+      const programId = rows?.[0]?.id as string | undefined;
+      if (!programId) {
+        throw new Error(`Unable to resolve program id for slug: ${program.slug}`);
+      }
+
+      // Re-seed curriculum idempotently for this program
+      await queryRunner.query(
+        `DELETE FROM lessons
+         WHERE module_id IN (SELECT id FROM program_modules WHERE program_id = $1)`,
+        [programId],
+      );
+      await queryRunner.query(`DELETE FROM program_modules WHERE program_id = $1`, [programId]);
+
+      const modules = generateModules(programId, program.slug);
       for (const mod of modules) {
         await queryRunner.query(
           `INSERT INTO program_modules (id, program_id, title, description, sort_order, estimated_duration, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-           ON CONFLICT DO NOTHING`,
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
           [mod.id, mod.program_id, mod.title, mod.description, mod.sort_order, mod.estimated_duration],
         );
 
         for (const lesson of mod.lessons) {
           await queryRunner.query(
             `INSERT INTO lessons (id, module_id, title, content_type, is_free, estimated_duration, content, sort_order, resource_urls, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '[]', NOW(), NOW())
-             ON CONFLICT DO NOTHING`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '[]', NOW(), NOW())`,
             [lesson.id, mod.id, lesson.title, lesson.content_type, lesson.is_free, lesson.estimated_duration, lesson.content, lesson.sort_order],
           );
         }

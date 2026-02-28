@@ -12,7 +12,7 @@ import { ProgramQueryDto } from './dto/program-query.dto';
 import { Program } from './entities/program.entity';
 import { ProgramModule } from './entities/module.entity';
 import { Lesson } from './entities/lesson.entity';
-import { ProgramStatus } from '@tbcn/shared';
+import { ProgramStatus, UserRole } from '@tbcn/shared';
 import {
   PaginatedResult,
   createPaginationMeta,
@@ -28,6 +28,11 @@ export const PROGRAM_EVENTS = {
   MODULE_CREATED: 'program.module.created',
   LESSON_CREATED: 'program.lesson.created',
 };
+
+interface ProgramActor {
+  id: string;
+  role: UserRole;
+}
 
 @Injectable()
 export class ProgramsService {
@@ -56,13 +61,13 @@ export class ProgramsService {
         const mod = await this.createModule(program.id, {
           ...modDto,
           sortOrder: modDto.sortOrder ?? idx,
-        });
+        }, { id: instructorId, role: UserRole.COACH });
         if (modDto.lessons?.length) {
           for (const [lIdx, lessonDto] of modDto.lessons.entries()) {
             await this.createLesson(mod.id, {
               ...lessonDto,
               sortOrder: lessonDto.sortOrder ?? lIdx,
-            });
+            }, { id: instructorId, role: UserRole.COACH });
           }
         }
       }
@@ -128,10 +133,10 @@ export class ProgramsService {
   async update(
     id: string,
     dto: UpdateProgramDto,
-    userId: string,
+    actor: ProgramActor,
   ): Promise<Program> {
     const program = await this.findById(id);
-    this.assertOwnerOrAdmin(program, userId);
+    this.assertCanManageProgram(program, actor);
 
     const updateData: Partial<Program> = { ...dto } as Partial<Program>;
 
@@ -154,9 +159,9 @@ export class ProgramsService {
     return updated;
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string, actor: ProgramActor): Promise<void> {
     const program = await this.findById(id);
-    this.assertOwnerOrAdmin(program, userId);
+    this.assertCanManageProgram(program, actor);
 
     if (program.enrollmentCount > 0) {
       throw new BadRequestException(
@@ -168,12 +173,12 @@ export class ProgramsService {
     this.eventEmitter.emit(PROGRAM_EVENTS.DELETED, { programId: id });
   }
 
-  async publish(id: string, userId: string): Promise<Program> {
-    return this.update(id, { status: ProgramStatus.PUBLISHED }, userId);
+  async publish(id: string, actor: ProgramActor): Promise<Program> {
+    return this.update(id, { status: ProgramStatus.PUBLISHED }, actor);
   }
 
-  async archive(id: string, userId: string): Promise<Program> {
-    return this.update(id, { status: ProgramStatus.ARCHIVED }, userId);
+  async archive(id: string, actor: ProgramActor): Promise<Program> {
+    return this.update(id, { status: ProgramStatus.ARCHIVED }, actor);
   }
 
   async getStats(): Promise<{
@@ -189,8 +194,14 @@ export class ProgramsService {
   // Modules
   // ═══════════════════════════════════════════════
 
-  async createModule(programId: string, dto: CreateModuleDto): Promise<ProgramModule> {
-    await this.findById(programId); // ensure program exists
+  async createModule(
+    programId: string,
+    dto: CreateModuleDto,
+    actor: ProgramActor,
+  ): Promise<ProgramModule> {
+    const program = await this.findById(programId);
+    this.assertCanManageProgram(program, actor);
+
     const mod = await this.repository.createModule({
       ...dto,
       programId,
@@ -203,15 +214,31 @@ export class ProgramsService {
     return this.repository.findModulesByProgramId(programId);
   }
 
-  async updateModule(id: string, dto: UpdateModuleDto): Promise<ProgramModule> {
-    const mod = await this.repository.findModuleById(id);
+  async updateModule(
+    id: string,
+    dto: UpdateModuleDto,
+    actor: ProgramActor,
+  ): Promise<ProgramModule> {
+    const mod = await this.repository.findModuleById(id, ['program']);
     if (!mod) throw new NotFoundException(`Module with ID "${id}" not found`);
+
+    this.assertCanManageProgram(
+      mod.program || (await this.findById(mod.programId)),
+      actor,
+    );
+
     return this.repository.updateModule(id, dto as Partial<ProgramModule>);
   }
 
-  async deleteModule(id: string): Promise<void> {
-    const mod = await this.repository.findModuleById(id);
+  async deleteModule(id: string, actor: ProgramActor): Promise<void> {
+    const mod = await this.repository.findModuleById(id, ['program']);
     if (!mod) throw new NotFoundException(`Module with ID "${id}" not found`);
+
+    this.assertCanManageProgram(
+      mod.program || (await this.findById(mod.programId)),
+      actor,
+    );
+
     await this.repository.deleteModule(id);
   }
 
@@ -219,9 +246,19 @@ export class ProgramsService {
   // Lessons
   // ═══════════════════════════════════════════════
 
-  async createLesson(moduleId: string, dto: CreateLessonDto): Promise<Lesson> {
-    const mod = await this.repository.findModuleById(moduleId);
+  async createLesson(
+    moduleId: string,
+    dto: CreateLessonDto,
+    actor: ProgramActor,
+  ): Promise<Lesson> {
+    const mod = await this.repository.findModuleById(moduleId, ['program']);
     if (!mod) throw new NotFoundException(`Module with ID "${moduleId}" not found`);
+
+    this.assertCanManageProgram(
+      mod.program || (await this.findById(mod.programId)),
+      actor,
+    );
+
     const lesson = await this.repository.createLesson({
       ...dto,
       moduleId,
@@ -240,13 +277,43 @@ export class ProgramsService {
     return lesson;
   }
 
-  async updateLesson(id: string, dto: UpdateLessonDto): Promise<Lesson> {
-    await this.findLessonById(id);
+  async updateLesson(
+    id: string,
+    dto: UpdateLessonDto,
+    actor: ProgramActor,
+  ): Promise<Lesson> {
+    const lesson = await this.repository.findLessonById(id, ['module', 'module.program']);
+    if (!lesson) throw new NotFoundException(`Lesson with ID "${id}" not found`);
+
+    const ownerModule = lesson.module
+      || (await this.repository.findModuleById(lesson.moduleId, ['program']));
+    if (!ownerModule) {
+      throw new NotFoundException(`Module for lesson "${id}" not found`);
+    }
+
+    this.assertCanManageProgram(
+      ownerModule.program || (await this.findById(ownerModule.programId)),
+      actor,
+    );
+
     return this.repository.updateLesson(id, dto as Partial<Lesson>);
   }
 
-  async deleteLesson(id: string): Promise<void> {
-    await this.findLessonById(id);
+  async deleteLesson(id: string, actor: ProgramActor): Promise<void> {
+    const lesson = await this.repository.findLessonById(id, ['module', 'module.program']);
+    if (!lesson) throw new NotFoundException(`Lesson with ID "${id}" not found`);
+
+    const ownerModule = lesson.module
+      || (await this.repository.findModuleById(lesson.moduleId, ['program']));
+    if (!ownerModule) {
+      throw new NotFoundException(`Module for lesson "${id}" not found`);
+    }
+
+    this.assertCanManageProgram(
+      ownerModule.program || (await this.findById(ownerModule.programId)),
+      actor,
+    );
+
     await this.repository.deleteLesson(id);
   }
 
@@ -254,13 +321,25 @@ export class ProgramsService {
     return this.repository.countLessonsByProgramId(programId);
   }
 
+  async incrementEnrollmentCount(programId: string): Promise<void> {
+    await this.repository.incrementEnrollmentCount(programId);
+  }
+
+  async decrementEnrollmentCount(programId: string): Promise<void> {
+    await this.repository.decrementEnrollmentCount(programId);
+  }
+
   // ═══════════════════════════════════════════════
   // Private Helpers
   // ═══════════════════════════════════════════════
 
-  private assertOwnerOrAdmin(program: Program, userId: string): void {
-    // Allow if user is the instructor — admin check happens at guard level
-    if (program.instructorId && program.instructorId !== userId) {
+  private assertCanManageProgram(program: Program, actor: ProgramActor): void {
+    const privilegedRoles = [UserRole.SUPER_ADMIN, UserRole.ADMIN];
+    if (privilegedRoles.includes(actor.role)) {
+      return;
+    }
+
+    if (program.instructorId !== actor.id) {
       throw new ForbiddenException('You do not have permission to modify this program');
     }
   }
@@ -275,3 +354,4 @@ export class ProgramsService {
     }
   }
 }
+

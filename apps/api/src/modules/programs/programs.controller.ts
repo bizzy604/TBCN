@@ -97,8 +97,9 @@ export class ProgramsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProgramDto,
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.update(id, dto, userId);
+    return this.programsService.update(id, dto, { id: userId, role });
   }
 
   @Patch(':id/publish')
@@ -108,8 +109,9 @@ export class ProgramsController {
   async publish(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.publish(id, userId);
+    return this.programsService.publish(id, { id: userId, role });
   }
 
   @Patch(':id/archive')
@@ -119,8 +121,9 @@ export class ProgramsController {
   async archive(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.archive(id, userId);
+    return this.programsService.archive(id, { id: userId, role });
   }
 
   @Delete(':id')
@@ -131,8 +134,9 @@ export class ProgramsController {
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.delete(id, userId);
+    return this.programsService.delete(id, { id: userId, role });
   }
 
   // ─── Modules ─────────────────────────────────────────
@@ -151,8 +155,10 @@ export class ProgramsController {
   async createModule(
     @Param('programId', ParseUUIDPipe) programId: string,
     @Body() dto: CreateModuleDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.createModule(programId, dto);
+    return this.programsService.createModule(programId, dto, { id: userId, role });
   }
 
   @Put('modules/:moduleId')
@@ -162,8 +168,10 @@ export class ProgramsController {
   async updateModule(
     @Param('moduleId', ParseUUIDPipe) moduleId: string,
     @Body() dto: UpdateModuleDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.updateModule(moduleId, dto);
+    return this.programsService.updateModule(moduleId, dto, { id: userId, role });
   }
 
   @Delete('modules/:moduleId')
@@ -171,8 +179,12 @@ export class ProgramsController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COACH)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a module' })
-  async deleteModule(@Param('moduleId', ParseUUIDPipe) moduleId: string) {
-    return this.programsService.deleteModule(moduleId);
+  async deleteModule(
+    @Param('moduleId', ParseUUIDPipe) moduleId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.programsService.deleteModule(moduleId, { id: userId, role });
   }
 
   // ─── Lessons ─────────────────────────────────────────
@@ -198,8 +210,10 @@ export class ProgramsController {
   async createLesson(
     @Param('moduleId', ParseUUIDPipe) moduleId: string,
     @Body() dto: CreateLessonDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.createLesson(moduleId, dto);
+    return this.programsService.createLesson(moduleId, dto, { id: userId, role });
   }
 
   @Put('lessons/:lessonId')
@@ -209,8 +223,10 @@ export class ProgramsController {
   async updateLesson(
     @Param('lessonId', ParseUUIDPipe) lessonId: string,
     @Body() dto: UpdateLessonDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.programsService.updateLesson(lessonId, dto);
+    return this.programsService.updateLesson(lessonId, dto, { id: userId, role });
   }
 
   @Delete('lessons/:lessonId')
@@ -218,7 +234,11 @@ export class ProgramsController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COACH)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a lesson' })
-  async deleteLesson(@Param('lessonId', ParseUUIDPipe) lessonId: string) {
-    return this.programsService.deleteLesson(lessonId);
+  async deleteLesson(
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.programsService.deleteLesson(lessonId, { id: userId, role });
   }
 }
