@@ -12,6 +12,8 @@ import { DatabaseModule } from './common/database/database.module';
 import { CacheModule } from './common/cache/cache.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { RateLimitGuard } from './common/guards/rate-limit.guard';
+import { HealthController } from './health/health.controller';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -35,6 +37,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
 import { configValidationSchema } from './common/config/config.schema';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     // ============================================
     // Configuration
@@ -128,6 +131,10 @@ import { configValidationSchema } from './common/config/config.schema';
     CertificatesModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
     // Global guards — every route requires JWT auth by default.
     // Use @Public() decorator to opt-out specific routes.
     {

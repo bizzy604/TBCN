@@ -42,6 +42,20 @@ export class MessagingService {
     return this.messageRepo.save(message);
   }
 
+  async getById(messageId: string, currentUserId: string): Promise<Message> {
+    const message = await this.messageRepo.findOne({
+      where: { id: messageId },
+      relations: ['sender', 'recipient'],
+    });
+    if (!message) {
+      throw new NotFoundException(`Message with ID "${messageId}" not found`);
+    }
+    if (message.senderId !== currentUserId && message.recipientId !== currentUserId) {
+      throw new ForbiddenException('You do not have permission to access this message');
+    }
+    return message;
+  }
+
   async getConversation(currentUserId: string, peerId: string, query: ConversationQueryDto): Promise<PaginatedResult<Message>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 25;

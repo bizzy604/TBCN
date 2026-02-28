@@ -74,26 +74,26 @@
 
 ### 3.2 Week 10: Community and Messaging
 
-- [ ] Implement `community` module (posts, comments, reactions, moderation baseline).
-- [ ] Implement `messaging` module (basic 1:1 messaging).
-- [ ] Replace dashboard community/messages placeholders with working screens.
+- [x] Implement `community` module (posts, comments, reactions, moderation baseline).
+- [x] Implement `messaging` module (basic 1:1 messaging).
+- [x] Replace dashboard community/messages placeholders with working screens.
 
 ### 3.3 Week 11: Events and Masterclasses
 
-- [ ] Implement `events` module (create/list/register/attendance baseline).
-- [ ] Replace events placeholder pages with working event list/detail/registration flow.
+- [x] Implement `events` module (create/list/register/attendance baseline).
+- [x] Replace events placeholder pages with working event list/detail/registration flow.
 
 ### 3.4 Week 12: Notifications and Integration QA
 
-- [ ] Implement `notifications` module (email/in-app baseline).
-- [ ] Add notification center UX.
-- [ ] Add integration tests for coaching/community/events critical paths.
+- [x] Implement `notifications` module (email/in-app baseline).
+- [x] Add notification center UX.
+- [x] Add integration tests for coaching/community/events critical paths.
 
 ### 3.5 Sprint 3 Exit Criteria
 
-- [ ] All Sprint 3 APIs implemented and wired to UI.
-- [ ] No Sprint 3 dashboard routes show "Coming Soon".
-- [ ] Sprint 3 report is published:
+- [x] All Sprint 3 APIs implemented and wired to UI.
+- [x] No Sprint 3 dashboard routes show "Coming Soon".
+- [x] Sprint 3 report is published:
 - `docs/architecture/sprint-3-implementation-report.md`
 
 ---

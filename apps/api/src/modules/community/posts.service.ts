@@ -95,6 +95,20 @@ export class PostsService {
     await this.postRepo.delete(id);
   }
 
+  async listForModeration(limit = 50): Promise<Post[]> {
+    return this.postRepo.find({
+      relations: ['author'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+  }
+
+  async setLock(postId: string, locked: boolean): Promise<Post> {
+    const post = await this.findById(postId);
+    post.isLocked = locked;
+    return this.postRepo.save(post);
+  }
+
   private canManage(authorId: string, actor: Actor): boolean {
     return actor.id === authorId || actor.role === UserRole.ADMIN || actor.role === UserRole.SUPER_ADMIN;
   }

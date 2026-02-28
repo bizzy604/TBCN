@@ -89,5 +89,12 @@ export const communityApi = {
 
   toggleCommentReaction: (commentId: string, type: ReactionType = 'like') =>
     api.post<{ reacted: boolean }>(`/community/comments/${commentId}/reactions`, { type }),
+
+  moderationListPosts: (limit = 50) =>
+    api.get<CommunityPost[]>('/community/posts/moderation/list', { params: { limit } }),
+
+  moderationSetLock: (postId: string, locked: boolean) =>
+    api.patch<CommunityPost>(`/community/posts/moderation/${postId}/lock`, { locked }),
 };
+
 

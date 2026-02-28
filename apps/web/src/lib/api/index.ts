@@ -1,4 +1,4 @@
-// API exports - barrel file
+﻿// API exports - barrel file
 export { api, default as apiClient } from './client';
 export * from './auth';
 export * from './users';
@@ -12,3 +12,7 @@ export * from './community';
 export * from './events';
 export * from './messages';
 export * from './notifications';
+export * from './payments';
+
+export * from './analytics';
+

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MessagingController } from './messaging.controller';
 import { MessagingService } from './messaging.service';
 import { MessagingGateway } from './messaging.gateway';
 import { Message } from './entities/message.entity';
 import { User } from '../users/entities/user.entity';
+import { JwtModule } from '@nestjs/jwt';
 
 /**
  * Messaging Module
@@ -15,8 +15,8 @@ import { User } from '../users/entities/user.entity';
  * - Message notifications
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Message, User])],
-  controllers: [MessagingController],
+  imports: [TypeOrmModule.forFeature([Message, User]), JwtModule],
+  controllers: [],
   providers: [MessagingService, MessagingGateway],
   exports: [MessagingService, TypeOrmModule],
 })

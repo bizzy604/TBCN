@@ -25,6 +25,10 @@ class ReactionDto {
   type?: ReactionType;
 }
 
+class ModerationLockDto {
+  locked: boolean;
+}
+
 @ApiTags('Community')
 @Controller('community/posts')
 export class PostsController {
@@ -102,5 +106,22 @@ export class PostsController {
     @Body() dto: ReactionDto,
   ) {
     return this.reactionsService.togglePostReaction(postId, userId, dto.type ?? ReactionType.LIKE);
+  }
+
+  @Get('/moderation/list')
+  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async listForModeration(@Query('limit') limit?: number) {
+    return this.postsService.listForModeration(limit);
+  }
+
+  @Patch('/moderation/:id/lock')
+  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async setLock(
+    @Param('id', ParseUUIDPipe) postId: string,
+    @Body() dto: ModerationLockDto,
+  ) {
+    return this.postsService.setLock(postId, !!dto.locked);
   }
 }
