@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ const crumbLabels: Record<string, string> = {
   security: 'Security',
   subscription: 'Subscription',
   sessions: 'Sessions',
+  notifications: 'Notifications',
   edit: 'Edit',
 };
 
@@ -34,7 +35,7 @@ function isDynamicSegment(seg: string) {
 /**
  * Breadcrumb navigation component
  * Auto-generates from the current URL path.
- * On small screens: collapses middle segments behind "…"
+ * On small screens: collapses middle segments behind "â€¦"
  */
 export default function Breadcrumbs() {
   const pathname = usePathname();
@@ -45,18 +46,18 @@ export default function Breadcrumbs() {
   // Build crumb objects
   const crumbs = segments.map((seg, idx) => ({
     href: '/' + segments.slice(0, idx + 1).join('/'),
-    label: crumbLabels[seg] ?? (isDynamicSegment(seg) ? '…' : seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
+    label: crumbLabels[seg] ?? (isDynamicSegment(seg) ? 'â€¦' : seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
     isLast: idx === segments.length - 1,
   }));
 
-  // On mobile (handled via CSS), we show: Home / first / … / last
+  // On mobile (handled via CSS), we show: Home / first / â€¦ / last
   // On desktop, show everything. We'll mark middle items as collapsible.
   const collapsible = crumbs.length > 2 ? crumbs.slice(1, -1) : [];
 
   return (
     <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
       <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground overflow-x-auto scrollbar-none">
-        {/* Home — always visible */}
+        {/* Home â€” always visible */}
         <li className="shrink-0">
           <Link href="/" className="hover:text-primary transition-colors whitespace-nowrap">
             Home
@@ -75,11 +76,11 @@ export default function Breadcrumbs() {
               key={crumb.href}
               className="contents"
             >
-              {/* Collapsed indicator — only on mobile, once before hidden middle items */}
+              {/* Collapsed indicator â€” only on mobile, once before hidden middle items */}
               {showEllipsis && (
                 <span className="flex sm:hidden items-center gap-1 sm:gap-2 shrink-0">
                   <span aria-hidden="true" className="text-muted-foreground/50">/</span>
-                  <span className="text-muted-foreground">…</span>
+                  <span className="text-muted-foreground">â€¦</span>
                 </span>
               )}
 
@@ -109,3 +110,4 @@ export default function Breadcrumbs() {
     </nav>
   );
 }
+

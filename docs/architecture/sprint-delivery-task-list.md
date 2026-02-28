@@ -68,9 +68,9 @@
 
 ### 3.1 Week 9: Coaching Marketplace
 
-- [ ] Implement `coaching` backend module (profiles, availability, booking, session lifecycle).
-- [ ] Replace `coaches` and `sessions` "Coming Soon" pages with functional UI.
-- [ ] Add booking validations and conflict handling.
+- [x] Implement `coaching` backend module (profiles, availability, booking, session lifecycle).
+- [x] Replace `coaches` and `sessions` "Coming Soon" pages with functional UI.
+- [x] Add booking validations and conflict handling.
 
 ### 3.2 Week 10: Community and Messaging
 

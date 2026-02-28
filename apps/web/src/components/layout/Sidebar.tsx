@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -8,6 +8,9 @@ import {
   UsersIcon,
   CalendarDaysIcon,
   ChatBubbleLeftRightIcon,
+  BellIcon,
+  UserGroupIcon,
+  VideoCameraIcon,
   Cog6ToothIcon,
   AcademicCapIcon,
   DocumentCheckIcon,
@@ -20,10 +23,13 @@ const sidebarLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { label: 'My Learning', href: '/enrollments', icon: BookOpenIcon },
   { label: 'Programs', href: '/programs', icon: AcademicCapIcon },
+  { label: 'Coaches', href: '/coaches', icon: UserGroupIcon },
+  { label: 'Sessions', href: '/sessions', icon: VideoCameraIcon },
   { label: 'Certificates', href: '/certificates', icon: DocumentCheckIcon },
   { label: 'Community', href: '/community', icon: UsersIcon },
   { label: 'Events', href: '/events', icon: CalendarDaysIcon },
   { label: 'Messages', href: '/messages', icon: ChatBubbleLeftRightIcon },
+  { label: 'Notifications', href: '/notifications', icon: BellIcon },
   { label: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
@@ -53,7 +59,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         <Link href="/" className={`text-xl font-bold font-heading text-sidebar-primary transition-all ${collapsed ? 'sr-only' : ''}`}>
           TBCN
         </Link>
-        {/* Collapse toggle — desktop only */}
+        {/* Collapse toggle â€” desktop only */}
         <button
           onClick={onToggle}
           className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -61,7 +67,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         >
           {collapsed ? <ChevronRightIcon className="h-5 w-5" /> : <ChevronLeftIcon className="h-5 w-5" />}
         </button>
-        {/* Close button — mobile only */}
+        {/* Close button â€” mobile only */}
         <button
           onClick={onMobileClose}
           className="flex lg:hidden h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -135,3 +141,4 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
     </>
   );
 }
+

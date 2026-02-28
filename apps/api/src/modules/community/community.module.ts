@@ -1,5 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostsController } from './posts.controller';
+import { CommentsController } from './comments.controller';
+import { PostsService } from './posts.service';
+import { CommentsService } from './comments.service';
+import { ReactionsService } from './reactions.service';
+import { Post } from './entities/post.entity';
+import { Comment } from './entities/comment.entity';
+import { Reaction } from './entities/reaction.entity';
+import { User } from '../users/entities/user.entity';
 
 /**
  * Community Module
@@ -10,9 +19,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
  * - Topic circles
  */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [TypeOrmModule.forFeature([Post, Comment, Reaction, User])],
+  controllers: [PostsController, CommentsController],
+  providers: [PostsService, CommentsService, ReactionsService],
+  exports: [PostsService, CommentsService, ReactionsService, TypeOrmModule],
 })
 export class CommunityModule {}

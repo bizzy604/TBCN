@@ -1,32 +1,25 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Card } from '@/components/ui/Card';
+import EventDetailClient from './EventDetailClient';
 
 export const metadata: Metadata = {
   title: 'Event Details | Brand Coach Network',
-  description: 'View event details, schedule, and registration.',
+  description: 'View event details and complete registration.',
 };
 
-export default function EventDetailPage({ params }: { params: { id: string } }) {
+export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   return (
     <Card className="p-6">
       <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Event Details</h1>
-        <p className="mt-2 text-muted-foreground">
-          View event information, schedule, speakers, and registration.
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-dashed border-muted-foreground/25 p-12 text-center">
-        <div className="mx-auto max-w-md space-y-4">
-          <div className="text-4xl">🎤</div>
-          <h2 className="text-xl font-semibold">Event Details Coming Soon</h2>
-          <p className="text-sm text-muted-foreground">
-            Event schedule, speaker information, and registration will appear here.
-          </p>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Event Details</h1>
+          <p className="mt-2 text-muted-foreground">Review event information and register.</p>
         </div>
-      </div>
+        <EventDetailClient eventId={id} />
       </div>
     </Card>
   );
 }
+
