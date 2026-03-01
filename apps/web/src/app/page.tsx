@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { SITE_ARCHITECTURE } from '@/lib/site-architecture';
 import {
   ArrowRightIcon,
   PlayCircleIcon,
@@ -17,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: 'The Brand Coach Network | Build Your Brand, Transform Your Life',
   description:
-    "Join Africa's premier coaching platform. Discover your brand, build visibility, and create measurable impact through structured coaching, community, and commerce.",
+    "Join Africa's premier coaching platform. Discover your brand, build visibility, and create measurable impact through Community, Collaboration, and Coaching.",
 };
 
 /**
@@ -53,8 +54,8 @@ export default function HomePage() {
               {/* Sub-headline */}
               <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
                 Join Africa&apos;s premier coaching platform. Discover your brand,
-                build visibility, and create measurable impact through structured
-                coaching, community, and commerce.
+                build visibility, and create measurable impact through our three
+                pillars: Community, Collaboration, and Coaching.
               </p>
 
               {/* CTA */}
@@ -88,7 +89,74 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ──────────────────── VALUE PROPOSITION ──────────────────── */}
+        <section id="what-tbcn-does" className="section-padding bg-background">
+          <div className="container-app">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                What TBCN Does
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                TBCN is a transformational digital ecosystem built around
+                Community, Collaboration, and Coaching. Every focus area below
+                is mapped to capabilities defined in the PRD.
+              </p>
+            </div>
+
+            <div className="mt-16 grid gap-6 lg:grid-cols-3">
+              {SITE_ARCHITECTURE.map((section) => (
+                <article
+                  id={section.anchorId}
+                  key={section.anchorId}
+                  className="card-hover p-6"
+                >
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                    Main Page
+                  </p>
+                  <h3 className="mb-3 text-2xl font-semibold">{section.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {section.description}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {section.subPages.map((subPage) => (
+                      <Link
+                        key={subPage.anchorId}
+                        href={`/#${subPage.anchorId}`}
+                        className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                      >
+                        {subPage.title}
+                      </Link>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-16 space-y-10">
+              {SITE_ARCHITECTURE.map((section) => (
+                <article key={`details-${section.anchorId}`}>
+                  <h3 className="mb-4 text-2xl font-semibold">{section.title} Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {section.subPages.map((subPage) => (
+                      <div
+                        id={subPage.anchorId}
+                        key={subPage.anchorId}
+                        className="card p-5 scroll-mt-10"
+                      >
+                        <h4 className="text-lg font-semibold text-primary">
+                          {subPage.title}
+                        </h4>
+                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                          {subPage.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="section-padding bg-background">
           <div className="container-app">
             <div className="mx-auto max-w-2xl text-center">

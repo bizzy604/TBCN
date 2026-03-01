@@ -7,10 +7,10 @@ import {
 
 const footerLinks = {
   platform: [
-    { label: 'Programs', href: '/programs' },
-    { label: 'Coaches', href: '/coaches' },
-    { label: 'Events', href: '/events' },
-    { label: 'Community', href: '/community' },
+    { label: 'Programs', href: '/#coaching-programs' },
+    { label: 'Coaches', href: '/#coaching-marketplace' },
+    { label: 'Events', href: '/#community-events' },
+    { label: 'Community', href: '/#community-brand-coach-circle' },
     { label: 'Pricing', href: '/pricing' },
   ],
   company: [
