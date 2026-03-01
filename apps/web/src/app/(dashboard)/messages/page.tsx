@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/lib/store';
 import type { ConversationSummary, DirectMessage } from '@/lib/api/messages';
+import { usersApi, type DirectoryUser } from '@/lib/api/users';
 
 function resolveSocketBaseUrl(): string {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -34,6 +36,7 @@ export default function MessagesPage() {
   const socketRef = useRef<Socket | null>(null);
 
   const [activePeerId, setActivePeerId] = useState<string | null>(null);
+  const [directorySearch, setDirectorySearch] = useState('');
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -46,6 +49,19 @@ export default function MessagesPage() {
 
   const currentPeerId = activePeerId || conversations[0]?.peerId || '';
   const baseUrl = useMemo(() => resolveSocketBaseUrl(), []);
+
+  const { data: directoryData, isLoading: isLoadingDirectory } = useQuery({
+    queryKey: ['messages', 'directory', directorySearch],
+    queryFn: () =>
+      usersApi.listDirectory({
+        search: directorySearch.trim() || undefined,
+        page: 1,
+        limit: 12,
+      }),
+    enabled: !!accessToken,
+  });
+
+  const directoryUsers = directoryData?.data ?? [];
 
   useEffect(() => {
     if (!accessToken) {
@@ -67,8 +83,11 @@ export default function MessagesPage() {
     });
 
     socket.on('message.new', (incoming: DirectMessage) => {
+      const peerId = incoming.senderId === user?.id ? incoming.recipientId : incoming.senderId;
+      const isIncoming = incoming.recipientId === user?.id;
+      const isActiveThread = currentPeerId === peerId;
+
       setConversations((prev) => {
-        const peerId = incoming.senderId === user?.id ? incoming.recipientId : incoming.senderId;
         const existing = prev.find((item) => item.peerId === peerId);
         const peer = incoming.senderId === user?.id ? incoming.recipient : incoming.sender;
         if (!peer) {
@@ -79,7 +98,10 @@ export default function MessagesPage() {
           peerId,
           peer,
           lastMessage: incoming,
-          unreadCount: existing?.unreadCount ?? 0,
+          unreadCount:
+            isIncoming && !isActiveThread
+              ? (existing?.unreadCount ?? 0) + 1
+              : (existing?.unreadCount ?? 0),
         };
 
         const withoutCurrent = prev.filter((item) => item.peerId !== peerId);
@@ -88,6 +110,10 @@ export default function MessagesPage() {
 
       if (currentPeerId && (incoming.senderId === currentPeerId || incoming.recipientId === currentPeerId)) {
         setThread((prev) => [...prev, incoming]);
+      }
+
+      if (isIncoming && isActiveThread) {
+        emitWithAck(socket, 'message.read', { messageId: incoming.id }).catch(() => undefined);
       }
     });
 
@@ -139,7 +165,26 @@ export default function MessagesPage() {
           page: 1,
           limit: 100,
         });
-        setThread(response?.items ?? []);
+        const items = response?.items ?? [];
+        setThread(items);
+
+        const unreadIncoming = items.filter(
+          (item) => item.recipientId === user?.id && !item.readAt,
+        );
+        if (unreadIncoming.length > 0) {
+          await Promise.all(
+            unreadIncoming.map((item) =>
+              emitWithAck(socket, 'message.read', { messageId: item.id }).catch(() => undefined),
+            ),
+          );
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.peerId === currentPeerId
+                ? { ...conv, unreadCount: 0 }
+                : conv,
+            ),
+          );
+        }
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Failed to load thread');
       } finally {
@@ -148,7 +193,7 @@ export default function MessagesPage() {
     };
 
     loadThread();
-  }, [currentPeerId]);
+  }, [currentPeerId, user?.id]);
 
   const handleSend = async () => {
     const socket = socketRef.current;
@@ -171,6 +216,52 @@ export default function MessagesPage() {
     }
   };
 
+  const handleStartChat = (entry: DirectoryUser) => {
+    const peer = {
+      id: entry.id,
+      firstName: entry.firstName,
+      lastName: entry.lastName,
+      avatarUrl: entry.avatarUrl,
+    };
+
+    setActivePeerId(entry.id);
+    setConversations((prev) => {
+      const existing = prev.find((conv) => conv.peerId === entry.id);
+      if (existing) {
+        return prev;
+      }
+
+      const placeholderMessage: DirectMessage = {
+        id: `draft-${entry.id}`,
+        senderId: user?.id || '',
+        recipientId: entry.id,
+        content: '',
+        readAt: null,
+        sender: user
+          ? {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              avatarUrl: user.avatarUrl,
+            }
+          : undefined,
+        recipient: peer,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return [
+        {
+          peerId: entry.id,
+          peer,
+          lastMessage: placeholderMessage,
+          unreadCount: 0,
+        },
+        ...prev,
+      ];
+    });
+  };
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -184,6 +275,35 @@ export default function MessagesPage() {
         <div className="grid gap-4 md:grid-cols-[280px,1fr]">
           <aside className="rounded-lg border border-border bg-card p-3">
             <h2 className="mb-3 text-sm font-semibold">Conversations</h2>
+            <div className="mb-3 space-y-2">
+              <input
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                placeholder="Search users to start chat"
+                value={directorySearch}
+                onChange={(e) => setDirectorySearch(e.target.value)}
+              />
+              {isLoadingDirectory ? (
+                <p className="text-xs text-muted-foreground">Loading users...</p>
+              ) : directoryUsers.length > 0 ? (
+                <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
+                  {directoryUsers.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => handleStartChat(entry)}
+                      className="w-full rounded-md border border-border px-2 py-1.5 text-left text-xs hover:bg-muted"
+                    >
+                      <p className="font-medium">
+                        {entry.firstName} {entry.lastName}
+                      </p>
+                      <p className="text-muted-foreground">{entry.role.replace('_', ' ')}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No users found.</p>
+              )}
+            </div>
             {isLoadingConversations ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : conversations.length === 0 ? (
@@ -194,13 +314,29 @@ export default function MessagesPage() {
                   <button
                     key={conv.peerId}
                     type="button"
-                    onClick={() => setActivePeerId(conv.peerId)}
+                    onClick={() => {
+                      setActivePeerId(conv.peerId);
+                      setConversations((prev) =>
+                        prev.map((item) =>
+                          item.peerId === conv.peerId ? { ...item, unreadCount: 0 } : item,
+                        ),
+                      );
+                    }}
                     className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
                       currentPeerId === conv.peerId ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'
                     }`}
                   >
-                    <p className="font-medium">{conv.peer.firstName} {conv.peer.lastName}</p>
-                    <p className="truncate text-xs text-muted-foreground">{conv.lastMessage.content}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{conv.peer.firstName} {conv.peer.lastName}</p>
+                      {conv.unreadCount > 0 && (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                          {conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {conv.lastMessage.content || 'No messages yet. Start conversation.'}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -235,6 +371,12 @@ export default function MessagesPage() {
                     placeholder="Type a message"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void handleSend();
+                      }
+                    }}
                   />
                   <button
                     type="button"

@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { UserRole } from '@tbcn/shared';
@@ -17,6 +18,7 @@ import { User } from '../users/entities/user.entity';
 import { CoachingSession } from './entities/coaching-session.entity';
 import { SessionFeedback } from './entities/session-feedback.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { SessionsQueryDto } from './dto/sessions-query.dto';
 import { SessionFeedbackDto } from './dto/session-feedback.dto';
 import { UpdateSessionAction, UpdateSessionDto } from './dto/update-session.dto';
 import { SessionStatus, SessionType } from './enums/session-status.enum';
@@ -24,14 +26,6 @@ import { SessionStatus, SessionType } from './enums/session-status.enum';
 interface SessionActor {
   id: string;
   role: UserRole;
-}
-
-interface SessionQuery {
-  page?: number;
-  limit?: number;
-  role?: 'coach' | 'mentee';
-  status?: SessionStatus;
-  upcoming?: boolean;
 }
 
 @Injectable()
@@ -43,6 +37,7 @@ export class SessionsService {
     private readonly feedbackRepo: Repository<SessionFeedback>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async bookSession(menteeId: string, dto: CreateSessionDto): Promise<CoachingSession> {
@@ -78,10 +73,20 @@ export class SessionsService {
       status: SessionStatus.SCHEDULED,
     });
     await this.sessionRepo.save(session);
-    return this.findById(session.id, { id: menteeId, role: UserRole.MEMBER });
+    const saved = await this.findById(session.id, { id: menteeId, role: UserRole.MEMBER });
+
+    this.eventEmitter.emit('session.booked', {
+      sessionId: saved.id,
+      coachId: saved.coachId,
+      menteeId: saved.menteeId,
+      topic: saved.topic,
+      scheduledAt: saved.scheduledAt,
+    });
+
+    return saved;
   }
 
-  async listSessions(actor: SessionActor, query: SessionQuery): Promise<PaginatedResult<CoachingSession>> {
+  async listSessions(actor: SessionActor, query: SessionsQueryDto): Promise<PaginatedResult<CoachingSession>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const asCoach = query.role === 'coach';
@@ -147,7 +152,15 @@ export class SessionsService {
       await this.assertNoConflicts(session.coachId, scheduledAt, endAt, session.id);
       session.scheduledAt = scheduledAt;
       await this.sessionRepo.save(session);
-      return this.findById(id, actor);
+      const updated = await this.findById(id, actor);
+      this.eventEmitter.emit('session.rescheduled', {
+        sessionId: updated.id,
+        coachId: updated.coachId,
+        menteeId: updated.menteeId,
+        topic: updated.topic,
+        scheduledAt: updated.scheduledAt,
+      });
+      return updated;
     }
 
     if (dto.action === UpdateSessionAction.CANCEL) {
@@ -155,7 +168,15 @@ export class SessionsService {
       session.cancelledAt = new Date();
       session.cancellationReason = dto.cancellationReason ?? null;
       await this.sessionRepo.save(session);
-      return this.findById(id, actor);
+      const updated = await this.findById(id, actor);
+      this.eventEmitter.emit('session.cancelled', {
+        sessionId: updated.id,
+        coachId: updated.coachId,
+        menteeId: updated.menteeId,
+        topic: updated.topic,
+        cancellationReason: updated.cancellationReason,
+      });
+      return updated;
     }
 
     if (dto.action === UpdateSessionAction.COMPLETE) {
@@ -165,7 +186,15 @@ export class SessionsService {
       session.status = SessionStatus.COMPLETED;
       session.completedAt = new Date();
       await this.sessionRepo.save(session);
-      return this.findById(id, actor);
+      const updated = await this.findById(id, actor);
+      this.eventEmitter.emit('session.completed', {
+        sessionId: updated.id,
+        coachId: updated.coachId,
+        menteeId: updated.menteeId,
+        topic: updated.topic,
+        completedAt: updated.completedAt,
+      });
+      return updated;
     }
 
     throw new BadRequestException('Invalid session update action');
@@ -193,7 +222,14 @@ export class SessionsService {
       highlights: dto.highlights ?? [],
       isPublic: dto.isPublic ?? true,
     });
-    return this.feedbackRepo.save(feedback);
+    const saved = await this.feedbackRepo.save(feedback);
+    this.eventEmitter.emit('session.feedback.submitted', {
+      sessionId,
+      coachId: session.coachId,
+      menteeId: session.menteeId,
+      rating: saved.rating,
+    });
+    return saved;
   }
 
   private async assertNoConflicts(

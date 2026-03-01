@@ -20,6 +20,7 @@ export const engagementKeys = {
     list: (params?: EventQuery) => ['events', 'list', params] as const,
     detail: (id: string) => ['events', 'detail', id] as const,
     registrations: () => ['events', 'registrations', 'me'] as const,
+    accessLink: (id: string) => ['events', 'access-link', id] as const,
   },
   notifications: {
     mine: (page = 1, limit = 20) => ['notifications', 'mine', page, limit] as const,
@@ -118,6 +119,44 @@ export function useRegisterEvent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => eventsApi.register(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: engagementKeys.events.registrations() });
+      queryClient.invalidateQueries({ queryKey: engagementKeys.events.detail(id) });
+      queryClient.invalidateQueries({ queryKey: engagementKeys.events.accessLink(id) });
+    },
+  });
+}
+
+export function useEventCheckout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Parameters<typeof eventsApi.checkout>[1];
+    }) => eventsApi.checkout(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: engagementKeys.events.detail(variables.id) });
+    },
+  });
+}
+
+export function useEventAccessLink(id: string, enabled = true) {
+  return useQuery({
+    queryKey: engagementKeys.events.accessLink(id),
+    queryFn: () => eventsApi.getAccessLink(id),
+    enabled: !!id && enabled,
+    retry: false,
+  });
+}
+
+export function useCreateEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof eventsApi.create>[0]) => eventsApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
     },

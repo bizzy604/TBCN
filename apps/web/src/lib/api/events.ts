@@ -33,6 +33,27 @@ export interface EventRegistration {
   event?: EventItem;
 }
 
+export interface EventCheckoutPayload {
+  amount: number;
+  currency?: string;
+  paymentMethod?: 'card' | 'mpesa' | 'flutterwave' | 'paystack' | 'paypal';
+  phone?: string;
+  returnPath?: string;
+  description?: string;
+  couponCode?: string;
+}
+
+export interface EventCheckoutTransaction {
+  id: string;
+  reference: string;
+  status: 'pending' | 'processing' | 'success' | 'failed' | 'cancelled';
+  paymentMethod: string;
+  amount: number;
+  currency: string;
+  checkoutUrl: string | null;
+  metadata: Record<string, unknown>;
+}
+
 export interface PaginatedEvents {
   data: EventItem[];
   meta: {
@@ -98,5 +119,11 @@ export const eventsApi = {
 
   myRegistrations: () =>
     api.get<EventRegistration[]>('/events/me/registrations'),
+
+  checkout: (id: string, payload: EventCheckoutPayload) =>
+    api.post<EventCheckoutTransaction>(`/events/${id}/checkout`, payload),
+
+  getAccessLink: (id: string) =>
+    api.get<{ meetingUrl: string }>(`/events/${id}/access-link`),
 };
 

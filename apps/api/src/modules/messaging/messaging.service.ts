@@ -3,8 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   PaginatedResult,
   createPaginatedResult,
@@ -22,6 +23,7 @@ export class MessagingService {
     private readonly messageRepo: Repository<Message>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async send(senderId: string, dto: SendMessageDto): Promise<Message> {
@@ -29,7 +31,14 @@ export class MessagingService {
       throw new ForbiddenException('You cannot send a message to yourself');
     }
 
-    const recipient = await this.userRepo.findOne({ where: { id: dto.recipientId } });
+    const [sender, recipient] = await Promise.all([
+      this.userRepo.findOne({ where: { id: senderId } }),
+      this.userRepo.findOne({ where: { id: dto.recipientId } }),
+    ]);
+
+    if (!sender) {
+      throw new NotFoundException(`Sender with ID "${senderId}" not found`);
+    }
     if (!recipient) {
       throw new NotFoundException(`Recipient with ID "${dto.recipientId}" not found`);
     }
@@ -39,7 +48,19 @@ export class MessagingService {
       recipientId: dto.recipientId,
       content: dto.content,
     });
-    return this.messageRepo.save(message);
+    const saved = await this.messageRepo.save(message);
+
+    this.eventEmitter.emit('message.sent', {
+      messageId: saved.id,
+      senderId,
+      senderName: `${sender.firstName} ${sender.lastName}`.trim(),
+      recipientId: dto.recipientId,
+      recipientName: `${recipient.firstName} ${recipient.lastName}`.trim(),
+      preview: dto.content.slice(0, 120),
+      createdAt: saved.createdAt,
+    });
+
+    return saved;
   }
 
   async getById(messageId: string, currentUserId: string): Promise<Message> {
@@ -92,11 +113,27 @@ export class MessagingService {
       }
     }
 
+    const peerIds = Array.from(map.keys());
+    const unreadRows = peerIds.length
+      ? await this.messageRepo
+          .createQueryBuilder('message')
+          .select('message.senderId', 'senderId')
+          .addSelect('COUNT(*)', 'count')
+          .where('message.recipientId = :currentUserId', { currentUserId })
+          .andWhere('message.readAt IS NULL')
+          .andWhere('message.senderId IN (:...peerIds)', { peerIds })
+          .groupBy('message.senderId')
+          .getRawMany<{ senderId: string; count: string }>()
+      : [];
+    const unreadByPeer = new Map<string, number>(
+      unreadRows.map((row) => [row.senderId, parseInt(row.count, 10)]),
+    );
+
     return Array.from(map.entries()).map(([peerId, lastMessage]) => ({
       peerId,
       peer: lastMessage.senderId === currentUserId ? lastMessage.recipient : lastMessage.sender,
       lastMessage,
-      unreadCount: 0,
+      unreadCount: unreadByPeer.get(peerId) ?? 0,
     }));
   }
 

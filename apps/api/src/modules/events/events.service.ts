@@ -56,6 +56,14 @@ export class EventsService {
     return createPaginatedResult(items, createPaginationMeta(page, limit, total));
   }
 
+  async listPublic(query: EventQueryDto): Promise<PaginatedResult<Event>> {
+    const result = await this.list(query);
+    return {
+      ...result,
+      items: result.items.map((event) => this.sanitizeEventForPublic(event)),
+    };
+  }
+
   async findById(id: string): Promise<Event> {
     const event = await this.eventRepo.findOne({
       where: { id },
@@ -65,6 +73,11 @@ export class EventsService {
       throw new NotFoundException(`Event with ID "${id}" not found`);
     }
     return event;
+  }
+
+  async findByIdPublic(id: string): Promise<Event> {
+    const event = await this.findById(id);
+    return this.sanitizeEventForPublic(event);
   }
 
   async create(actor: Actor, dto: CreateEventDto): Promise<Event> {
@@ -115,5 +128,14 @@ export class EventsService {
       throw new ForbiddenException('You do not have permission to delete this event');
     }
     await this.eventRepo.delete(id);
+  }
+
+  private sanitizeEventForPublic(event: Event): Event {
+    const eventPrice = Number(event.price || 0);
+    if (eventPrice <= 0) {
+      return event;
+    }
+    event.meetingUrl = null;
+    return event;
   }
 }

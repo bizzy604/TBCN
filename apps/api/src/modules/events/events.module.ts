@@ -6,6 +6,8 @@ import { RegistrationsService } from './registrations.service';
 import { Event } from './entities/event.entity';
 import { EventRegistration } from './entities/event-registration.entity';
 import { EventTicket } from './entities/event-ticket.entity';
+import { Transaction } from '../payments/entities/transaction.entity';
+import { PaymentsModule } from '../payments/payments.module';
 
 /**
  * Events Module
@@ -16,7 +18,7 @@ import { EventTicket } from './entities/event-ticket.entity';
  * - Virtual/physical event support
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Event, EventRegistration, EventTicket])],
+  imports: [TypeOrmModule.forFeature([Event, EventRegistration, EventTicket, Transaction]), PaymentsModule],
   controllers: [EventsController],
   providers: [EventsService, RegistrationsService],
   exports: [EventsService, RegistrationsService, TypeOrmModule],

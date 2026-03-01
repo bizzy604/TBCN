@@ -250,3 +250,33 @@ export class UserQueryDto {
   @Max(100)
   limit?: number;
 }
+
+/**
+ * User Directory Query DTO (for messaging/contact picker)
+ */
+export class DirectoryQueryDto {
+  @ApiProperty({ description: 'Search by first name, last name, or email', required: false })
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiProperty({ description: 'Filter by role', enum: UserRole, required: false })
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
+
+  @ApiProperty({ description: 'Page number', required: false, default: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiProperty({ description: 'Items per page', required: false, default: 20 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+}

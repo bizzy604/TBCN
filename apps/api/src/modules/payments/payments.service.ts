@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
@@ -62,6 +63,7 @@ export class PaymentsService {
     private readonly paystackProcessor: PaystackProcessor,
     private readonly paypalProcessor: PaypalProcessor,
     private readonly couponsService: CouponsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getMySubscription(userId: string): Promise<Subscription> {
@@ -214,6 +216,18 @@ export class PaymentsService {
       await this.recordCouponRedemptionSafe(transaction, appliedCoupon);
     }
 
+    this.eventEmitter.emit('payment.initiated', {
+      transactionId: transaction.id,
+      reference: transaction.reference,
+      userId: transaction.userId,
+      type: transaction.type,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      paymentMethod: transaction.paymentMethod,
+      status: transaction.status,
+      metadata: transaction.metadata,
+    });
+
     return transaction;
   }
 
@@ -225,6 +239,7 @@ export class PaymentsService {
 
     const resolution = await this.resolveCallbackStatus(transaction, dto);
     const wasSuccessful = transaction.status === PaymentStatus.SUCCESS;
+    const previousStatus = transaction.status;
 
     transaction.status = resolution.status;
     transaction.providerTransactionId = resolution.providerTransactionId
@@ -248,8 +263,24 @@ export class PaymentsService {
     if ([PaymentStatus.FAILED, PaymentStatus.CANCELLED].includes(resolution.status)) {
       transaction.completedAt = transaction.completedAt ?? new Date();
     }
+    const saved = await this.transactionRepo.save(transaction);
 
-    return this.transactionRepo.save(transaction);
+    if (previousStatus !== saved.status) {
+      this.eventEmitter.emit('payment.status.changed', {
+        transactionId: saved.id,
+        reference: saved.reference,
+        userId: saved.userId,
+        type: saved.type,
+        amount: saved.amount,
+        currency: saved.currency,
+        paymentMethod: saved.paymentMethod,
+        status: saved.status,
+        metadata: saved.metadata,
+        completedAt: saved.completedAt,
+      });
+    }
+
+    return saved;
   }
 
   async handleWebhook(

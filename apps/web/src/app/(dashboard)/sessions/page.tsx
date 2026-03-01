@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/hooks';
 import { useSessions, useUpdateSession, useSubmitSessionFeedback } from '@/hooks/use-coaching';
@@ -198,6 +199,31 @@ export default function SessionsPage() {
         ) : sessions.length === 0 ? (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center">
             <p className="text-sm text-muted-foreground">No sessions found yet.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {!canManage ? (
+                <Link
+                  href="/coaches"
+                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  Find a Coach to Book
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/coaches"
+                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    View Coach Directory
+                  </Link>
+                  <Link
+                    href="/coach/workspace"
+                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    Open Coach Workspace
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

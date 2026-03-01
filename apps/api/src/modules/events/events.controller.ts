@@ -17,6 +17,7 @@ import { EventQueryDto } from './dto/event-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 import { RegistrationsService } from './registrations.service';
+import { InitiatePaymentDto } from '../payments/dto/initiate-payment.dto';
 
 const AUTHENTICATED_USER_ROLES: UserRole[] = [
   UserRole.MEMBER,
@@ -44,14 +45,14 @@ export class EventsController {
   @Get()
   @ApiOperation({ summary: 'List events' })
   async list(@Query() query: EventQueryDto) {
-    return this.eventsService.list(query);
+    return this.eventsService.listPublic(query);
   }
 
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get event by ID' })
   async findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.eventsService.findById(id);
+    return this.eventsService.findByIdPublic(id);
   }
 
   @Post()
@@ -115,6 +116,27 @@ export class EventsController {
   @Roles(...AUTHENTICATED_USER_ROLES)
   async myRegistrations(@CurrentUser('id') userId: string) {
     return this.registrationsService.listMine(userId);
+  }
+
+  @Post(':id/checkout')
+  @ApiBearerAuth('JWT-auth')
+  @Roles(...AUTHENTICATED_USER_ROLES)
+  async checkoutRegistration(
+    @Param('id', ParseUUIDPipe) eventId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: InitiatePaymentDto,
+  ) {
+    return this.registrationsService.initiateCheckout(eventId, userId, dto);
+  }
+
+  @Get(':id/access-link')
+  @ApiBearerAuth('JWT-auth')
+  @Roles(...AUTHENTICATED_USER_ROLES)
+  async accessLink(
+    @Param('id', ParseUUIDPipe) eventId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.registrationsService.getAccessLink(eventId, userId);
   }
 
   @Patch(':id/attendance/:registrationId')

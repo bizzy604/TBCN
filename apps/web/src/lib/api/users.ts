@@ -39,6 +39,15 @@ export interface CreateUserData {
   role?: string;
 }
 
+export interface DirectoryUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  avatarUrl: string | null;
+}
+
 /**
  * Users API
  * User profile and management API calls
@@ -101,6 +110,24 @@ export const usersApi = {
         )
       : undefined;
     const response = await apiClient.get<ApiResponse<PaginatedResponse<User>>>('/users', { params: cleanParams });
+    return response.data.data;
+  },
+
+  /**
+   * Get active users directory (authenticated)
+   */
+  async listDirectory(params?: PaginationParams & {
+    search?: string;
+    role?: string;
+  }): Promise<PaginatedResponse<DirectoryUser>> {
+    const cleanParams = params
+      ? Object.fromEntries(
+          Object.entries(params).filter(([, value]) => value !== '' && value !== undefined && value !== null),
+        )
+      : undefined;
+    const response = await apiClient.get<ApiResponse<PaginatedResponse<DirectoryUser>>>('/users/directory', {
+      params: cleanParams,
+    });
     return response.data.data;
   },
 

@@ -30,9 +30,19 @@ import {
   UpdateProfileDto,
   AdminUpdateUserDto,
   UserQueryDto,
+  DirectoryQueryDto,
 } from './dto/user.dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles, Role } from '../../common/decorators';
+import { UserRole } from '@tbcn/shared';
+
+const AUTHENTICATED_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
 
 @ApiTags('Users')
 @Controller('users')
@@ -105,6 +115,17 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'User created' })
   async create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
+  }
+
+  @Get('directory')
+  @Roles(...AUTHENTICATED_USER_ROLES)
+  @ApiOperation({ summary: 'List active users directory (for messaging)' })
+  @ApiResponse({ status: 200, description: 'Paginated user directory list' })
+  async findDirectory(
+    @CurrentUser('id') userId: string,
+    @Query() query: DirectoryQueryDto,
+  ) {
+    return this.usersService.findDirectory(query, userId);
   }
 
   @Get('stats')

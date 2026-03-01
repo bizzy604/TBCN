@@ -14,6 +14,7 @@ import {
   UpdateProfileDto,
   AdminUpdateUserDto,
   UserQueryDto,
+  DirectoryQueryDto,
 } from './dto/user.dto';
 
 // Domain events
@@ -121,6 +122,57 @@ export class UsersService {
 
     return {
       data: users,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Directory listing for authenticated users (used by messaging user picker)
+   */
+  async findDirectory(query: DirectoryQueryDto, currentUserId: string) {
+    const { search, role, page = 1, limit = 20 } = query;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+    queryBuilder
+      .where('user.deletedAt IS NULL')
+      .andWhere('user.status = :status', { status: UserStatus.ACTIVE })
+      .andWhere('user.id != :currentUserId', { currentUserId });
+
+    if (role) {
+      queryBuilder.andWhere('user.role = :role', { role });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.email ILIKE :search OR user.firstName ILIKE :search OR user.lastName ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder
+      .orderBy('user.firstName', 'ASC')
+      .addOrderBy('user.lastName', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+
+    const data = users.map((user) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+    }));
+
+    return {
+      data,
       meta: {
         page,
         limit,

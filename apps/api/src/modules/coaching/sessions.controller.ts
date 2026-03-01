@@ -18,18 +18,10 @@ import {
 import { CurrentUser, Roles } from '../../common/decorators';
 import { UserRole } from '@tbcn/shared';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { SessionsQueryDto } from './dto/sessions-query.dto';
 import { SessionFeedbackDto } from './dto/session-feedback.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
-import { SessionStatus } from './enums/session-status.enum';
 import { SessionsService } from './sessions.service';
-
-class SessionsQueryDto {
-  page?: number;
-  limit?: number;
-  role?: 'coach' | 'mentee';
-  status?: SessionStatus;
-  upcoming?: boolean;
-}
 
 const COACHING_USER_ROLES: UserRole[] = [
   UserRole.MEMBER,

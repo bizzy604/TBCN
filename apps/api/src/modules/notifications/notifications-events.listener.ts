@@ -40,6 +40,47 @@ interface UserStatusChangedPayload {
   newStatus?: string;
 }
 
+interface SessionEventPayload {
+  sessionId?: string;
+  coachId?: string;
+  menteeId?: string;
+  topic?: string;
+  scheduledAt?: string | Date;
+  completedAt?: string | Date;
+  cancellationReason?: string | null;
+  rating?: number;
+}
+
+interface MessageSentPayload {
+  messageId?: string;
+  senderId?: string;
+  senderName?: string;
+  recipientId?: string;
+  recipientName?: string;
+  preview?: string;
+}
+
+interface EventRegistrationPayload {
+  eventId?: string;
+  userId?: string;
+  organizerId?: string;
+  title?: string;
+  price?: number;
+  currency?: string;
+}
+
+interface PaymentPayload {
+  transactionId?: string;
+  reference?: string;
+  userId?: string;
+  type?: string;
+  amount?: number;
+  currency?: string;
+  paymentMethod?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
 @Injectable()
 export class NotificationsEventsListener {
   private readonly logger = new Logger(NotificationsEventsListener.name);
@@ -184,6 +225,230 @@ export class NotificationsEventsListener {
       `Your account status changed from ${payload.oldStatus || 'unknown'} to ${payload.newStatus || 'unknown'}.`,
       type,
       { event: 'user.status.changed' },
+    );
+  }
+
+  @OnEvent('message.sent')
+  async onMessageSent(payload: MessageSentPayload) {
+    if (!payload?.recipientId) return;
+    const senderName = payload.senderName || 'A user';
+    await this.safeCreate(
+      payload.recipientId,
+      'New message received',
+      `${senderName} sent you a new message.`,
+      NotificationType.INFO,
+      {
+        event: 'message.sent',
+        messageId: payload.messageId,
+        senderId: payload.senderId,
+        preview: payload.preview,
+      },
+    );
+  }
+
+  @OnEvent('session.booked')
+  async onSessionBooked(payload: SessionEventPayload) {
+    if (payload?.menteeId) {
+      await this.safeCreate(
+        payload.menteeId,
+        'Session booked',
+        `Your session "${payload.topic || 'Coaching session'}" has been booked successfully.`,
+        NotificationType.SUCCESS,
+        {
+          event: 'session.booked',
+          sessionId: payload.sessionId,
+          scheduledAt: payload.scheduledAt,
+        },
+      );
+    }
+    if (payload?.coachId) {
+      await this.safeCreate(
+        payload.coachId,
+        'New session booking',
+        `A new session "${payload.topic || 'Coaching session'}" has been booked with you.`,
+        NotificationType.INFO,
+        {
+          event: 'session.booked',
+          sessionId: payload.sessionId,
+          scheduledAt: payload.scheduledAt,
+        },
+      );
+    }
+  }
+
+  @OnEvent('session.rescheduled')
+  async onSessionRescheduled(payload: SessionEventPayload) {
+    const message = `Session "${payload.topic || 'Coaching session'}" was rescheduled.`;
+    if (payload?.menteeId) {
+      await this.safeCreate(
+        payload.menteeId,
+        'Session rescheduled',
+        message,
+        NotificationType.INFO,
+        { event: 'session.rescheduled', sessionId: payload.sessionId, scheduledAt: payload.scheduledAt },
+      );
+    }
+    if (payload?.coachId) {
+      await this.safeCreate(
+        payload.coachId,
+        'Session rescheduled',
+        message,
+        NotificationType.INFO,
+        { event: 'session.rescheduled', sessionId: payload.sessionId, scheduledAt: payload.scheduledAt },
+      );
+    }
+  }
+
+  @OnEvent('session.cancelled')
+  async onSessionCancelled(payload: SessionEventPayload) {
+    const reason = payload?.cancellationReason ? ` Reason: ${payload.cancellationReason}` : '';
+    const message = `Session "${payload.topic || 'Coaching session'}" was cancelled.${reason}`;
+    if (payload?.menteeId) {
+      await this.safeCreate(
+        payload.menteeId,
+        'Session cancelled',
+        message,
+        NotificationType.WARNING,
+        { event: 'session.cancelled', sessionId: payload.sessionId },
+      );
+    }
+    if (payload?.coachId) {
+      await this.safeCreate(
+        payload.coachId,
+        'Session cancelled',
+        message,
+        NotificationType.WARNING,
+        { event: 'session.cancelled', sessionId: payload.sessionId },
+      );
+    }
+  }
+
+  @OnEvent('session.completed')
+  async onSessionCompleted(payload: SessionEventPayload) {
+    const message = `Session "${payload.topic || 'Coaching session'}" was marked completed.`;
+    if (payload?.menteeId) {
+      await this.safeCreate(
+        payload.menteeId,
+        'Session completed',
+        `${message} You can now submit feedback.`,
+        NotificationType.SUCCESS,
+        { event: 'session.completed', sessionId: payload.sessionId, completedAt: payload.completedAt },
+      );
+    }
+    if (payload?.coachId) {
+      await this.safeCreate(
+        payload.coachId,
+        'Session completed',
+        message,
+        NotificationType.SUCCESS,
+        { event: 'session.completed', sessionId: payload.sessionId, completedAt: payload.completedAt },
+      );
+    }
+  }
+
+  @OnEvent('session.feedback.submitted')
+  async onSessionFeedbackSubmitted(payload: SessionEventPayload) {
+    if (!payload?.coachId) return;
+    await this.safeCreate(
+      payload.coachId,
+      'New session feedback',
+      `You received ${payload.rating || 0}/5 feedback on "${payload.topic || 'a session'}".`,
+      NotificationType.INFO,
+      { event: 'session.feedback.submitted', sessionId: payload.sessionId, rating: payload.rating },
+    );
+  }
+
+  @OnEvent('event.registered')
+  async onEventRegistered(payload: EventRegistrationPayload) {
+    if (payload?.userId) {
+      await this.safeCreate(
+        payload.userId,
+        'Event registration confirmed',
+        `You are registered for "${payload.title || 'an event'}".`,
+        NotificationType.SUCCESS,
+        { event: 'event.registered', eventId: payload.eventId },
+      );
+    }
+    if (payload?.organizerId && payload.organizerId !== payload.userId) {
+      await this.safeCreate(
+        payload.organizerId,
+        'New event registration',
+        `A participant registered for "${payload.title || 'your event'}".`,
+        NotificationType.INFO,
+        { event: 'event.registered', eventId: payload.eventId, userId: payload.userId },
+      );
+    }
+  }
+
+  @OnEvent('event.registration.cancelled')
+  async onEventRegistrationCancelled(payload: EventRegistrationPayload) {
+    if (payload?.userId) {
+      await this.safeCreate(
+        payload.userId,
+        'Event registration cancelled',
+        `Your registration for "${payload.title || 'an event'}" was cancelled.`,
+        NotificationType.WARNING,
+        { event: 'event.registration.cancelled', eventId: payload.eventId },
+      );
+    }
+    if (payload?.organizerId && payload.organizerId !== payload.userId) {
+      await this.safeCreate(
+        payload.organizerId,
+        'Event registration cancelled',
+        `A participant cancelled registration for "${payload.title || 'your event'}".`,
+        NotificationType.WARNING,
+        { event: 'event.registration.cancelled', eventId: payload.eventId, userId: payload.userId },
+      );
+    }
+  }
+
+  @OnEvent('payment.initiated')
+  async onPaymentInitiated(payload: PaymentPayload) {
+    if (!payload?.userId) return;
+    await this.safeCreate(
+      payload.userId,
+      'Payment initiated',
+      `Payment ${payload.reference || ''} was initiated for ${payload.currency || ''} ${payload.amount ?? 0}.`,
+      NotificationType.INFO,
+      {
+        event: 'payment.initiated',
+        reference: payload.reference,
+        transactionId: payload.transactionId,
+        type: payload.type,
+      },
+    );
+  }
+
+  @OnEvent('payment.status.changed')
+  async onPaymentStatusChanged(payload: PaymentPayload) {
+    if (!payload?.userId) return;
+    const status = (payload.status || 'pending').toLowerCase();
+    const type =
+      status === 'success'
+        ? NotificationType.SUCCESS
+        : status === 'failed' || status === 'cancelled'
+          ? NotificationType.ERROR
+          : NotificationType.INFO;
+
+    const context =
+      payload.type === 'event_registration'
+        ? 'event access payment'
+        : payload.type === 'product'
+          ? 'order payment'
+          : 'subscription payment';
+
+    await this.safeCreate(
+      payload.userId,
+      'Payment update',
+      `Your ${context} is now ${status}. Reference: ${payload.reference || 'n/a'}.`,
+      type,
+      {
+        event: 'payment.status.changed',
+        reference: payload.reference,
+        transactionId: payload.transactionId,
+        paymentStatus: status,
+        paymentType: payload.type,
+      },
     );
   }
 
