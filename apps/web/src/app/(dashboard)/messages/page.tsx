@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -34,11 +34,18 @@ async function emitWithAck<T>(socket: Socket, event: string, payload?: unknown):
 export default function MessagesPage() {
   const { accessToken, user } = useAuthStore();
   const socketRef = useRef<Socket | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
+  const typingPeerRef = useRef<string | null>(null);
+  const currentPeerIdRef = useRef<string>('');
+  const userIdRef = useRef<string | undefined>(user?.id);
 
   const [activePeerId, setActivePeerId] = useState<string | null>(null);
   const [directorySearch, setDirectorySearch] = useState('');
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
+  const [isPeerTyping, setIsPeerTyping] = useState(false);
 
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingThread, setIsLoadingThread] = useState(false);
@@ -49,6 +56,43 @@ export default function MessagesPage() {
 
   const currentPeerId = activePeerId || conversations[0]?.peerId || '';
   const baseUrl = useMemo(() => resolveSocketBaseUrl(), []);
+  const activeConversation = useMemo(
+    () => conversations.find((item) => item.peerId === currentPeerId),
+    [conversations, currentPeerId],
+  );
+
+  useEffect(() => {
+    currentPeerIdRef.current = currentPeerId;
+  }, [currentPeerId]);
+
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
+
+  const isUserOnline = useCallback(
+    (id: string) => onlineUserIds.includes(id),
+    [onlineUserIds],
+  );
+
+  const emitTypingStart = useCallback(async () => {
+    const socket = socketRef.current;
+    if (!socket || !currentPeerId) return;
+    if (isTypingRef.current && typingPeerRef.current === currentPeerId) return;
+
+    isTypingRef.current = true;
+    typingPeerRef.current = currentPeerId;
+    await emitWithAck(socket, 'typing.start', { peerId: currentPeerId }).catch(() => undefined);
+  }, [currentPeerId]);
+
+  const emitTypingStop = useCallback(async (explicitPeerId?: string) => {
+    const socket = socketRef.current;
+    const peerId = explicitPeerId || typingPeerRef.current || currentPeerId;
+    if (!socket || !peerId || !isTypingRef.current) return;
+
+    isTypingRef.current = false;
+    typingPeerRef.current = null;
+    await emitWithAck(socket, 'typing.stop', { peerId }).catch(() => undefined);
+  }, [currentPeerId]);
 
   const { data: directoryData, isLoading: isLoadingDirectory } = useQuery({
     queryKey: ['messages', 'directory', directorySearch],
@@ -82,17 +126,25 @@ export default function MessagesPage() {
       setMessage(error.message || 'Messaging socket connection failed');
     });
 
+    socket.on('presence.online', ({ userId }: { userId: string }) => {
+      setOnlineUserIds((prev) => (prev.includes(userId) ? prev : [...prev, userId]));
+    });
+
+    socket.on('presence.offline', ({ userId }: { userId: string }) => {
+      setOnlineUserIds((prev) => prev.filter((id) => id !== userId));
+    });
+
     socket.on('message.new', (incoming: DirectMessage) => {
-      const peerId = incoming.senderId === user?.id ? incoming.recipientId : incoming.senderId;
-      const isIncoming = incoming.recipientId === user?.id;
-      const isActiveThread = currentPeerId === peerId;
+      const currentUserId = userIdRef.current;
+      const activePeer = currentPeerIdRef.current;
+      const peerId = incoming.senderId === currentUserId ? incoming.recipientId : incoming.senderId;
+      const isIncoming = incoming.recipientId === currentUserId;
+      const isActiveThread = activePeer === peerId;
 
       setConversations((prev) => {
         const existing = prev.find((item) => item.peerId === peerId);
-        const peer = incoming.senderId === user?.id ? incoming.recipient : incoming.sender;
-        if (!peer) {
-          return prev;
-        }
+        const peer = incoming.senderId === currentUserId ? incoming.recipient : incoming.sender;
+        if (!peer) return prev;
 
         const nextItem: ConversationSummary = {
           peerId,
@@ -108,7 +160,7 @@ export default function MessagesPage() {
         return [nextItem, ...withoutCurrent];
       });
 
-      if (currentPeerId && (incoming.senderId === currentPeerId || incoming.recipientId === currentPeerId)) {
+      if (activePeer && (incoming.senderId === activePeer || incoming.recipientId === activePeer)) {
         setThread((prev) => [...prev, incoming]);
       }
 
@@ -121,17 +173,31 @@ export default function MessagesPage() {
       setThread((prev) => prev.map((item) => (item.id === messageId ? { ...item, readAt } : item)));
     });
 
+    socket.on('typing.start', ({ userId }: { userId: string }) => {
+      if (userId === currentPeerIdRef.current) {
+        setIsPeerTyping(true);
+      }
+    });
+
+    socket.on('typing.stop', ({ userId }: { userId: string }) => {
+      if (userId === currentPeerIdRef.current) {
+        setIsPeerTyping(false);
+      }
+    });
+
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [accessToken, baseUrl, currentPeerId, user?.id]);
+  }, [accessToken, baseUrl]);
 
   useEffect(() => {
     const socket = socketRef.current;
-    if (!socket || !accessToken) {
-      return;
-    }
+    if (!socket || !accessToken) return;
 
     const loadConversations = async () => {
       setIsLoadingConversations(true);
@@ -139,6 +205,8 @@ export default function MessagesPage() {
       try {
         const response = await emitWithAck<ConversationSummary[]>(socket, 'conversation.list');
         setConversations(response ?? []);
+        const online = await emitWithAck<string[]>(socket, 'presence.list');
+        setOnlineUserIds(online ?? []);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Failed to load conversations');
       } finally {
@@ -168,23 +236,22 @@ export default function MessagesPage() {
         const items = response?.items ?? [];
         setThread(items);
 
-        const unreadIncoming = items.filter(
-          (item) => item.recipientId === user?.id && !item.readAt,
-        );
+        const unreadIncoming = items.filter((item) => item.recipientId === user?.id && !item.readAt);
         if (unreadIncoming.length > 0) {
           await Promise.all(
             unreadIncoming.map((item) =>
               emitWithAck(socket, 'message.read', { messageId: item.id }).catch(() => undefined),
             ),
           );
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.peerId === currentPeerId
-                ? { ...conv, unreadCount: 0 }
-                : conv,
-            ),
-          );
         }
+
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.peerId === currentPeerId
+              ? { ...conv, unreadCount: 0 }
+              : conv,
+          ),
+        );
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Failed to load thread');
       } finally {
@@ -195,15 +262,40 @@ export default function MessagesPage() {
     loadThread();
   }, [currentPeerId, user?.id]);
 
-  const handleSend = async () => {
-    const socket = socketRef.current;
-    if (!socket || !currentPeerId || !draft.trim()) {
+  useEffect(() => {
+    setIsPeerTyping(false);
+  }, [currentPeerId]);
+
+  useEffect(() => {
+    if (!currentPeerId) return;
+
+    if (!draft.trim()) {
+      void emitTypingStop(currentPeerId);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
       return;
     }
+
+    void emitTypingStart();
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      void emitTypingStop(currentPeerId);
+      typingTimeoutRef.current = null;
+    }, 1200);
+  }, [draft, currentPeerId, emitTypingStart, emitTypingStop]);
+
+  const handleSend = async () => {
+    const socket = socketRef.current;
+    if (!socket || !currentPeerId || !draft.trim()) return;
 
     setMessage(null);
     setIsSending(true);
     try {
+      await emitTypingStop(currentPeerId);
       await emitWithAck<DirectMessage>(socket, 'message.send', {
         recipientId: currentPeerId,
         content: draft.trim(),
@@ -225,11 +317,10 @@ export default function MessagesPage() {
     };
 
     setActivePeerId(entry.id);
+    setIsPeerTyping(false);
     setConversations((prev) => {
       const existing = prev.find((conv) => conv.peerId === entry.id);
-      if (existing) {
-        return prev;
-      }
+      if (existing) return prev;
 
       const placeholderMessage: DirectMessage = {
         id: `draft-${entry.id}`,
@@ -293,9 +384,14 @@ export default function MessagesPage() {
                       onClick={() => handleStartChat(entry)}
                       className="w-full rounded-md border border-border px-2 py-1.5 text-left text-xs hover:bg-muted"
                     >
-                      <p className="font-medium">
-                        {entry.firstName} {entry.lastName}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${isUserOnline(entry.id) ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+                        />
+                        <p className="font-medium">
+                          {entry.firstName} {entry.lastName}
+                        </p>
+                      </div>
                       <p className="text-muted-foreground">{entry.role.replace('_', ' ')}</p>
                     </button>
                   ))}
@@ -327,7 +423,12 @@ export default function MessagesPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium">{conv.peer.firstName} {conv.peer.lastName}</p>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${isUserOnline(conv.peerId) ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+                        />
+                        <p className="font-medium">{conv.peer.firstName} {conv.peer.lastName}</p>
+                      </div>
                       {conv.unreadCount > 0 && (
                         <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                           {conv.unreadCount}
@@ -348,20 +449,51 @@ export default function MessagesPage() {
               <p className="text-sm text-muted-foreground">Select a conversation to view messages.</p>
             ) : (
               <>
+                <div className="mb-3 rounded-md border border-border bg-muted/20 px-3 py-2">
+                  <p className="text-sm font-medium">
+                    {activeConversation
+                      ? `${activeConversation.peer.firstName} ${activeConversation.peer.lastName}`
+                      : 'Conversation'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isUserOnline(currentPeerId) ? 'Online' : 'Offline'}
+                    {isPeerTyping ? ' - typing...' : ''}
+                  </p>
+                </div>
+
                 <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
                   {isLoadingThread ? (
                     <p className="text-sm text-muted-foreground">Loading messages...</p>
                   ) : thread.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No messages yet.</p>
                   ) : (
-                    thread.map((msg) => (
-                      <div key={msg.id} className="rounded-md border border-border bg-muted/20 p-3 text-sm">
-                        <p className="text-xs text-muted-foreground">
-                          {msg.sender?.firstName} {msg.sender?.lastName} - {new Date(msg.createdAt).toLocaleString()}
-                        </p>
-                        <p className="mt-1">{msg.content}</p>
-                      </div>
-                    ))
+                    thread.map((msg) => {
+                      const isMine = msg.senderId === user?.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                              isMine
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border border-border bg-muted/20'
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] ${
+                                isMine ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {new Date(msg.createdAt).toLocaleString()}
+                              {isMine && msg.readAt ? ' - seen' : ''}
+                            </p>
+                            <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
 
@@ -395,3 +527,4 @@ export default function MessagesPage() {
     </Card>
   );
 }
+

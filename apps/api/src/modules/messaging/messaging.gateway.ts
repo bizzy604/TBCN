@@ -34,6 +34,7 @@ interface SocketWithUser extends Socket {
 })
 export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(MessagingGateway.name);
+  private readonly userSockets = new Map<string, Set<string>>();
 
   @WebSocketServer()
   server: Server;
@@ -62,6 +63,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       };
 
       client.join(this.userRoom(payload.sub));
+      this.trackSocketConnected(payload.sub, client.id);
       this.logger.debug(`Socket connected: ${client.id} user=${payload.sub}`);
     } catch (error) {
       this.logger.warn(`Socket auth failed: ${error?.message ?? 'unknown error'}`);
@@ -71,7 +73,16 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   handleDisconnect(client: SocketWithUser): void {
+    if (client.user?.id) {
+      this.trackSocketDisconnected(client.user.id, client.id);
+    }
     this.logger.debug(`Socket disconnected: ${client.id}`);
+  }
+
+  @SubscribeMessage('presence.list')
+  async onPresenceList(@ConnectedSocket() client: SocketWithUser): Promise<string[]> {
+    this.requireUser(client);
+    return Array.from(this.userSockets.keys());
   }
 
   @SubscribeMessage('conversation.list')
@@ -133,6 +144,32 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     return message;
   }
 
+  @SubscribeMessage('typing.start')
+  async onTypingStart(
+    @ConnectedSocket() client: SocketWithUser,
+    @MessageBody() payload: { peerId: string },
+  ) {
+    const userId = this.requireUser(client);
+    if (!payload?.peerId) {
+      throw new WsException('peerId is required');
+    }
+    this.server.to(this.userRoom(payload.peerId)).emit('typing.start', { userId });
+    return { ok: true };
+  }
+
+  @SubscribeMessage('typing.stop')
+  async onTypingStop(
+    @ConnectedSocket() client: SocketWithUser,
+    @MessageBody() payload: { peerId: string },
+  ) {
+    const userId = this.requireUser(client);
+    if (!payload?.peerId) {
+      throw new WsException('peerId is required');
+    }
+    this.server.to(this.userRoom(payload.peerId)).emit('typing.stop', { userId });
+    return { ok: true };
+  }
+
   private requireUser(client: SocketWithUser): string {
     if (!client.user?.id) {
       throw new WsException('Unauthorized');
@@ -142,6 +179,32 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   private userRoom(userId: string): string {
     return `user:${userId}`;
+  }
+
+  private trackSocketConnected(userId: string, socketId: string): void {
+    const existing = this.userSockets.get(userId) ?? new Set<string>();
+    const wasOffline = existing.size === 0;
+    existing.add(socketId);
+    this.userSockets.set(userId, existing);
+
+    if (wasOffline) {
+      this.server.emit('presence.online', { userId });
+    }
+  }
+
+  private trackSocketDisconnected(userId: string, socketId: string): void {
+    const existing = this.userSockets.get(userId);
+    if (!existing) {
+      return;
+    }
+
+    existing.delete(socketId);
+    if (existing.size === 0) {
+      this.userSockets.delete(userId);
+      this.server.emit('presence.offline', { userId });
+    } else {
+      this.userSockets.set(userId, existing);
+    }
   }
 
   private extractToken(client: Socket): string | null {
