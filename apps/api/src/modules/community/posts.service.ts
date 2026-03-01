@@ -96,10 +96,11 @@ export class PostsService {
   }
 
   async listForModeration(limit = 50): Promise<Post[]> {
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 50;
     return this.postRepo.find({
       relations: ['author'],
       order: { createdAt: 'DESC' },
-      take: limit,
+      take: safeLimit,
     });
   }
 

@@ -12,6 +12,7 @@ import { FlutterwaveProcessor } from './processors/flutterwave.processor';
 import { MpesaProcessor } from './processors/mpesa.processor';
 import { PaypalProcessor } from './processors/paypal.processor';
 import { PaystackProcessor } from './processors/paystack.processor';
+import { CouponsModule } from '../coupons/coupons.module';
 
 /**
  * Payments Module
@@ -22,7 +23,10 @@ import { PaystackProcessor } from './processors/paystack.processor';
  * - Webhook handling
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Transaction, Subscription, WebhookEvent])],
+  imports: [
+    TypeOrmModule.forFeature([User, Transaction, Subscription, WebhookEvent]),
+    CouponsModule,
+  ],
   controllers: [PaymentsController, WebhooksController],
   providers: [
     PaymentsService,

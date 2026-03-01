@@ -50,6 +50,8 @@
 | Payments backend | Transactions, subscriptions, webhook event idempotency entities and service flows | `apps/api/src/modules/payments/` |
 | Multi-method processors | Stripe, Flutterwave, M-PESA, PayPal, Paystack processors | `apps/api/src/modules/payments/processors/` |
 | Checkout and confirmation UX | Payment initiation and callback confirmation pages | `apps/web/src/app/(dashboard)/settings/subscription/page.tsx`, `apps/web/src/app/(dashboard)/payments/confirmation/page.tsx` |
+| Coupon and discount engine | Admin coupon CRUD, validation endpoint, checkout auto-apply, usage analytics, expiry auto-disable scheduler | `apps/api/src/modules/coupons/`, `apps/api/src/modules/payments/payments.service.ts`, `apps/api/src/modules/products/orders.service.ts` |
+| E-commerce direct sales baseline | Products catalog/admin CRUD, order checkout initialization, purchase history, invoice payload, secure digital download entitlement controls | `apps/api/src/modules/products/` |
 
 ### Week 14 - Admin Dashboard and Analytics
 
@@ -87,6 +89,7 @@
 | Directory/File | Purpose | Status |
 |----------------|---------|--------|
 | `src/modules/payments/` | Payments/subscriptions/webhooks implementation | done |
+| `src/modules/coupons/` | Coupon CRUD, validation, redemptions, analytics, expiry automation | done |
 | `src/modules/analytics/` | Admin analytics events and aggregated metrics | done |
 | `src/modules/community/posts.controller.ts` | Moderation admin endpoints | done |
 | `src/modules/community/posts.service.ts` | Moderation list and lock logic | done |
@@ -99,6 +102,7 @@
 | `src/health/health.controller.ts` | Public health endpoint for monitoring | done |
 | `src/app.module.ts` | Global guard wiring (rate limiting + auth + roles) | done |
 | `test/payments.e2e-spec.ts` | Payments integration coverage including Paystack | done |
+| `test/coupons.e2e-spec.ts` | Coupons and discount checkout coverage | done |
 | `test/analytics.e2e-spec.ts` | Analytics integration coverage | done |
 | `test/load/smoke.k6.js` | Load smoke test script | done |
 
@@ -153,6 +157,8 @@
 | Module | Status | Entities | Endpoints | Tests |
 |--------|--------|----------|-----------|-------|
 | Payments | Implemented | Transaction, Subscription, WebhookEvent | checkout/callback/webhooks/transactions/subscription/admin | e2e |
+| Coupons | Implemented baseline | Coupon, CouponRedemption | coupons validate/admin CRUD/admin analytics | build-verified |
+| Products / Orders | Implemented baseline | Product, Order, OrderItem | products catalog/admin CRUD, orders create/history/invoice/download | build-verified |
 | Analytics | Implemented | AnalyticsEvent + aggregated joins | admin overview/activity | e2e |
 | Community Moderation | Implemented baseline | CommunityPost | moderation list/lock | build-verified |
 | Health | Implemented | n/a | `/health` | build-verified |
@@ -163,7 +169,11 @@
 
 ```text
 Member -> POST /payments/checkout -> PaymentsService -> Transaction saved -> checkoutUrl returned
+Member -> POST /coupons/validate -> CouponsService -> coupon eligibility and discount computed
+Member -> checkout with couponCode -> discount applied -> redemption tracked for analytics
 Provider/Web Redirect -> POST /payments/callback or /payments/webhooks/:provider -> status normalized -> transaction updated -> subscription upgraded
+Member -> POST /orders -> OrdersService -> payment checkout initialized -> order purchase history and invoice available
+Paid digital order -> POST /orders/:id/items/:itemId/download -> secure entitlement check -> download allowance consumed
 Admin -> GET /analytics/admin/overview -> AnalyticsService aggregate queries -> dashboard metrics payload
 Admin -> PATCH /community/posts/moderation/:id/lock -> PostsService -> post lock state updated
 Ops -> GET /health -> service status payload for uptime monitoring
@@ -184,6 +194,26 @@ Ops -> GET /health -> service status payload for uptime monitoring
 | `POST` | `/payments/subscription/upgrade` | JWT | Upgrade subscription | done |
 | `PATCH` | `/payments/subscription/cancel` | JWT | Cancel subscription | done |
 | `GET` | `/payments/admin/transactions` | Admin | List all transactions | done |
+| `POST` | `/coupons/validate` | JWT | Validate coupon in real time for checkout context | done |
+| `GET` | `/coupons` | Admin | List coupons with pagination/filtering | done |
+| `POST` | `/coupons` | Admin | Create coupon | done |
+| `PATCH` | `/coupons/:id` | Admin | Update coupon | done |
+| `PATCH` | `/coupons/:id/activate` | Admin | Activate coupon | done |
+| `PATCH` | `/coupons/:id/deactivate` | Admin | Deactivate coupon | done |
+| `GET` | `/coupons/admin/analytics` | Admin | Coupon redemption and discount analytics | done |
+| `GET` | `/products/catalog` | Public | List published store products | done |
+| `GET` | `/products/catalog/:id` | Public | Get published product details | done |
+| `GET` | `/products` | Admin | List all products | done |
+| `POST` | `/products` | Admin | Create product | done |
+| `PATCH` | `/products/:id` | Admin | Update product | done |
+| `PATCH` | `/products/:id/publish` | Admin | Publish product | done |
+| `PATCH` | `/products/:id/unpublish` | Admin | Unpublish product | done |
+| `POST` | `/orders` | JWT | Create order and initialize payment checkout | done |
+| `GET` | `/orders/me` | JWT | Get purchase history | done |
+| `GET` | `/orders/:id` | JWT | Get order details | done |
+| `GET` | `/orders/:id/invoice` | JWT | Get basic invoice payload | done |
+| `PATCH` | `/orders/:id/cancel` | JWT | Cancel pending order | done |
+| `POST` | `/orders/:id/items/:itemId/download` | JWT | Secure digital download entitlement | done |
 | `GET` | `/analytics/admin/overview` | Admin | Aggregated metrics | done |
 | `GET` | `/analytics/admin/activity` | Admin | Recent activity feed | done |
 | `GET` | `/community/posts/moderation/list` | Admin | Moderation queue/list | done |
@@ -196,7 +226,7 @@ Ops -> GET /health -> service status payload for uptime monitoring
 
 | Page | Route | Status | Key Components |
 |------|-------|--------|----------------|
-| Subscription Settings | `/settings/subscription` | done | plan cards, payment method selection, transaction table |
+| Subscription Settings | `/settings/subscription` | done | plan cards, payment method selection, coupon input, transaction table |
 | Payment Confirmation | `/payments/confirmation` | done | callback confirmation workflow |
 | Admin Overview | `/admin` | done | live metrics + activity widgets |
 | Admin Analytics | `/admin/analytics` | done | analytics charts/tables |
@@ -225,7 +255,8 @@ Ops -> GET /health -> service status payload for uptime monitoring
 | Metric | Value | Evidence Command |
 |--------|-------|------------------|
 | API build | pass | `cd apps/api && npm run build` |
-| Payments e2e | 1 suite, 4 passing | `cd apps/api && npm run test:e2e -- --runInBand test/payments.e2e-spec.ts` |
+| Payments e2e | 1 suite, 6 passing | `cd apps/api && npm run test:e2e -- --runInBand test/payments.e2e-spec.ts` |
+| Coupons e2e | 1 suite, 6 passing | `cd apps/api && npm run test:e2e -- --runInBand test/coupons.e2e-spec.ts` |
 | Analytics e2e | 1 suite, 2 passing | `cd apps/api && npm run test:e2e -- --runInBand test/analytics.e2e-spec.ts` |
 | Web build | pass | `cd apps/web && npm run build` |
 | Admin LMS build | pass | `cd apps/admin && npm run build` |

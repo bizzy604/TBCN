@@ -26,6 +26,8 @@ import { CommunityModule } from './modules/community/community.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { EventsModule } from './modules/events/events.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
+import { ProductsModule } from './modules/products/products.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PartnersModule } from './modules/partners/partners.module';
@@ -123,6 +125,8 @@ import { configValidationSchema } from './common/config/config.schema';
     MessagingModule,
     EventsModule,
     PaymentsModule,
+    CouponsModule,
+    ProductsModule,
     NotificationsModule,
     AnalyticsModule,
     PartnersModule,

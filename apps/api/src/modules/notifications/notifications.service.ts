@@ -31,13 +31,16 @@ export class NotificationsService {
   ) {}
 
   async listMine(userId: string, page = 1, limit = 20): Promise<PaginatedResult<Notification>> {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 20;
+
     const [items, total] = await this.notificationRepo.findAndCount({
       where: { userId },
       order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
     });
-    return createPaginatedResult(items, createPaginationMeta(page, limit, total));
+    return createPaginatedResult(items, createPaginationMeta(safePage, safeLimit, total));
   }
 
   async send(actor: Actor, dto: SendNotificationDto): Promise<Notification[]> {

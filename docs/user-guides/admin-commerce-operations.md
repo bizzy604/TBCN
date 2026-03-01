@@ -13,6 +13,13 @@
 2. Open `/admin/analytics` for deeper trend and activity checks.
 3. Monitor daily active users, bookings, enrollments, and revenue totals.
 
+## Coupon Operations
+
+1. Manage coupons through `/api/v1/coupons` admin endpoints (create/update/activate/deactivate).
+2. Track redemption performance through `/api/v1/coupons/admin/analytics`.
+3. Use usage caps (`maxTotalUses`, `maxUsesPerUser`) and expiry windows to control campaigns.
+4. Use `allowedPlans` and `applicableUserIds` for tier-specific or user-specific promotions.
+
 ## Moderation Workflow
 
 1. Open `/admin/moderation`.

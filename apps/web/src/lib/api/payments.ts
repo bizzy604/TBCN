@@ -55,6 +55,7 @@ export const paymentsApi = {
     description?: string;
     phone?: string;
     returnPath?: string;
+    couponCode?: string;
   }) => api.post<Transaction>('/payments/checkout', payload),
 
   upgradeSubscription: (payload: {
@@ -65,6 +66,7 @@ export const paymentsApi = {
     description?: string;
     phone?: string;
     returnPath?: string;
+    couponCode?: string;
   }) => api.post<Transaction>('/payments/subscription/upgrade', payload),
 
   confirmPayment: (payload: {

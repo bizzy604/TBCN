@@ -98,6 +98,7 @@ async function bootstrap() {
       .addTag('Community', 'Community Forums & Posts')
       .addTag('Events', 'Events & Masterclasses')
       .addTag('Payments', 'Payments & Subscriptions')
+      .addTag('Coupons', 'Coupon & Discount Management')
       .addTag('Certificates', 'Learning Certificates & Verification')
       .build();
 

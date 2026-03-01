@@ -48,4 +48,10 @@ export class InitiatePaymentDto {
   @IsOptional()
   @IsString()
   returnPath?: string;
+
+  @ApiPropertyOptional({ example: 'WELCOME20' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  couponCode?: string;
 }

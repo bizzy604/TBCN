@@ -64,6 +64,7 @@ function extractProvider(metadata: unknown): string | null {
 export default function SubscriptionSettingsPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [mpesaPhone, setMpesaPhone] = useState('');
+  const [couponCode, setCouponCode] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const { user } = useAuth();
@@ -124,6 +125,7 @@ export default function SubscriptionSettingsPage() {
         description: `Upgrade to ${planId} plan`,
         phone: paymentMethod === 'mpesa' ? phone : undefined,
         returnPath: '/settings/subscription',
+        couponCode: couponCode.trim() || undefined,
       });
 
       const provider = extractProvider(tx.metadata);
@@ -222,6 +224,17 @@ export default function SubscriptionSettingsPage() {
               <option value="flutterwave">Flutterwave</option>
               <option value="paypal">PayPal</option>
             </select>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <label className="block text-sm font-medium">Coupon Code (Optional)</label>
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="e.g. WELCOME20"
+              className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            />
           </div>
 
           {paymentMethod === 'mpesa' && (

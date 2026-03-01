@@ -106,6 +106,15 @@
 - [x] Implement webhook handlers and idempotency protections.
 - [x] Deliver checkout and payment confirmation UX.
 - [x] Deliver subscription management UX in settings.
+- [x] Implement `products/orders` e-commerce baseline for direct sales:
+- Product catalog and admin product management.
+- Order creation with checkout initialization.
+- Purchase history, invoice payload, and secure digital download entitlement lifecycle.
+- [x] Implement coupon and discount management (PRD FR-2.3):
+- Admin coupon CRUD and activation lifecycle.
+- Real-time coupon validation endpoint and checkout application for subscriptions/orders.
+- Usage caps, tier/user restrictions, redemption analytics, and expiry auto-disable job.
+- [ ] Implement physical shipping partner integrations and advanced inventory workflows (PRD FR-6.2) - phase 2.
 
 ### 4.2 Week 14: Admin Dashboard and Analytics
 

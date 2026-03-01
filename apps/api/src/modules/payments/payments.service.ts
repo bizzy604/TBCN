@@ -12,6 +12,8 @@ import {
   createPaginatedResult,
   createPaginationMeta,
 } from '../../common/dto';
+import { CouponContextType } from '../coupons/enums/coupon-context-type.enum';
+import { CouponsService } from '../coupons/coupons.service';
 import { User } from '../users/entities/user.entity';
 import { Transaction } from './entities/transaction.entity';
 import {
@@ -30,6 +32,15 @@ import { MpesaProcessor } from './processors/mpesa.processor';
 import { PaypalProcessor } from './processors/paypal.processor';
 import { PaystackProcessor } from './processors/paystack.processor';
 import { CheckoutInitInput, CheckoutInitResult } from './processors/processor.types';
+
+interface InitiateCheckoutOptions {
+  type?: string;
+  plan?: string;
+  description?: string;
+  returnPath?: string;
+  metadata?: Record<string, unknown>;
+  skipCoupon?: boolean;
+}
 
 @Injectable()
 export class PaymentsService {
@@ -50,6 +61,7 @@ export class PaymentsService {
     private readonly mpesaProcessor: MpesaProcessor,
     private readonly paystackProcessor: PaystackProcessor,
     private readonly paypalProcessor: PaypalProcessor,
+    private readonly couponsService: CouponsService,
   ) {}
 
   async getMySubscription(userId: string): Promise<Subscription> {
@@ -65,7 +77,11 @@ export class PaymentsService {
     }));
   }
 
-  async initiateCheckout(userId: string, dto: InitiatePaymentDto): Promise<Transaction> {
+  async initiateCheckout(
+    userId: string,
+    dto: InitiatePaymentDto,
+    options: InitiateCheckoutOptions = {},
+  ): Promise<Transaction> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException(`User "${userId}" not found`);
@@ -75,31 +91,100 @@ export class PaymentsService {
     const reference = `txn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const requestedCurrency = (dto.currency ?? 'KES').toUpperCase();
     const currency = this.resolveCheckoutCurrency(paymentMethod, requestedCurrency);
-    const plan = dto.plan ?? 'pro';
+    const originalAmount = this.roundMoney(dto.amount);
+    if (!Number.isFinite(originalAmount) || originalAmount < 0) {
+      throw new BadRequestException('Payment amount must be a valid non-negative number.');
+    }
+
+    const transactionType = options.type ?? 'subscription';
+    const plan = options.plan ?? dto.plan ?? 'pro';
     const checkoutPhone = dto.phone?.trim() || user.phone || undefined;
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    const returnPath = dto.returnPath ?? '/settings/subscription';
+    const returnPath = options.returnPath ?? dto.returnPath ?? '/settings/subscription';
     const provider = this.resolveProviderName(paymentMethod);
+    const description = options.description
+      ?? dto.description
+      ?? (transactionType === 'subscription'
+        ? `Upgrade subscription to ${plan}`
+        : 'Checkout payment');
+
+    const checkoutMetadata: Record<string, unknown> = {
+      userId,
+      returnPath,
+      ...options.metadata,
+    };
+
+    if (transactionType === 'subscription') {
+      checkoutMetadata.plan = plan;
+    }
+
+    let amountToCharge = originalAmount;
+    let appliedCoupon: Awaited<ReturnType<CouponsService['applyCoupon']>> | null = null;
+    if (dto.couponCode && !options.skipCoupon) {
+      appliedCoupon = await this.couponsService.applyCoupon({
+        userId,
+        code: dto.couponCode,
+        amount: originalAmount,
+        currency,
+        plan,
+      });
+      amountToCharge = appliedCoupon.finalAmount;
+      checkoutMetadata.coupon = {
+        code: appliedCoupon.code,
+        couponId: appliedCoupon.couponId,
+        discountType: appliedCoupon.discountType,
+        discountValue: appliedCoupon.discountValue,
+        discountAmount: appliedCoupon.discountAmount,
+        originalAmount: appliedCoupon.originalAmount,
+        finalAmount: appliedCoupon.finalAmount,
+      };
+    }
 
     if (dto.phone?.trim() && dto.phone.trim() !== user.phone) {
       user.phone = dto.phone.trim();
       await this.userRepo.save(user);
     }
 
+    if (amountToCharge <= 0) {
+      const transaction = await this.transactionRepo.save(this.transactionRepo.create({
+        userId,
+        reference,
+        paymentMethod,
+        status: PaymentStatus.SUCCESS,
+        amount: 0,
+        currency,
+        type: transactionType,
+        description,
+        providerTransactionId: null,
+        checkoutUrl: `${frontendUrl}/payments/confirmation?reference=${encodeURIComponent(reference)}&status=success&provider=internal`,
+        completedAt: new Date(),
+        metadata: {
+          provider: 'internal',
+          ...checkoutMetadata,
+        },
+      }));
+
+      if (transaction.type === 'subscription') {
+        await this.applySubscriptionUpgrade(transaction);
+      }
+
+      if (appliedCoupon) {
+        await this.recordCouponRedemptionSafe(transaction, appliedCoupon);
+      }
+
+      return transaction;
+    }
+
     const initInput: CheckoutInitInput = {
       reference,
-      amount: dto.amount,
+      amount: amountToCharge,
       currency,
-      description: dto.description ?? `Upgrade subscription to ${plan}`,
+      description,
       email: user.email,
       phone: checkoutPhone,
       callbackUrl: `${frontendUrl}/payments/confirmation?provider=${provider}`,
       webhookUrl: `${this.resolveApiPublicBaseUrl()}/payments/webhooks/${provider}`,
-      metadata: {
-        userId,
-        plan,
-        returnPath,
-      },
+      metadata: checkoutMetadata,
     };
 
     const checkoutTarget = await this.getCheckoutTarget(paymentMethod, initInput);
@@ -107,24 +192,29 @@ export class PaymentsService {
       ? checkoutTarget.checkoutUrl
       : `${frontendUrl}${checkoutTarget.checkoutUrl}`;
 
-    return this.transactionRepo.save(this.transactionRepo.create({
+    const transaction = await this.transactionRepo.save(this.transactionRepo.create({
       userId,
       reference,
       paymentMethod,
       status: checkoutTarget.status ?? PaymentStatus.PENDING,
-      amount: dto.amount,
+      amount: amountToCharge,
       currency,
-      type: 'subscription',
+      type: transactionType,
       description: initInput.description,
       providerTransactionId: checkoutTarget.providerTransactionId ?? null,
       checkoutUrl,
       metadata: {
-        plan,
-        returnPath,
         provider,
+        ...checkoutMetadata,
         providerPayload: checkoutTarget.providerPayload ?? {},
       },
     }));
+
+    if (appliedCoupon) {
+      await this.recordCouponRedemptionSafe(transaction, appliedCoupon);
+    }
+
+    return transaction;
   }
 
   async confirmCallback(dto: PaymentCallbackDto): Promise<Transaction> {
@@ -150,7 +240,7 @@ export class PaymentsService {
 
     if (resolution.status === PaymentStatus.SUCCESS) {
       transaction.completedAt = transaction.completedAt ?? new Date();
-      if (!wasSuccessful) {
+      if (!wasSuccessful && transaction.type === 'subscription') {
         await this.applySubscriptionUpgrade(transaction);
       }
     }
@@ -412,6 +502,36 @@ export class PaymentsService {
       where: { providerTransactionId },
     });
     return transaction?.reference;
+  }
+
+  private async recordCouponRedemptionSafe(
+    transaction: Transaction,
+    coupon: Awaited<ReturnType<CouponsService['applyCoupon']>>,
+  ): Promise<void> {
+    try {
+      const orderId = typeof transaction.metadata?.orderId === 'string'
+        ? transaction.metadata.orderId
+        : undefined;
+      await this.couponsService.recordRedemption({
+        ...coupon,
+        userId: transaction.userId,
+        contextType: transaction.type === 'subscription'
+          ? CouponContextType.SUBSCRIPTION
+          : CouponContextType.ORDER,
+        orderId,
+        transactionReference: transaction.reference,
+        metadata: {
+          transactionType: transaction.type,
+          transactionId: transaction.id,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to record coupon redemption for transaction "${transaction.reference}".`);
+    }
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 
   private normalizeStatus(value: string): PaymentStatus {

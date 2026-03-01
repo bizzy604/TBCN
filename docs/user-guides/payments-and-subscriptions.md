@@ -12,8 +12,10 @@
    - Flutterwave
    - Paystack
    - PayPal
-4. Click `Choose <Plan>`.
-5. Complete payment and return to the confirmation page.
+4. Optional: enter a coupon code to apply discount at checkout.
+5. If using M-PESA, enter your phone number (`07XXXXXXXX` or `2547XXXXXXXX`) to receive STK push.
+6. Click `Choose <Plan>`.
+7. Complete payment and return to the confirmation page.
 
 ## Confirm Payment
 
