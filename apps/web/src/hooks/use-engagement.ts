@@ -23,6 +23,7 @@ export const engagementKeys = {
   },
   notifications: {
     mine: (page = 1, limit = 20) => ['notifications', 'mine', page, limit] as const,
+    unreadCount: () => ['notifications', 'unread-count'] as const,
   },
 };
 
@@ -137,12 +138,20 @@ export function useNotifications(page = 1, limit = 20) {
   });
 }
 
+export function useUnreadNotificationsCount() {
+  return useQuery({
+    queryKey: engagementKeys.notifications.unreadCount(),
+    queryFn: () => notificationsApi.getUnreadCount(),
+  });
+}
+
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: engagementKeys.notifications.unreadCount() });
     },
   });
 }
@@ -153,6 +162,7 @@ export function useMarkAllNotificationsRead() {
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: engagementKeys.notifications.unreadCount() });
     },
   });
 }

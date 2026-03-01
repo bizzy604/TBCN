@@ -8,6 +8,8 @@ const crumbLabels: Record<string, string> = {
   partners: 'Partners',
   contact: 'Contact',
   programs: 'Programs',
+  store: 'Store',
+  orders: 'Orders',
   coaches: 'Coaches',
   events: 'Events',
   pricing: 'Pricing',
@@ -24,6 +26,8 @@ const crumbLabels: Record<string, string> = {
   subscription: 'Subscription',
   sessions: 'Sessions',
   notifications: 'Notifications',
+  products: 'Products',
+  coupons: 'Coupons',
   edit: 'Edit',
 };
 

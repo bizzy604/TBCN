@@ -12,15 +12,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@tbcn/shared';
 import { Public, Roles } from '../../common/decorators';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
+import { ProductQueryDto } from './dto/product-query.dto';
 import { ProductsService } from './products.service';
-import { ProductType } from './enums/product-type.enum';
-
-class ProductQueryDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-  type?: ProductType;
-}
 
 @ApiTags('Products')
 @Controller('products')

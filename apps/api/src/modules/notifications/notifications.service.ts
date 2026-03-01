@@ -15,6 +15,7 @@ import { Notification, NotificationType } from './entities/notification.entity';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { InAppChannel } from './channels/in-app.channel';
 import { EmailChannel } from './channels/email.channel';
+import { NotificationsGateway } from './notifications.gateway';
 
 interface Actor {
   id: string;
@@ -26,6 +27,7 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly notificationsGateway: NotificationsGateway,
     private readonly inAppChannel: InAppChannel,
     private readonly emailChannel: EmailChannel,
   ) {}
@@ -60,6 +62,8 @@ export class NotificationsService {
     await Promise.all(saved.map(async (n) => {
       await this.inAppChannel.send(n.userId, n.title);
       await this.emailChannel.send(n.userId, n.title);
+      this.notificationsGateway.emitNotification(n);
+      this.notificationsGateway.emitUnreadCount(n.userId, await this.getUnreadCountValue(n.userId));
     }));
 
     return saved;
@@ -79,7 +83,10 @@ export class NotificationsService {
       type,
       metadata,
     });
-    return this.notificationRepo.save(notification);
+    const saved = await this.notificationRepo.save(notification);
+    this.notificationsGateway.emitNotification(saved);
+    this.notificationsGateway.emitUnreadCount(userId, await this.getUnreadCountValue(userId));
+    return saved;
   }
 
   async markRead(id: string, userId: string): Promise<Notification> {
@@ -91,6 +98,8 @@ export class NotificationsService {
       notification.isRead = true;
       notification.readAt = new Date();
       await this.notificationRepo.save(notification);
+      this.notificationsGateway.emitNotificationRead(notification);
+      this.notificationsGateway.emitUnreadCount(userId, await this.getUnreadCountValue(userId));
     }
     return notification;
   }
@@ -107,6 +116,15 @@ export class NotificationsService {
       { id: In(pending.map((n) => n.id)) },
       { isRead: true, readAt: new Date() },
     );
+    this.notificationsGateway.emitUnreadCount(userId, 0);
     return { updated: pending.length };
+  }
+
+  async getUnreadCount(userId: string): Promise<{ unread: number }> {
+    return { unread: await this.getUnreadCountValue(userId) };
+  }
+
+  private async getUnreadCountValue(userId: string): Promise<number> {
+    return this.notificationRepo.count({ where: { userId, isRead: false } });
   }
 }

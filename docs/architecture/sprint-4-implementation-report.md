@@ -50,6 +50,7 @@
 | Payments backend | Transactions, subscriptions, webhook event idempotency entities and service flows | `apps/api/src/modules/payments/` |
 | Multi-method processors | Stripe, Flutterwave, M-PESA, PayPal, Paystack processors | `apps/api/src/modules/payments/processors/` |
 | Checkout and confirmation UX | Payment initiation and callback confirmation pages | `apps/web/src/app/(dashboard)/settings/subscription/page.tsx`, `apps/web/src/app/(dashboard)/payments/confirmation/page.tsx` |
+| E-commerce web UI | Store catalog + product checkout + orders management + admin commerce operations pages | `apps/web/src/app/(dashboard)/store/`, `apps/web/src/app/(dashboard)/orders/`, `apps/web/src/app/(admin)/admin/products/page.tsx`, `apps/web/src/app/(admin)/admin/coupons/page.tsx` |
 | Coupon and discount engine | Admin coupon CRUD, validation endpoint, checkout auto-apply, usage analytics, expiry auto-disable scheduler | `apps/api/src/modules/coupons/`, `apps/api/src/modules/payments/payments.service.ts`, `apps/api/src/modules/products/orders.service.ts` |
 | E-commerce direct sales baseline | Products catalog/admin CRUD, order checkout initialization, purchase history, invoice payload, secure digital download entitlement controls | `apps/api/src/modules/products/` |
 
@@ -112,10 +113,16 @@
 |----------------|---------|--------|
 | `src/app/(dashboard)/settings/subscription/page.tsx` | Subscription management and checkout initiation | done |
 | `src/app/(dashboard)/payments/confirmation/page.tsx` | Payment confirmation handling | done |
+| `src/app/(dashboard)/store/page.tsx` | Product catalog/storefront UI | done |
+| `src/app/(dashboard)/store/[id]/page.tsx` | Product detail and checkout initiation | done |
+| `src/app/(dashboard)/orders/page.tsx` | Order history and status tracking | done |
+| `src/app/(dashboard)/orders/[id]/page.tsx` | Order detail, invoice, and digital download actions | done |
 | `src/app/(admin)/admin/page.tsx` | Admin overview with live aggregates | done |
 | `src/app/(admin)/admin/analytics/page.tsx` | Detailed admin analytics page | done |
 | `src/app/(admin)/admin/moderation/page.tsx` | Moderation tooling UI | done |
 | `src/app/(admin)/admin/payments/page.tsx` | Admin payments operations page | done |
+| `src/app/(admin)/admin/products/page.tsx` | Admin product management UI | done |
+| `src/app/(admin)/admin/coupons/page.tsx` | Admin coupon management and analytics UI | done |
 | `src/app/(dashboard)/coach/workspace/page.tsx` | Coach-only operations workspace | done |
 | `src/app/(dashboard)/partner/workspace/page.tsx` | Partner-only operations workspace | done |
 | `src/app/(dashboard)/sessions/page.tsx` | Role-aware session actions (learner vs coach management) | done |
@@ -228,10 +235,16 @@ Ops -> GET /health -> service status payload for uptime monitoring
 |------|-------|--------|----------------|
 | Subscription Settings | `/settings/subscription` | done | plan cards, payment method selection, coupon input, transaction table |
 | Payment Confirmation | `/payments/confirmation` | done | callback confirmation workflow |
+| Store Catalog | `/store` | done | product listing and filtering |
+| Store Product Detail | `/store/[id]` | done | checkout form with payment method + coupon validation |
+| My Orders | `/orders` | done | purchase history, status filter, order navigation |
+| Order Detail | `/orders/[id]` | done | item breakdown, invoice summary, digital download actions |
 | Admin Overview | `/admin` | done | live metrics + activity widgets |
 | Admin Analytics | `/admin/analytics` | done | analytics charts/tables |
 | Admin Moderation | `/admin/moderation` | done | moderation actions (lock/unlock) |
 | Admin Payments | `/admin/payments` | done | transaction operations view |
+| Admin Products | `/admin/products` | done | create/edit/publish product operations |
+| Admin Coupons | `/admin/coupons` | done | create/edit/activate/deactivate coupon operations |
 
 ---
 

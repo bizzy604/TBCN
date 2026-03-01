@@ -19,6 +19,7 @@ export default function PaymentConfirmationPage() {
   const params = useSearchParams();
   const confirm = useConfirmPayment();
   const [resultMessage, setResultMessage] = useState<string>('Confirming payment status...');
+  const [isProductCheckout, setIsProductCheckout] = useState(false);
 
   const provider = (params.get('provider') || 'paystack').toLowerCase();
   const reference = params.get('reference') || params.get('trxref');
@@ -35,13 +36,26 @@ export default function PaymentConfirmationPage() {
     const run = async () => {
       try {
         const transaction = await confirm.mutateAsync({ reference, status });
+        setIsProductCheckout(transaction.type === 'product');
         if (active) {
           if (transaction.status === 'success') {
-            setResultMessage('Payment successful. Your subscription status has been updated.');
+            setResultMessage(
+              transaction.type === 'product'
+                ? 'Payment successful. Your order has been confirmed.'
+                : 'Payment successful. Your subscription status has been updated.',
+            );
           } else if (transaction.status === 'processing' || transaction.status === 'pending') {
-            setResultMessage('Payment is still processing. We will update your subscription as soon as confirmation is received.');
+            setResultMessage(
+              transaction.type === 'product'
+                ? 'Payment is still processing. Your order status will update once confirmation is received.'
+                : 'Payment is still processing. We will update your subscription as soon as confirmation is received.',
+            );
           } else {
-            setResultMessage(`Payment ${transaction.status}. Please retry from subscription settings if needed.`);
+            setResultMessage(
+              transaction.type === 'product'
+                ? `Payment ${transaction.status}. Please retry checkout from the store if needed.`
+                : `Payment ${transaction.status}. Please retry from subscription settings if needed.`,
+            );
           }
         }
       } catch (error: any) {
@@ -67,10 +81,10 @@ export default function PaymentConfirmationPage() {
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/settings/subscription"
+            href={isProductCheckout ? '/orders' : '/settings/subscription'}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Back to Subscription
+            {isProductCheckout ? 'View My Orders' : 'Back to Subscription'}
           </Link>
           <Link
             href="/dashboard"

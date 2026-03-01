@@ -1,4 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsEmail,
@@ -219,16 +220,19 @@ export class AdminUpdateUserDto extends PartialType(UpdateUserDto) {
  */
 export class UserQueryDto {
   @ApiProperty({ description: 'Search query', required: false })
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
   @IsOptional()
   @IsString()
   search?: string;
 
   @ApiProperty({ description: 'Filter by role', enum: UserRole, required: false })
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
 
   @ApiProperty({ description: 'Filter by status', enum: UserStatus, required: false })
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;

@@ -7,4 +7,6 @@ export * from './use-coaching';
 export * from './use-engagement';
 export * from './use-payments';
 export * from './use-analytics';
+export * from './use-commerce';
+export * from './use-notifications-realtime';
 

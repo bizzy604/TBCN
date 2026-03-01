@@ -19,6 +19,8 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   ShieldCheckIcon,
+  ShoppingBagIcon,
+  QueueListIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/lib/store';
 import {
@@ -52,6 +54,18 @@ const sidebarLinks: SidebarLink[] = [
     label: 'Programs',
     href: '/programs',
     icon: AcademicCapIcon,
+    roles: ['member', 'partner', 'coach', 'admin', 'super_admin'],
+  },
+  {
+    label: 'Store',
+    href: '/store',
+    icon: ShoppingBagIcon,
+    roles: ['member', 'partner', 'coach', 'admin', 'super_admin'],
+  },
+  {
+    label: 'Orders',
+    href: '/orders',
+    icon: QueueListIcon,
     roles: ['member', 'partner', 'coach', 'admin', 'super_admin'],
   },
   {

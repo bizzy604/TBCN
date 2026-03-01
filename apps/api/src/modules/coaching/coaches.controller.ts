@@ -20,12 +20,7 @@ import { AvailabilityService } from './availability.service';
 import { CoachingService } from './coaching.service';
 import { AvailabilityQueryDto, SetAvailabilityDto } from './dto/availability.dto';
 import { UpsertCoachProfileDto } from './dto/coach-profile.dto';
-
-class CoachesQueryDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
+import { CoachesQueryDto } from './dto/coaches-query.dto';
 
 const COACHING_USER_ROLES: UserRole[] = [
   UserRole.MEMBER,

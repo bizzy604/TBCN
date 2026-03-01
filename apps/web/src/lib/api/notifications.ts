@@ -27,9 +27,16 @@ export interface PaginatedNotifications {
   };
 }
 
+export interface UnreadNotificationsCount {
+  unread: number;
+}
+
 export const notificationsApi = {
   listMine: (page = 1, limit = 20) =>
     api.getRaw<PaginatedNotifications>('/notifications', { params: { page, limit } }),
+
+  getUnreadCount: () =>
+    api.get<UnreadNotificationsCount>('/notifications/unread-count'),
 
   markRead: (id: string) =>
     api.patch<NotificationItem>(`/notifications/${id}/read`),

@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AssessmentType, QuestionType } from '@tbcn/shared';
 import { AssessmentsService } from './assessments.service';
 import { AssessmentsRepository } from './assessments.repository';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 describe('AssessmentsService', () => {
   let service: AssessmentsService;
@@ -26,11 +27,16 @@ describe('AssessmentsService', () => {
     emit: jest.fn(),
   };
 
+  const mockEnrollmentsService = {
+    findByIdForViewer: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AssessmentsService,
         { provide: AssessmentsRepository, useValue: mockRepository },
+        { provide: EnrollmentsService, useValue: mockEnrollmentsService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
@@ -172,4 +178,3 @@ describe('AssessmentsService', () => {
     });
   });
 });
-

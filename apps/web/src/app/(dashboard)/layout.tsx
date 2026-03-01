@@ -5,7 +5,9 @@ import { ProtectedRoute } from '@/components/auth';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline';
+import { useUnreadNotificationsCount } from '@/hooks/use-engagement';
+import { useNotificationsRealtime } from '@/hooks';
 
 export default function DashboardLayout({
   children,
@@ -14,6 +16,9 @@ export default function DashboardLayout({
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  useNotificationsRealtime();
+  const { data: unreadData } = useUnreadNotificationsCount();
+  const unreadCount = unreadData?.unread ?? 0;
 
   return (
     <ProtectedRoute>
@@ -45,6 +50,18 @@ export default function DashboardLayout({
 
               {/* User menu */}
               <div className="flex items-center gap-4">
+                <Link
+                  href="/notifications"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg text-foreground hover:bg-muted transition-colors"
+                  title="Notifications"
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-destructive px-1 text-center text-[10px] font-semibold text-destructive-foreground">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
                 <Link
                   href="/settings/profile"
                   className="flex items-center gap-2 text-foreground hover:text-primary"

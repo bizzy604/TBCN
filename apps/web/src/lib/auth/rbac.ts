@@ -14,6 +14,8 @@ export const AUTHENTICATED_ROLES: AppRole[] = [
 const AUTH_REQUIRED_PREFIXES = [
   '/dashboard',
   '/programs',
+  '/store',
+  '/orders',
   '/enrollments',
   '/coaches',
   '/sessions',

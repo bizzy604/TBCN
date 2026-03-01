@@ -110,6 +110,10 @@
 - Product catalog and admin product management.
 - Order creation with checkout initialization.
 - Purchase history, invoice payload, and secure digital download entitlement lifecycle.
+- [x] Deliver e-commerce UI surfaces:
+- Member store catalog and product checkout flow.
+- Member orders history/detail/invoice/download screens.
+- Admin product and coupon management pages.
 - [x] Implement coupon and discount management (PRD FR-2.3):
 - Admin coupon CRUD and activation lifecycle.
 - Real-time coupon validation endpoint and checkout application for subscriptions/orders.

@@ -31,6 +31,14 @@ export interface UpdateUserData {
   locale?: string;
 }
 
+export interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role?: string;
+}
+
 /**
  * Users API
  * User profile and management API calls
@@ -87,7 +95,20 @@ export const usersApi = {
     role?: string;
     status?: string;
   }): Promise<PaginatedResponse<User>> {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<User>>>('/users', { params });
+    const cleanParams = params
+      ? Object.fromEntries(
+          Object.entries(params).filter(([, value]) => value !== '' && value !== undefined && value !== null),
+        )
+      : undefined;
+    const response = await apiClient.get<ApiResponse<PaginatedResponse<User>>>('/users', { params: cleanParams });
+    return response.data.data;
+  },
+
+  /**
+   * Create user (admin)
+   */
+  async create(data: CreateUserData): Promise<User> {
+    const response = await apiClient.post<ApiResponse<User>>('/users', data);
     return response.data.data;
   },
 

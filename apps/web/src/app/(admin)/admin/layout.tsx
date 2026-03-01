@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AdminRoute } from '@/components/auth';
-import { useAuth } from '@/hooks';
+import { useAuth, useNotificationsRealtime } from '@/hooks';
+import { useUnreadNotificationsCount } from '@/hooks/use-engagement';
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +13,8 @@ import {
   Calendar,
   MessageSquare,
   CreditCard,
+  ShoppingBag,
+  TicketPercent,
   BarChart3,
   Settings,
   Shield,
@@ -29,6 +32,8 @@ const navItems = [
   { href: '/admin/coaching', icon: Calendar, label: 'Coaching' },
   { href: '/admin/community', icon: MessageSquare, label: 'Community' },
   { href: '/admin/payments', icon: CreditCard, label: 'Payments' },
+  { href: '/admin/products', icon: ShoppingBag, label: 'Products' },
+  { href: '/admin/coupons', icon: TicketPercent, label: 'Coupons' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/admin/moderation', icon: Shield, label: 'Moderation' },
   { href: '/admin/settings', icon: Settings, label: 'Settings' },
@@ -42,6 +47,9 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  useNotificationsRealtime();
+  const { data: unreadData } = useUnreadNotificationsCount();
+  const unreadCount = unreadData?.unread ?? 0;
 
   return (
     <AdminRoute>
@@ -143,10 +151,17 @@ export default function AdminLayout({
 
             <div className="flex items-center gap-4">
               {/* Notifications */}
-              <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg">
+              <Link
+                href="/notifications"
+                className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+              >
                 <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              </button>
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-destructive px-1 text-center text-[10px] font-semibold text-destructive-foreground">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
 
               {/* Go to main site */}
               <Link
