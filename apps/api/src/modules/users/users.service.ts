@@ -14,7 +14,7 @@ import {
   UpdateProfileDto,
   AdminUpdateUserDto,
   UserQueryDto,
-} from './dto';
+} from './dto/user.dto';
 
 // Domain events
 export const USER_EVENTS = {

@@ -15,12 +15,14 @@ import {
   UserPlus,
   FileText,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';
 import {
   adminProgramsApi,
   adminEnrollmentsApi,
   adminUsersApi,
+  getAdminUserFromCookie,
+  PLATFORM_ADMIN_ROLES,
   type ProgramStats,
 } from '@/lib/api/admin-api';
 
@@ -38,31 +40,109 @@ export default function DashboardPage() {
   const [programStats, setProgramStats] = useState<ProgramStats | null>(null);
   const [enrollmentStats, setEnrollmentStats] = useState<EnrollmentStats | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isPlatformAdmin = role
+    ? PLATFORM_ADMIN_ROLES.includes(role as (typeof PLATFORM_ADMIN_ROLES)[number])
+    : false;
 
   useEffect(() => {
     async function fetchStats() {
+      const currentUser = getAdminUserFromCookie();
+      setRole(currentUser?.role ?? null);
+
+      const currentUserIsPlatformAdmin = currentUser
+        ? PLATFORM_ADMIN_ROLES.includes(
+            currentUser.role as (typeof PLATFORM_ADMIN_ROLES)[number],
+          )
+        : false;
+
       try {
-        const [programs, enrollments, users] = await Promise.allSettled([
-          adminProgramsApi.getStats(),
-          adminEnrollmentsApi.getStats(),
-          adminUsersApi.getStats(),
+        if (currentUserIsPlatformAdmin) {
+          const [programs, enrollments, users] = await Promise.allSettled([
+            adminProgramsApi.getStats(),
+            adminEnrollmentsApi.getStats(),
+            adminUsersApi.getStats(),
+          ]);
+
+          if (programs.status === 'fulfilled') setProgramStats(programs.value);
+          if (enrollments.status === 'fulfilled') setEnrollmentStats(enrollments.value);
+          if (users.status === 'fulfilled') setUserStats(users.value);
+          return;
+        }
+
+        // Coach-safe path: build LMS stats from coach-allowed endpoints.
+        const [allPrograms, publishedPrograms, draftPrograms] = await Promise.allSettled([
+          adminProgramsApi.getAll({ page: 1, limit: 1 }),
+          adminProgramsApi.getAll({ page: 1, limit: 1, status: 'published' }),
+          adminProgramsApi.getAll({ page: 1, limit: 1, status: 'draft' }),
         ]);
-        if (programs.status === 'fulfilled') setProgramStats(programs.value);
-        if (enrollments.status === 'fulfilled') setEnrollmentStats(enrollments.value);
-        if (users.status === 'fulfilled') setUserStats(users.value);
+
+        setProgramStats({
+          total: allPrograms.status === 'fulfilled' ? allPrograms.value.meta.total : 0,
+          published:
+            publishedPrograms.status === 'fulfilled'
+              ? publishedPrograms.value.meta.total
+              : 0,
+          draft: draftPrograms.status === 'fulfilled' ? draftPrograms.value.meta.total : 0,
+          totalEnrollments: 0,
+        });
       } finally {
         setLoading(false);
       }
     }
+
     fetchStats();
   }, []);
 
   const totalUsers = userStats
-    ? Object.values(userStats).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)
+    ? Object.values(userStats).reduce(
+        (sum, count) => sum + (typeof count === 'number' ? count : 0),
+        0,
+      )
     : 0;
 
-  const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString() : '0');
+  const fmt = (n: number | null | undefined) =>
+    typeof n === 'number' ? n.toLocaleString() : '0';
+
+  const quickActions = [
+    {
+      href: '/programs/new',
+      icon: <FileText size={18} />,
+      title: 'Create Program',
+      description: 'Add a new learning program',
+      adminOnly: false,
+    },
+    {
+      href: '/programs',
+      icon: <BookOpen size={18} />,
+      title: 'Manage Programs',
+      description: 'Edit curriculum and publish updates',
+      adminOnly: false,
+    },
+    {
+      href: '/users',
+      icon: <UserPlus size={18} />,
+      title: 'Manage Users',
+      description: `${fmt(totalUsers)} registered users`,
+      adminOnly: true,
+    },
+    {
+      href: '/content-moderation',
+      icon: <ShieldCheck size={18} />,
+      title: 'Content Moderation',
+      description: 'Review flagged content',
+      adminOnly: true,
+    },
+    {
+      href: '/settings',
+      icon: <Settings size={18} />,
+      title: 'Platform Settings',
+      description: 'Configure system preferences',
+      adminOnly: true,
+    },
+  ].filter((action) => (action.adminOnly ? isPlatformAdmin : true));
 
   if (loading) {
     return (
@@ -75,131 +155,150 @@ export default function DashboardPage() {
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here&apos;s what&apos;s happening with your platform.
+            {isPlatformAdmin
+              ? "Welcome back! Here's what's happening with your platform."
+              : "Welcome back! Here's what's happening with your learning programs."}
           </p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <DashboardCard
-            title="Total Users"
-            value={fmt(totalUsers)}
-            description={`${fmt(userStats?.coach ?? 0)} coaches · ${fmt(userStats?.member ?? 0)} members`}
-            icon={Users}
-            variant="primary"
-          />
-          <DashboardCard
-            title="Active Enrollments"
-            value={fmt(enrollmentStats?.totalActive)}
-            description={`${fmt(enrollmentStats?.totalCompleted)} completed`}
-            icon={GraduationCap}
-            variant="secondary"
-          />
-          <DashboardCard
-            title="Published Programs"
-            value={programStats?.published?.toString() ?? '0'}
-            description={`${programStats?.draft ?? 0} drafts · ${programStats?.total ?? 0} total`}
-            icon={BookOpen}
-            variant="accent"
-          />
-          <DashboardCard
-            title="Total Enrollments"
-            value={fmt(programStats?.totalEnrollments)}
-            description={`${enrollmentStats?.totalDropped ?? 0} dropped`}
-            icon={BarChart3}
-            variant="default"
-          />
+          {isPlatformAdmin ? (
+            <>
+              <DashboardCard
+                title="Total Users"
+                value={fmt(totalUsers)}
+                description={`${fmt(userStats?.coach ?? 0)} coaches - ${fmt(userStats?.member ?? 0)} members`}
+                icon={Users}
+                variant="primary"
+              />
+              <DashboardCard
+                title="Active Enrollments"
+                value={fmt(enrollmentStats?.totalActive)}
+                description={`${fmt(enrollmentStats?.totalCompleted)} completed`}
+                icon={GraduationCap}
+                variant="secondary"
+              />
+              <DashboardCard
+                title="Published Programs"
+                value={programStats?.published?.toString() ?? '0'}
+                description={`${programStats?.draft ?? 0} drafts - ${programStats?.total ?? 0} total`}
+                icon={BookOpen}
+                variant="accent"
+              />
+              <DashboardCard
+                title="Total Enrollments"
+                value={fmt(programStats?.totalEnrollments)}
+                description={`${enrollmentStats?.totalDropped ?? 0} dropped`}
+                icon={BarChart3}
+                variant="default"
+              />
+            </>
+          ) : (
+            <>
+              <DashboardCard
+                title="Total Programs"
+                value={fmt(programStats?.total)}
+                description="Programs visible in LMS"
+                icon={BookOpen}
+                variant="primary"
+              />
+              <DashboardCard
+                title="Published Programs"
+                value={fmt(programStats?.published)}
+                description="Live programs for members"
+                icon={BarChart3}
+                variant="secondary"
+              />
+              <DashboardCard
+                title="Draft Programs"
+                value={fmt(programStats?.draft)}
+                description="Ready for review or publish"
+                icon={FileText}
+                variant="accent"
+              />
+              <DashboardCard
+                title="Role"
+                value="Coach"
+                description="LMS content operations scope"
+                icon={GraduationCap}
+                variant="default"
+              />
+            </>
+          )}
         </div>
 
-        {/* Two-column: User Breakdown + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          {/* User Breakdown */}
-          <Card className="lg:col-span-4">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>User Breakdown</CardTitle>
-                  <CardDescription>Users by role</CardDescription>
+          {isPlatformAdmin && (
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>User Breakdown</CardTitle>
+                    <CardDescription>Users by role</CardDescription>
+                  </div>
+                  <Link href="/users" className="text-sm text-primary hover:underline">
+                    View all
+                  </Link>
                 </div>
-                <Link href="/users" className="text-sm text-primary hover:underline">
-                  View all
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!userStats || totalUsers === 0 ? (
-                <EmptyState message="No user data available" />
-              ) : (
-                <div className="space-y-3">
-                  {[
-                    { label: 'Members', key: 'member', color: 'bg-primary' },
-                    { label: 'Coaches', key: 'coach', color: 'bg-green-500' },
-                    { label: 'Partners', key: 'partner', color: 'bg-blue-500' },
-                    { label: 'Admins', key: 'admin', color: 'bg-orange-500' },
-                    { label: 'Super Admins', key: 'super_admin', color: 'bg-red-500' },
-                  ].map(({ label, key, color }) => {
-                    const count = userStats[key] ?? 0;
-                    const pct = totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0;
-                    return (
-                      <div key={key} className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground w-28 shrink-0">{label}</span>
-                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${color} transition-all`}
-                            style={{ width: `${pct}%` }}
-                          />
+              </CardHeader>
+              <CardContent>
+                {!userStats || totalUsers === 0 ? (
+                  <EmptyState message="No user data available" />
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Members', key: 'member', color: 'bg-primary' },
+                      { label: 'Coaches', key: 'coach', color: 'bg-green-500' },
+                      { label: 'Partners', key: 'partner', color: 'bg-blue-500' },
+                      { label: 'Admins', key: 'admin', color: 'bg-orange-500' },
+                      { label: 'Super Admins', key: 'super_admin', color: 'bg-red-500' },
+                    ].map(({ label, key, color }) => {
+                      const count = userStats[key] ?? 0;
+                      const pct = totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0;
+                      return (
+                        <div key={key} className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground w-28 shrink-0">{label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${color} transition-all`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium w-16 text-right">{fmt(count)}</span>
                         </div>
-                        <span className="text-sm font-medium w-16 text-right">{fmt(count)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Quick Actions */}
-          <Card className="lg:col-span-3">
+          <Card className={isPlatformAdmin ? 'lg:col-span-3' : 'lg:col-span-7'}>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common admin tasks</CardDescription>
+              <CardDescription>
+                {isPlatformAdmin ? 'Common admin tasks' : 'Common coaching tasks'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <QuickAction
-                href="/programs/new"
-                icon={<FileText size={18} />}
-                title="Create Program"
-                description="Add a new learning program"
-              />
-              <QuickAction
-                href="/users"
-                icon={<UserPlus size={18} />}
-                title="Manage Users"
-                description={`${fmt(totalUsers)} registered users`}
-              />
-              <QuickAction
-                href="/content-moderation"
-                icon={<ShieldCheck size={18} />}
-                title="Content Moderation"
-                description="Review flagged content"
-              />
-              <QuickAction
-                href="/settings"
-                icon={<Settings size={18} />}
-                title="Platform Settings"
-                description="Configure system preferences"
-              />
+              {quickActions.map((action) => (
+                <QuickAction
+                  key={action.href}
+                  href={action.href}
+                  icon={action.icon}
+                  title={action.title}
+                  description={action.description}
+                />
+              ))}
             </CardContent>
           </Card>
         </div>
 
-        {/* Bottom row: Programs Overview + System Status */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Programs Overview */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -238,61 +337,73 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Enrollment Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Enrollment Overview</CardTitle>
-              <CardDescription>Current enrollment status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!enrollmentStats ? (
-                <EmptyState message="No enrollment data available" />
-              ) : (
-                <div className="space-y-4">
-                  {[
-                    { label: 'Active', value: enrollmentStats.totalActive, color: 'bg-primary' },
-                    { label: 'Completed', value: enrollmentStats.totalCompleted, color: 'bg-green-500' },
-                    { label: 'Dropped', value: enrollmentStats.totalDropped ?? 0, color: 'bg-red-500' },
-                  ].map(({ label, value, color }) => {
-                    const total =
-                      enrollmentStats.totalActive +
-                      enrollmentStats.totalCompleted +
-                      (enrollmentStats.totalDropped ?? 0);
-                    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                    return (
-                      <div key={label} className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground w-24 shrink-0">{label}</span>
-                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${color} transition-all`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium w-16 text-right">{fmt(value)}</span>
-                      </div>
-                    );
-                  })}
-                  <div className="pt-2 border-t border-border text-center">
-                    <p className="text-sm text-muted-foreground">
-                      {fmt(
+          {isPlatformAdmin ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Enrollment Overview</CardTitle>
+                <CardDescription>Current enrollment status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!enrollmentStats ? (
+                  <EmptyState message="No enrollment data available" />
+                ) : (
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Active', value: enrollmentStats.totalActive, color: 'bg-primary' },
+                      { label: 'Completed', value: enrollmentStats.totalCompleted, color: 'bg-green-500' },
+                      { label: 'Dropped', value: enrollmentStats.totalDropped ?? 0, color: 'bg-red-500' },
+                    ].map(({ label, value, color }) => {
+                      const total =
                         enrollmentStats.totalActive +
-                          enrollmentStats.totalCompleted +
-                          (enrollmentStats.totalDropped ?? 0)
-                      )}{' '}
-                      total enrollments
-                    </p>
+                        enrollmentStats.totalCompleted +
+                        (enrollmentStats.totalDropped ?? 0);
+                      const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+
+                      return (
+                        <div key={label} className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground w-24 shrink-0">{label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${color} transition-all`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium w-16 text-right">{fmt(value)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="pt-2 border-t border-border text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {fmt(
+                          enrollmentStats.totalActive +
+                            enrollmentStats.totalCompleted +
+                            (enrollmentStats.totalDropped ?? 0),
+                        )}{' '}
+                        total enrollments
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Coach Workspace</CardTitle>
+                <CardDescription>Your scope in this portal</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>- Create and manage your programs, modules, lessons, and assessments.</p>
+                <p>- Publish programs when they are ready.</p>
+                <p>- Platform governance areas (users, settings, moderation) are admin-only.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </Card>
   );
 }
-
-/* ─── Sub-components ─── */
 
 function QuickAction({
   href,
@@ -353,19 +464,40 @@ function ProgramDonut({ stats }: { stats: ProgramStats }) {
   return (
     <div className="relative w-40 h-40">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted" />
+        <circle
+          cx="50"
+          cy="50"
+          r="38"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="12"
+          className="text-muted"
+        />
         {publishedArc > 0 && (
           <circle
-            cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12"
-            className="text-primary" strokeDasharray={`${publishedArc} ${circumference - publishedArc}`}
+            cx="50"
+            cy="50"
+            r="38"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="12"
+            className="text-primary"
+            strokeDasharray={`${publishedArc} ${circumference - publishedArc}`}
             strokeLinecap="round"
           />
         )}
         {draftArc > 0 && (
           <circle
-            cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12"
-            className="text-muted-foreground" strokeDasharray={`${draftArc} ${circumference - draftArc}`}
-            strokeDashoffset={`${-publishedArc}`} strokeLinecap="round"
+            cx="50"
+            cy="50"
+            r="38"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="12"
+            className="text-muted-foreground"
+            strokeDasharray={`${draftArc} ${circumference - draftArc}`}
+            strokeDashoffset={`${-publishedArc}`}
+            strokeLinecap="round"
           />
         )}
       </svg>

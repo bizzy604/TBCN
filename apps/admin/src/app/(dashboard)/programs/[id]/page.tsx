@@ -11,7 +11,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { adminProgramsApi, type Program, type Lesson } from '@/lib/api/admin-api';
+import {
+  adminProgramsApi,
+  getAdminUserFromCookie,
+  PLATFORM_ADMIN_ROLES,
+  type Program,
+  type Lesson,
+} from '@/lib/api/admin-api';
 import { AssessmentEditor } from '@/components/assessments/AssessmentEditor';
 
 function StatusBadge({ status }: { status: string }) {
@@ -33,8 +39,16 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   useEffect(() => {
+    const user = getAdminUserFromCookie();
+    setIsPlatformAdmin(
+      user
+        ? PLATFORM_ADMIN_ROLES.includes(user.role as (typeof PLATFORM_ADMIN_ROLES)[number])
+        : false,
+    );
+
     adminProgramsApi
       .getById(resolvedParams.id)
       .then(setProgram)
@@ -127,13 +141,17 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
             <Button onClick={handlePublish}>Publish</Button>
           )}
           {program.status === 'published' && (
-            <Button variant="outline" onClick={handleArchive}>
-              Archive
+            isPlatformAdmin ? (
+              <Button variant="outline" onClick={handleArchive}>
+                Archive
+              </Button>
+            ) : null
+          )}
+          {isPlatformAdmin && (
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
             </Button>
           )}
-          <Button variant="destructive" onClick={handleDelete}>
-            Delete
-          </Button>
         </div>
       </div>
 

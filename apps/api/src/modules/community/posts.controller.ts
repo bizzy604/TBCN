@@ -29,6 +29,14 @@ class ModerationLockDto {
   locked: boolean;
 }
 
+const COMMUNITY_MEMBER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
 @ApiTags('Community')
 @Controller('community/posts')
 export class PostsController {
@@ -53,6 +61,7 @@ export class PostsController {
 
   @HttpPost()
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COMMUNITY_MEMBER_ROLES)
   async create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreatePostDto,
@@ -62,6 +71,7 @@ export class PostsController {
 
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COMMUNITY_MEMBER_ROLES)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
@@ -73,6 +83,7 @@ export class PostsController {
 
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COMMUNITY_MEMBER_ROLES)
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
@@ -90,6 +101,7 @@ export class PostsController {
 
   @HttpPost(':id/comments')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COMMUNITY_MEMBER_ROLES)
   async addComment(
     @Param('id', ParseUUIDPipe) postId: string,
     @CurrentUser('id') userId: string,
@@ -100,6 +112,7 @@ export class PostsController {
 
   @HttpPost(':id/reactions')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COMMUNITY_MEMBER_ROLES)
   async toggleReaction(
     @Param('id', ParseUUIDPipe) postId: string,
     @CurrentUser('id') userId: string,

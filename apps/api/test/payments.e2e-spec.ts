@@ -74,4 +74,55 @@ describe('PaymentsController (e2e)', () => {
         expect(res.body).toHaveProperty('checkoutUrl');
       });
   });
+
+  it('should reject mpesa checkout when user profile has no phone number', () => {
+    return request(app.getHttpServer())
+      .post(`${API_PREFIX}/payments/checkout`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        amount: 29.99,
+        currency: 'KES',
+        paymentMethod: 'mpesa',
+        plan: 'pro',
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(String(res.body.message || '')).toContain('phone number');
+      });
+  });
+
+  it('should initiate mpesa checkout when phone number is provided in payload', () => {
+    return request(app.getHttpServer())
+      .post(`${API_PREFIX}/payments/checkout`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        amount: 29.99,
+        currency: 'KES',
+        paymentMethod: 'mpesa',
+        phone: '0712345678',
+        plan: 'pro',
+      })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.paymentMethod).toBe('mpesa');
+        expect(res.body.status).toBe('processing');
+      });
+  });
+
+  it('should initiate paystack checkout for authenticated user', () => {
+    return request(app.getHttpServer())
+      .post(`${API_PREFIX}/payments/checkout`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        amount: 29.99,
+        currency: 'USD',
+        paymentMethod: 'paystack',
+        plan: 'pro',
+      })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.paymentMethod).toBe('paystack');
+        expect(res.body.checkoutUrl).toContain('/payments/confirmation');
+      });
+  });
 });

@@ -19,9 +19,12 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import type { Enrollment } from '@/lib/api/enrollments';
+import { canAccessPartnerWorkspace, canManageCoachingSessions } from '@/lib/auth/rbac';
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const canManageSessions = canManageCoachingSessions(user?.role ?? null);
+  const canOpenPartnerWorkspace = canAccessPartnerWorkspace(user?.role ?? null);
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useMyEnrollments(1, 50);
   const { data: catalogData, isLoading: catalogLoading } = useProgramCatalog({ limit: 100 });
 
@@ -76,10 +79,10 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back, {user?.firstName || 'Coach'}!
+          Welcome back, {user?.firstName || 'Member'}!
         </h1>
         <p className="text-muted-foreground">
-          Here&apos;s an overview of your learning journey and activity.
+          Role: {user?.role?.replace('_', ' ') || 'member'}.
         </p>
       </div>
 
@@ -212,7 +215,7 @@ export default function DashboardPage() {
               href="/community"
               icon={<MessageSquare size={18} />}
               title="Community"
-              description="Connect with other coaches"
+              description="Connect with other members"
             />
             <QuickAction
               href="/settings/profile"
@@ -220,6 +223,30 @@ export default function DashboardPage() {
               title="Edit Profile"
               description="Complete your account setup"
             />
+            {canManageSessions && (
+              <QuickAction
+                href="/coach/workspace"
+                icon={<Calendar size={18} />}
+                title="Coach Workspace"
+                description="Manage mentee sessions and delivery"
+              />
+            )}
+            {canOpenPartnerWorkspace && (
+              <QuickAction
+                href="/partner/workspace"
+                icon={<Users size={18} />}
+                title="Partner Workspace"
+                description="Manage organizational activities"
+              />
+            )}
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <QuickAction
+                href="/admin"
+                icon={<TrendingUp size={18} />}
+                title="Admin Panel"
+                description="Open governance and moderation tools"
+              />
+            )}
           </CardContent>
         </Card>
       </div>

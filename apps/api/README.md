@@ -223,6 +223,18 @@ npm run migration:revert
 | `JWT_ACCESS_EXPIRATION` | Access token TTL | `15m` |
 | `JWT_REFRESH_EXPIRATION` | Refresh token TTL | `7d` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:3000` |
+| `FRONTEND_URL` | Frontend base URL used in payment callbacks | `http://localhost:3000` |
+| `API_PUBLIC_URL` | Public API base URL used for provider webhooks | `http://localhost:4000/api/v1` |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key for checkout/verification | - |
+| `PAYSTACK_WEBHOOK_SECRET` | Paystack webhook signature secret | - |
+| `PAYSTACK_CURRENCY` | Optional default Paystack currency override (e.g. `NGN`) | provider default |
+| `MPESA_ENV` | M-PESA environment | `sandbox` |
+| `MPESA_CONSUMER_KEY` | M-PESA Daraja app key | - |
+| `MPESA_CONSUMER_SECRET` | M-PESA Daraja app secret | - |
+| `MPESA_SHORTCODE` | M-PESA paybill/till shortcode | - |
+| `MPESA_PASSKEY` | M-PESA STK passkey | - |
+| `MPESA_CALLBACK_URL` | Public HTTPS callback URL for Daraja STK callbacks | auto-generated |
+| `MPESA_SANDBOX_CALLBACK_FALLBACK` | Fallback callback URL when running local dev without public API URL | `https://example.com/mpesa/callback` |
 
 ## Troubleshooting
 

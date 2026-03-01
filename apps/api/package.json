@@ -16,11 +16,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:load:smoke": "k6 run test/load/smoke.k6.js",
     "migration:generate": "typeorm migration:generate -d src/common/database/data-source.ts",
     "migration:run": "typeorm migration:run -d src/common/database/data-source.ts",
     "migration:revert": "typeorm migration:revert -d src/common/database/data-source.ts",
     "seed:run": "ts-node src/common/database/seeds/run-seed.ts",
-    "seed:admin": "ts-node -r tsconfig-paths/register src/common/commands/seed-admin.ts"
+    "seed:admin": "ts-node -r tsconfig-paths/register src/common/commands/seed-admin.ts",
+    "seed:test-users": "ts-node -r tsconfig-paths/register src/common/commands/seed-test-users.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.985.0",

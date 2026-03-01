@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { adminProgramsApi, type ProgramSummary, type ProgramStats } from '@/lib/api/admin-api';
+import {
+  adminProgramsApi,
+  getAdminUserFromCookie,
+  PLATFORM_ADMIN_ROLES,
+  type ProgramSummary,
+  type ProgramStats,
+} from '@/lib/api/admin-api';
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -23,6 +29,7 @@ export default function ProgramsPage() {
   const [programs, setPrograms] = useState<ProgramSummary[]>([]);
   const [stats, setStats] = useState<ProgramStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -31,24 +38,62 @@ export default function ProgramsPage() {
   const fetchPrograms = useCallback(async () => {
     setLoading(true);
     try {
-      const [programsRes, statsRes] = await Promise.all([
-        adminProgramsApi.getAll({
-          page,
-          limit: 15,
-          search: search || undefined,
-          status: statusFilter || undefined,
-        }),
-        adminProgramsApi.getStats(),
+      const programsRequest = adminProgramsApi.getAll({
+        page,
+        limit: 15,
+        search: search || undefined,
+        status: statusFilter || undefined,
+      });
+
+      if (isPlatformAdmin) {
+        const [programsRes, statsRes] = await Promise.allSettled([
+          programsRequest,
+          adminProgramsApi.getStats(),
+        ]);
+
+        if (programsRes.status === 'fulfilled') {
+          setPrograms(programsRes.value.data);
+          setTotalPages(programsRes.value.meta.totalPages);
+        }
+        if (statsRes.status === 'fulfilled') {
+          setStats(statsRes.value);
+        }
+        return;
+      }
+
+      const [programsRes, allRes, publishedRes, draftRes] = await Promise.allSettled([
+        programsRequest,
+        adminProgramsApi.getAll({ page: 1, limit: 1 }),
+        adminProgramsApi.getAll({ page: 1, limit: 1, status: 'published' }),
+        adminProgramsApi.getAll({ page: 1, limit: 1, status: 'draft' }),
       ]);
-      setPrograms(programsRes.data);
-      setTotalPages(programsRes.meta.totalPages);
-      setStats(statsRes);
+
+      if (programsRes.status === 'fulfilled') {
+        setPrograms(programsRes.value.data);
+        setTotalPages(programsRes.value.meta.totalPages);
+      }
+
+      setStats({
+        total: allRes.status === 'fulfilled' ? allRes.value.meta.total : 0,
+        published: publishedRes.status === 'fulfilled' ? publishedRes.value.meta.total : 0,
+        draft: draftRes.status === 'fulfilled' ? draftRes.value.meta.total : 0,
+        totalEnrollments: 0,
+      });
     } catch {
       // silently fail for now
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [isPlatformAdmin, page, search, statusFilter]);
+
+  useEffect(() => {
+    const user = getAdminUserFromCookie();
+    setIsPlatformAdmin(
+      user
+        ? PLATFORM_ADMIN_ROLES.includes(user.role as (typeof PLATFORM_ADMIN_ROLES)[number])
+        : false,
+    );
+  }, []);
 
   useEffect(() => {
     fetchPrograms();
@@ -97,12 +142,12 @@ export default function ProgramsPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 ${isPlatformAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
           {[
             { label: 'Total', value: stats.total },
             { label: 'Published', value: stats.published },
             { label: 'Draft', value: stats.draft },
-            { label: 'Enrollments', value: stats.totalEnrollments },
+            ...(isPlatformAdmin ? [{ label: 'Enrollments', value: stats.totalEnrollments }] : []),
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-card p-4">
               <p className="text-sm text-muted-foreground">{s.label}</p>
@@ -212,22 +257,26 @@ export default function ProgramsPage() {
                         </Button>
                       )}
                       {program.status === 'published' && (
+                        isPlatformAdmin ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchive(program.id)}
+                          >
+                            Archive
+                          </Button>
+                        ) : null
+                      )}
+                      {isPlatformAdmin && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleArchive(program.id)}
+                          onClick={() => handleDelete(program.id, program.title)}
+                          className="text-destructive"
                         >
-                          Archive
+                          Delete
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(program.id, program.title)}
-                        className="text-destructive"
-                      >
-                        Delete
-                      </Button>
                     </div>
                   </td>
                 </tr>

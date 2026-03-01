@@ -14,10 +14,19 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { UserRole } from '@tbcn/shared';
 import { UploadService } from './upload.service';
 import { RequestPresignedUrlDto } from './dto/presigned-url.dto';
 import { ConfirmUploadDto } from './dto/upload-file.dto';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
+
+const MEDIA_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
 
 @ApiTags('Media')
 @Controller('media')
@@ -26,6 +35,7 @@ export class MediaController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post('upload-url')
+  @Roles(...MEDIA_USER_ROLES)
   @ApiOperation({ summary: 'Request a presigned S3 upload URL' })
   @ApiResponse({ status: 201, description: 'Presigned URL created' })
   async getUploadUrl(
@@ -42,6 +52,7 @@ export class MediaController {
   }
 
   @Post('confirm')
+  @Roles(...MEDIA_USER_ROLES)
   @ApiOperation({ summary: 'Confirm an upload and store media asset' })
   @ApiResponse({ status: 201, description: 'Upload confirmed' })
   async confirm(
@@ -57,6 +68,7 @@ export class MediaController {
   }
 
   @Delete()
+  @Roles(...MEDIA_USER_ROLES)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a media asset' })
   async delete(@CurrentUser('id') userId: string, @Query('key') key: string) {

@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { adminAuthApi, type AuthUser } from '@/lib/api/admin-api';
+import {
+  adminAuthApi,
+  getAdminUserFromCookie,
+  PLATFORM_ADMIN_ROLES,
+  type AuthUser,
+} from '@/lib/api/admin-api';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/analytics', label: 'Analytics' },
-  { href: '/users', label: 'Users' },
-  { href: '/programs', label: 'Programs' },
-  { href: '/transactions', label: 'Transactions' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/', label: 'Dashboard', roles: ['coach', 'admin', 'super_admin'] },
+  { href: '/analytics', label: 'Analytics', roles: ['coach', 'admin', 'super_admin'] },
+  { href: '/programs', label: 'Programs', roles: ['coach', 'admin', 'super_admin'] },
+  { href: '/users', label: 'Users', roles: ['admin', 'super_admin'] },
+  { href: '/transactions', label: 'Transactions', roles: ['admin', 'super_admin'] },
+  { href: '/settings', label: 'Settings', roles: ['admin', 'super_admin'] },
 ];
 
 export default function DashboardLayout({
@@ -23,16 +28,19 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    // Try to read cached user from cookie first for instant display
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(/(?:^|;\s*)admin_user=([^;]*)/);
-      if (match) {
-        try {
-          setUser(JSON.parse(decodeURIComponent(match[1])));
-        } catch { /* ignore */ }
-      }
-    }
+    // Read cached user from cookie for fast role-aware navigation rendering.
+    setUser(getAdminUserFromCookie());
   }, []);
+
+  const isPlatformAdmin = user
+    ? PLATFORM_ADMIN_ROLES.includes(user.role as (typeof PLATFORM_ADMIN_ROLES)[number])
+    : false;
+  const navItems = NAV_ITEMS.filter((item) => {
+    if (!user) {
+      return item.roles.includes('coach');
+    }
+    return item.roles.includes(user.role);
+  });
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/';
@@ -64,7 +72,7 @@ export default function DashboardLayout({
           </div>
 
           <nav className="flex-1 p-4 space-y-1">
-            {NAV_ITEMS.map(({ href, label }) => (
+            {navItems.map(({ href, label }) => (
               <a
                 key={href}
                 href={href}
@@ -116,7 +124,9 @@ export default function DashboardLayout({
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
             </button>
-            <h1 className="font-semibold text-foreground">Dashboard</h1>
+            <h1 className="font-semibold text-foreground">
+              {isPlatformAdmin ? 'Admin Dashboard' : 'Coach Dashboard'}
+            </h1>
           </header>
           <div className="p-6">{children}</div>
         </main>

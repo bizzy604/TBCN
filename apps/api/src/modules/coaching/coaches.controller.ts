@@ -27,6 +27,14 @@ class CoachesQueryDto {
   search?: string;
 }
 
+const COACHING_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
 @ApiTags('Coaching')
 @Controller('coaches')
 export class CoachesController {
@@ -53,6 +61,7 @@ export class CoachesController {
 
   @Get(':id/availability')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'Get coach availability slots for a date range' })
   async getAvailability(
     @Param('id', ParseUUIDPipe) id: string,

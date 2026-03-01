@@ -8,9 +8,10 @@ export class PaymentCallbackDto {
   @MaxLength(120)
   reference: string;
 
-  @ApiProperty({ enum: PaymentStatus })
+  @ApiPropertyOptional({ enum: PaymentStatus })
+  @IsOptional()
   @IsEnum(PaymentStatus)
-  status: PaymentStatus;
+  status?: PaymentStatus;
 
   @ApiPropertyOptional({ example: 'provider_tx_456' })
   @IsOptional()

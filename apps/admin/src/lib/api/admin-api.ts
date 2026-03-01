@@ -81,18 +81,35 @@ interface LoginResponse {
   redirectTo?: string;
 }
 
-const ALLOWED_ADMIN_ROLES = ['super_admin', 'admin'];
+export const LMS_ADMIN_ROLES = ['super_admin', 'admin', 'coach'] as const;
+export const PLATFORM_ADMIN_ROLES = ['super_admin', 'admin'] as const;
+
+function getUserCookieValue(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)admin_user=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function getAdminUserFromCookie(): AuthUser | null {
+  const userCookie = getUserCookieValue();
+  if (!userCookie) return null;
+  try {
+    return JSON.parse(userCookie) as AuthUser;
+  } catch {
+    return null;
+  }
+}
 
 export const adminAuthApi = {
-  /** Login with email/password. Rejects non-admin roles. */
+  /** Login with email/password. Rejects users outside LMS portal roles. */
   login: async (email: string, password: string): Promise<AuthUser> => {
     const data = await request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
 
-    if (!ALLOWED_ADMIN_ROLES.includes(data.user.role)) {
-      throw new Error('Access denied. Admin privileges required.');
+    if (!LMS_ADMIN_ROLES.includes(data.user.role as (typeof LMS_ADMIN_ROLES)[number])) {
+      throw new Error('Access denied. Coach/Admin privileges required.');
     }
 
     setTokenCookie(data.accessToken);

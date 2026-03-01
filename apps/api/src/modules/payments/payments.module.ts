@@ -6,10 +6,12 @@ import { PaymentsService } from './payments.service';
 import { Transaction } from './entities/transaction.entity';
 import { Subscription } from './entities/subscription.entity';
 import { WebhookEvent } from './entities/webhook-event.entity';
+import { User } from '../users/entities/user.entity';
 import { StripeProcessor } from './processors/stripe.processor';
 import { FlutterwaveProcessor } from './processors/flutterwave.processor';
 import { MpesaProcessor } from './processors/mpesa.processor';
 import { PaypalProcessor } from './processors/paypal.processor';
+import { PaystackProcessor } from './processors/paystack.processor';
 
 /**
  * Payments Module
@@ -20,13 +22,14 @@ import { PaypalProcessor } from './processors/paypal.processor';
  * - Webhook handling
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction, Subscription, WebhookEvent])],
+  imports: [TypeOrmModule.forFeature([User, Transaction, Subscription, WebhookEvent])],
   controllers: [PaymentsController, WebhooksController],
   providers: [
     PaymentsService,
     StripeProcessor,
     FlutterwaveProcessor,
     MpesaProcessor,
+    PaystackProcessor,
     PaypalProcessor,
   ],
   exports: [PaymentsService, TypeOrmModule],

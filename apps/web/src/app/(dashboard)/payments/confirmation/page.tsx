@@ -20,9 +20,10 @@ export default function PaymentConfirmationPage() {
   const confirm = useConfirmPayment();
   const [resultMessage, setResultMessage] = useState<string>('Confirming payment status...');
 
-  const reference = params.get('reference');
-  const rawStatus = params.get('status') || 'success';
-  const status = useMemo(() => statusMap[rawStatus.toLowerCase()] || 'success', [rawStatus]);
+  const provider = (params.get('provider') || 'paystack').toLowerCase();
+  const reference = params.get('reference') || params.get('trxref');
+  const rawStatus = params.get('status') || (provider === 'mpesa' ? 'processing' : 'pending');
+  const status = useMemo(() => statusMap[rawStatus.toLowerCase()] || 'processing', [rawStatus]);
 
   useEffect(() => {
     if (!reference) {
@@ -33,9 +34,15 @@ export default function PaymentConfirmationPage() {
     let active = true;
     const run = async () => {
       try {
-        await confirm.mutateAsync({ reference, status });
+        const transaction = await confirm.mutateAsync({ reference, status });
         if (active) {
-          setResultMessage(`Payment ${status}. Your subscription status has been updated.`);
+          if (transaction.status === 'success') {
+            setResultMessage('Payment successful. Your subscription status has been updated.');
+          } else if (transaction.status === 'processing' || transaction.status === 'pending') {
+            setResultMessage('Payment is still processing. We will update your subscription as soon as confirmation is received.');
+          } else {
+            setResultMessage(`Payment ${transaction.status}. Please retry from subscription settings if needed.`);
+          }
         }
       } catch (error: any) {
         if (active) {

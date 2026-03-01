@@ -10,9 +10,17 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@tbcn/shared';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { NotificationsService } from './notifications.service';
+
+const NOTIFICATION_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
 
 @ApiTags('Notifications')
 @Controller('notifications')
@@ -21,6 +29,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
+  @Roles(...NOTIFICATION_USER_ROLES)
   @ApiOperation({ summary: 'List current user notifications' })
   async listMine(
     @CurrentUser('id') userId: string,
@@ -31,6 +40,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
+  @Roles(...NOTIFICATION_USER_ROLES)
   @ApiOperation({ summary: 'Mark a notification as read' })
   async markRead(
     @CurrentUser('id') userId: string,
@@ -40,12 +50,14 @@ export class NotificationsController {
   }
 
   @Patch('read-all')
+  @Roles(...NOTIFICATION_USER_ROLES)
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllRead(@CurrentUser('id') userId: string) {
     return this.notificationsService.markAllRead(userId);
   }
 
   @Post('send')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Send notifications to target users (admin)' })
   async send(
     @CurrentUser('id') userId: string,

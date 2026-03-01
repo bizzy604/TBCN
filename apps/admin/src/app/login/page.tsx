@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
             TBCN Admin
           </h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to access the admin dashboard
+            Sign in to access the LMS operations dashboard
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="admin@example.com"
+              placeholder="coach@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -91,7 +91,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          Only administrators can access this panel.
+          Coaches, admins, and super admins can access this panel.
         </p>
       </div>
     </div>

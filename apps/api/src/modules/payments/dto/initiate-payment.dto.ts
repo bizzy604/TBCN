@@ -38,6 +38,12 @@ export class InitiatePaymentDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ example: '+254712345678', description: 'Customer phone number. Required for M-PESA when not saved on profile.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
   @ApiPropertyOptional({ example: '/settings/subscription' })
   @IsOptional()
   @IsString()

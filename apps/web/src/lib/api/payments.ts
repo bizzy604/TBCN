@@ -1,6 +1,6 @@
 ﻿import { api } from './client';
 
-export type PaymentMethod = 'card' | 'mpesa' | 'flutterwave' | 'paypal';
+export type PaymentMethod = 'card' | 'mpesa' | 'flutterwave' | 'paystack' | 'paypal';
 export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'cancelled';
 
 export interface Transaction {
@@ -53,6 +53,7 @@ export const paymentsApi = {
     paymentMethod?: PaymentMethod;
     plan?: string;
     description?: string;
+    phone?: string;
     returnPath?: string;
   }) => api.post<Transaction>('/payments/checkout', payload),
 
@@ -62,12 +63,13 @@ export const paymentsApi = {
     paymentMethod?: PaymentMethod;
     plan?: string;
     description?: string;
+    phone?: string;
     returnPath?: string;
   }) => api.post<Transaction>('/payments/subscription/upgrade', payload),
 
   confirmPayment: (payload: {
     reference: string;
-    status: PaymentStatus;
+    status?: PaymentStatus;
     providerTransactionId?: string;
   }) => api.post<Transaction>('/payments/callback', payload),
 

@@ -12,7 +12,15 @@ import type { NextRequest } from 'next/server';
  * the API server's responsibility) to confirm the role is admin/super_admin.
  */
 
-const ADMIN_ROLES = ['super_admin', 'admin'];
+const LMS_ROLES = ['super_admin', 'admin', 'coach'];
+const PLATFORM_ADMIN_ROLES = ['super_admin', 'admin'];
+const ADMIN_ONLY_PREFIXES = [
+  '/users',
+  '/partners',
+  '/transactions',
+  '/settings',
+  '/content-moderation',
+];
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -39,14 +47,14 @@ function getAuth(request: NextRequest): {
   if (!payload) return { isAuthenticated: false, role: null };
 
   const role = (payload.role as string) || null;
-  const isAdmin = role ? ADMIN_ROLES.includes(role) : false;
+  const isAllowed = role ? LMS_ROLES.includes(role) : false;
 
-  return { isAuthenticated: isAdmin, role };
+  return { isAuthenticated: isAllowed, role };
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { isAuthenticated } = getAuth(request);
+  const { isAuthenticated, role } = getAuth(request);
 
   // Allow /login for unauthenticated users
   if (pathname === '/login') {
@@ -62,6 +70,15 @@ export function middleware(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  const isAdminOnlyRoute = ADMIN_ONLY_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  const isPlatformAdmin = role ? PLATFORM_ADMIN_ROLES.includes(role) : false;
+
+  if (isAdminOnlyRoute && !isPlatformAdmin) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();

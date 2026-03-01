@@ -15,6 +15,7 @@ import { PaymentStatus } from '../enums/payment-status.enum';
 @Unique('uq_transactions_reference', ['reference'])
 @Index('idx_transactions_user', ['userId'])
 @Index('idx_transactions_status', ['status'])
+@Index('idx_transactions_provider_tx_id', ['providerTransactionId'])
 export class Transaction extends BaseEntity {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

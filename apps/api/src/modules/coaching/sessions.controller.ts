@@ -15,7 +15,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
 import { UserRole } from '@tbcn/shared';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionFeedbackDto } from './dto/session-feedback.dto';
@@ -31,6 +31,14 @@ class SessionsQueryDto {
   upcoming?: boolean;
 }
 
+const COACHING_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
 @ApiTags('Coaching')
 @Controller('sessions')
 @ApiBearerAuth('JWT-auth')
@@ -38,6 +46,7 @@ export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
   @Post()
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'Book a coaching session' })
   @ApiResponse({ status: 201, description: 'Session created' })
   async create(
@@ -48,6 +57,7 @@ export class SessionsController {
   }
 
   @Get()
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'List current user sessions' })
   async findMine(
     @CurrentUser('id') userId: string,
@@ -58,6 +68,7 @@ export class SessionsController {
   }
 
   @Get(':id')
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'Get session by ID' })
   @ApiParam({ name: 'id', description: 'Session UUID' })
   async findById(
@@ -69,6 +80,7 @@ export class SessionsController {
   }
 
   @Patch(':id')
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'Reschedule/cancel/complete a session' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -80,6 +92,7 @@ export class SessionsController {
   }
 
   @Post(':id/feedback')
+  @Roles(...COACHING_USER_ROLES)
   @ApiOperation({ summary: 'Submit post-session feedback' })
   async submitFeedback(
     @Param('id', ParseUUIDPipe) id: string,

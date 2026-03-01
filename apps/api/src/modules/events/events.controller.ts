@@ -10,13 +10,27 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, Public } from '../../common/decorators';
+import { CurrentUser, Public, Roles } from '../../common/decorators';
 import { UserRole } from '@tbcn/shared';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventQueryDto } from './dto/event-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 import { RegistrationsService } from './registrations.service';
+
+const AUTHENTICATED_USER_ROLES: UserRole[] = [
+  UserRole.MEMBER,
+  UserRole.PARTNER,
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
+const EVENT_MANAGER_ROLES: UserRole[] = [
+  UserRole.COACH,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
 
 @ApiTags('Events')
 @Controller('events')
@@ -42,6 +56,7 @@ export class EventsController {
 
   @Post()
   @ApiBearerAuth('JWT-auth')
+  @Roles(...EVENT_MANAGER_ROLES)
   @ApiOperation({ summary: 'Create an event' })
   async create(
     @CurrentUser('id') userId: string,
@@ -53,6 +68,7 @@ export class EventsController {
 
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...EVENT_MANAGER_ROLES)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
@@ -64,6 +80,7 @@ export class EventsController {
 
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...EVENT_MANAGER_ROLES)
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
@@ -75,6 +92,7 @@ export class EventsController {
 
   @Post(':id/register')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...AUTHENTICATED_USER_ROLES)
   async register(
     @Param('id', ParseUUIDPipe) eventId: string,
     @CurrentUser('id') userId: string,
@@ -84,6 +102,7 @@ export class EventsController {
 
   @Delete(':id/register')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...AUTHENTICATED_USER_ROLES)
   async cancelRegistration(
     @Param('id', ParseUUIDPipe) eventId: string,
     @CurrentUser('id') userId: string,
@@ -93,12 +112,14 @@ export class EventsController {
 
   @Get('me/registrations')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...AUTHENTICATED_USER_ROLES)
   async myRegistrations(@CurrentUser('id') userId: string) {
     return this.registrationsService.listMine(userId);
   }
 
   @Patch(':id/attendance/:registrationId')
   @ApiBearerAuth('JWT-auth')
+  @Roles(...EVENT_MANAGER_ROLES)
   async markAttended(
     @Param('id', ParseUUIDPipe) eventId: string,
     @Param('registrationId', ParseUUIDPipe) registrationId: string,

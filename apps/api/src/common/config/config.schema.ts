@@ -13,6 +13,8 @@ export const configValidationSchema = Joi.object({
     .default('development'),
   PORT: Joi.number().default(4000),
   CORS_ORIGIN: Joi.string().default('http://localhost:3000'),
+  FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
+  API_PUBLIC_URL: Joi.string().uri().optional(),
 
   // ============================================
   // Database (PostgreSQL)
@@ -86,6 +88,17 @@ export const configValidationSchema = Joi.object({
   STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
   FLUTTERWAVE_SECRET_KEY: Joi.string().optional(),
   FLUTTERWAVE_WEBHOOK_SECRET: Joi.string().optional(),
+  PAYSTACK_SECRET_KEY: Joi.string().optional(),
+  PAYSTACK_WEBHOOK_SECRET: Joi.string().optional(),
+  PAYSTACK_CURRENCY: Joi.string().length(3).optional(),
+  MPESA_ENV: Joi.string().valid('sandbox', 'production').default('sandbox'),
+  MPESA_CONSUMER_KEY: Joi.string().optional(),
+  MPESA_CONSUMER_SECRET: Joi.string().optional(),
+  MPESA_SHORTCODE: Joi.string().optional(),
+  MPESA_PASSKEY: Joi.string().optional(),
+  MPESA_CALLBACK_URL: Joi.string().uri().optional(),
+  MPESA_SANDBOX_CALLBACK_FALLBACK: Joi.string().uri().optional(),
+  MPESA_TRANSACTION_TYPE: Joi.string().optional(),
 
   // ============================================
   // Rate Limiting
@@ -158,4 +171,15 @@ export interface PaymentsConfig {
   stripeWebhookSecret?: string;
   flutterwaveSecretKey?: string;
   flutterwaveWebhookSecret?: string;
+  paystackSecretKey?: string;
+  paystackWebhookSecret?: string;
+  paystackCurrency?: string;
+  mpesaEnv?: 'sandbox' | 'production';
+  mpesaConsumerKey?: string;
+  mpesaConsumerSecret?: string;
+  mpesaShortcode?: string;
+  mpesaPasskey?: string;
+  mpesaCallbackUrl?: string;
+  mpesaSandboxCallbackFallback?: string;
+  mpesaTransactionType?: string;
 }

@@ -32,7 +32,7 @@ export class PaymentsController {
   }
 
   @Post('callback')
-  @ApiOperation({ summary: 'Payment callback endpoint (client redirect simulation)' })
+  @ApiOperation({ summary: 'Confirm payment status after provider redirect' })
   async callback(@Body() dto: PaymentCallbackDto) {
     return this.paymentsService.confirmCallback(dto);
   }

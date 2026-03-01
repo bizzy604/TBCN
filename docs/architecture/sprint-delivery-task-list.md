@@ -1,6 +1,6 @@
 # Sprint Delivery Task List (Sprints 2-4)
 
-**Last Updated:** 2026-02-28  
+**Last Updated:** 2026-03-01  
 **Owner:** Product + Engineering  
 **Baseline Reference:** `docs/architecture/sprint-1-implementation-report.md`
 
@@ -102,35 +102,37 @@
 
 ### 4.1 Week 13: Payments and Subscriptions
 
-- [ ] Implement `payments` module and processors used in MVP scope.
-- [ ] Implement webhook handlers and idempotency protections.
-- [ ] Deliver checkout and payment confirmation UX.
-- [ ] Deliver subscription management UX in settings.
+- [x] Implement `payments` module and processors used in MVP scope.
+- [x] Implement webhook handlers and idempotency protections.
+- [x] Deliver checkout and payment confirmation UX.
+- [x] Deliver subscription management UX in settings.
 
 ### 4.2 Week 14: Admin Dashboard and Analytics
 
-- [ ] Replace admin mock stats with real aggregated API data.
-- [ ] Implement `analytics` endpoints required by admin dashboards.
-- [ ] Add moderation tooling required for launch.
+- [x] Replace admin mock stats with real aggregated API data.
+- [x] Implement `analytics` endpoints required by admin dashboards.
+- [x] Add moderation tooling required for launch.
 
 ### 4.3 Week 15: Security, Performance, QA
 
-- [ ] Verify/complete rate limits, headers, and security controls.
+- [x] Verify/complete rate limits, headers, and security controls.
 - [ ] Run load and basic penetration testing.
 - [ ] Execute bug bash and clear launch blockers.
 
 ### 4.4 Week 16: Launch Preparation
 
+- [x] Finalize LMS admin portal role separation (coach/admin/super_admin) with admin-only governance route guards.
+- [x] Add role-based test user seeding command for end-to-end validation.
 - [ ] Production readiness checklist completion (DNS, SSL, backups, monitoring).
-- [ ] Handover docs and user guides update.
+- [x] Handover docs and user guides update.
 - [ ] Go-live rehearsal and rollback validation.
 
 ### 4.5 Sprint 4 Exit Criteria
 
-- [ ] Commerce flows are production-ready and tested.
-- [ ] Admin analytics/moderation are operational.
+- [x] Commerce flows are production-ready and tested.
+- [x] Admin analytics/moderation are operational.
 - [ ] MVP launch readiness checklist is complete.
-- [ ] Sprint 4 report is published:
+- [x] Sprint 4 report is published:
 - `docs/architecture/sprint-4-implementation-report.md`
 
 ---

@@ -30,7 +30,7 @@ import {
   UpdateProfileDto,
   AdminUpdateUserDto,
   UserQueryDto,
-} from './dto';
+} from './dto/user.dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles, Role } from '../../common/decorators';
 

@@ -1,7 +1,8 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { useAuth } from '@/hooks';
 import {
   useCancelSubscription,
   useMySubscription,
@@ -10,16 +11,62 @@ import {
 } from '@/hooks/use-payments';
 import type { PaymentMethod } from '@/lib/api/payments';
 
+type PaystackInlineCallbacks = {
+  onSuccess?: (payload: { reference?: string }) => void;
+  onCancel?: () => void;
+  onError?: (payload: { message?: string }) => void;
+};
+
+type PaystackInlineInstance = {
+  resumeTransaction: (accessCode: string, callbacks?: PaystackInlineCallbacks) => void;
+};
+
+type PaystackInlineConstructor = new () => PaystackInlineInstance;
+
 const plans = [
   { id: 'free', name: 'Free', amount: 0, currency: 'USD', features: ['Community access', 'Basic dashboard'] },
   { id: 'pro', name: 'Pro', amount: 29.99, currency: 'USD', features: ['All free features', 'Priority support', 'Advanced insights'] },
   { id: 'enterprise', name: 'Enterprise', amount: 99.0, currency: 'USD', features: ['All pro features', 'Team access', 'Dedicated manager'] },
 ] as const;
 
+function isValidMpesaPhone(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  return (
+    (digits.startsWith('254') && digits.length === 12)
+    || (digits.startsWith('0') && digits.length === 10)
+    || (digits.startsWith('7') && digits.length === 9)
+  );
+}
+
+function extractPaystackAccessCode(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const providerPayload = (metadata as Record<string, unknown>).providerPayload;
+  if (!providerPayload || typeof providerPayload !== 'object' || Array.isArray(providerPayload)) {
+    return null;
+  }
+
+  const accessCode = (providerPayload as Record<string, unknown>).accessCode;
+  return typeof accessCode === 'string' ? accessCode : null;
+}
+
+function extractProvider(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const provider = (metadata as Record<string, unknown>).provider;
+  return typeof provider === 'string' ? provider.toLowerCase() : null;
+}
+
 export default function SubscriptionSettingsPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  const [mpesaPhone, setMpesaPhone] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  const { user } = useAuth();
   const { data: subscription, isLoading } = useMySubscription();
   const { data: transactions } = useMyTransactions(1, 10);
   const upgrade = useUpgradeSubscription();
@@ -27,8 +74,47 @@ export default function SubscriptionSettingsPage() {
 
   const currentPlan = subscription?.plan ?? 'free';
 
+  useEffect(() => {
+    if (user?.phone) {
+      setMpesaPhone((prev) => prev || user.phone || '');
+    }
+  }, [user?.phone]);
+
+  const openPaystackInline = async (accessCode: string, reference: string) => {
+    const { default: PaystackPop } = await import('@paystack/inline-js');
+    const PopupConstructor = PaystackPop as unknown as PaystackInlineConstructor;
+    const popup = new PopupConstructor();
+
+    popup.resumeTransaction(accessCode, {
+      onSuccess: (payload) => {
+        const resolvedReference = payload?.reference || reference;
+        window.location.href = `/payments/confirmation?reference=${encodeURIComponent(resolvedReference)}&provider=paystack&status=success`;
+      },
+      onCancel: () => {
+        window.location.href = `/payments/confirmation?reference=${encodeURIComponent(reference)}&provider=paystack&status=cancelled`;
+      },
+      onError: () => {
+        window.location.href = `/payments/confirmation?reference=${encodeURIComponent(reference)}&provider=paystack&status=failed`;
+      },
+    });
+  };
+
   const handleUpgrade = async (planId: string, amount: number, currency: string) => {
     setFeedback(null);
+    const phone = mpesaPhone.trim();
+
+    if (paymentMethod === 'mpesa') {
+      if (!phone) {
+        setFeedback('Enter the M-PESA number to receive STK push.');
+        return;
+      }
+
+      if (!isValidMpesaPhone(phone)) {
+        setFeedback('Use a valid Kenyan mobile number: 07XXXXXXXX, 7XXXXXXXX, or 2547XXXXXXXX.');
+        return;
+      }
+    }
+
     try {
       const tx = await upgrade.mutateAsync({
         amount,
@@ -36,8 +122,31 @@ export default function SubscriptionSettingsPage() {
         paymentMethod,
         plan: planId,
         description: `Upgrade to ${planId} plan`,
+        phone: paymentMethod === 'mpesa' ? phone : undefined,
         returnPath: '/settings/subscription',
       });
+
+      const provider = extractProvider(tx.metadata);
+      const accessCode = extractPaystackAccessCode(tx.metadata);
+      const shouldUsePaystackInline = (
+        paymentMethod === 'card'
+        || paymentMethod === 'paystack'
+        || provider === 'paystack'
+      );
+
+      if (shouldUsePaystackInline && accessCode) {
+        try {
+          await openPaystackInline(accessCode, tx.reference);
+          return;
+        } catch {
+          if (tx.checkoutUrl) {
+            window.location.href = tx.checkoutUrl;
+            return;
+          }
+          setFeedback('Could not open Paystack popup. Please try again.');
+          return;
+        }
+      }
 
       if (tx.checkoutUrl) {
         window.location.href = tx.checkoutUrl;
@@ -108,12 +217,34 @@ export default function SubscriptionSettingsPage() {
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
               className="rounded-md border border-border bg-background px-3 py-2 text-sm"
             >
-              <option value="card">Card</option>
+              <option value="card">Card (Paystack)</option>
               <option value="mpesa">M-PESA</option>
               <option value="flutterwave">Flutterwave</option>
               <option value="paypal">PayPal</option>
             </select>
           </div>
+
+          {paymentMethod === 'mpesa' && (
+            <div className="rounded-lg border border-border bg-card p-4">
+              <label className="block text-sm font-medium">M-PESA Phone Number</label>
+              <input
+                type="tel"
+                value={mpesaPhone}
+                onChange={(e) => setMpesaPhone(e.target.value)}
+                placeholder="07XXXXXXXX or 2547XXXXXXXX"
+                className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                We send an STK push to this number. It will also be saved to your profile for the next payment.
+              </p>
+            </div>
+          )}
+
+          {(paymentMethod === 'card' || paymentMethod === 'paystack') && (
+            <p className="text-xs text-muted-foreground">
+              Card payments open a secure Paystack popup checkout.
+            </p>
+          )}
 
           <div className="grid gap-4 md:grid-cols-3">
             {plans.map((plan) => {
