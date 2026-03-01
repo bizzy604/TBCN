@@ -5,6 +5,7 @@ import { AssessmentsService } from './assessments.service';
 import { AssessmentsRepository } from './assessments.repository';
 import { Assessment } from './entities/assessment.entity';
 import { AssessmentSubmission } from './entities/assessment-submission.entity';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
 
 /**
  * Assessments Module
@@ -16,6 +17,7 @@ import { AssessmentSubmission } from './entities/assessment-submission.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Assessment, AssessmentSubmission]),
+    EnrollmentsModule,
   ],
   controllers: [AssessmentsController],
   providers: [AssessmentsService, AssessmentsRepository],

@@ -57,8 +57,12 @@ export class EnrollmentsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get enrollment by ID' })
   @ApiParam({ name: 'id', description: 'Enrollment UUID' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.enrollmentsService.findById(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.enrollmentsService.findByIdForViewer(id, { id: userId, role });
   }
 
   @Patch(':id/drop')

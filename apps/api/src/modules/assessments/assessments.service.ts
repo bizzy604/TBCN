@@ -10,8 +10,14 @@ import { SubmitAssessmentDto } from './dto/submit-assessment.dto';
 import { Assessment, Question } from './entities/assessment.entity';
 import { AssessmentSubmission } from './entities/assessment-submission.entity';
 import { AssessmentResultDto, QuestionResultDto } from './dto/assessment-result.dto';
-import { SubmissionStatus, QuestionType, AssessmentType } from '@tbcn/shared';
+import {
+  SubmissionStatus,
+  QuestionType,
+  AssessmentType,
+  UserRole,
+} from '@tbcn/shared';
 import { v4 as uuidv4 } from 'uuid';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 export const ASSESSMENT_EVENTS = {
   CREATED: 'assessment.created',
@@ -25,6 +31,7 @@ export const ASSESSMENT_EVENTS = {
 export class AssessmentsService {
   constructor(
     private readonly repository: AssessmentsRepository,
+    private readonly enrollmentsService: EnrollmentsService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -227,7 +234,11 @@ export class AssessmentsService {
     return this.repository.findSubmissionsByAssessmentAndUser(assessmentId, userId);
   }
 
-  async getSubmissionsByEnrollment(enrollmentId: string): Promise<AssessmentSubmission[]> {
+  async getSubmissionsByEnrollment(
+    enrollmentId: string,
+    viewer: { id: string; role: UserRole },
+  ): Promise<AssessmentSubmission[]> {
+    await this.enrollmentsService.findByIdForViewer(enrollmentId, viewer);
     return this.repository.findSubmissionsByEnrollment(enrollmentId);
   }
 

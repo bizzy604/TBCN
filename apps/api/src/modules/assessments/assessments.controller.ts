@@ -121,7 +121,12 @@ export class AssessmentsController {
   @ApiOperation({ summary: 'Get all submissions for an enrollment' })
   async getEnrollmentSubmissions(
     @Param('enrollmentId', ParseUUIDPipe) enrollmentId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.assessmentsService.getSubmissionsByEnrollment(enrollmentId);
+    return this.assessmentsService.getSubmissionsByEnrollment(enrollmentId, {
+      id: userId,
+      role,
+    });
   }
 }

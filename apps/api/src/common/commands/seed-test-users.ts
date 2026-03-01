@@ -176,11 +176,18 @@ async function bootstrap() {
 
     console.log('\nCompleted role user seeding.\n');
   } finally {
-    await app.close();
+    // Some Nest integrations can keep open handles in CLI context.
+    // Bound shutdown wait so the script always returns control to the shell.
+    await Promise.race([
+      app.close(),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
   }
 }
 
 bootstrap().catch((err) => {
   console.error('Seed failed:', err);
   process.exit(1);
+}).then(() => {
+  process.exit(0);
 });

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EnrollmentsRepository } from './enrollments.repository';
@@ -11,7 +12,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { Enrollment } from './entities/enrollment.entity';
 import { LessonProgress } from './entities/lesson-progress.entity';
-import { EnrollmentStatus } from '@tbcn/shared';
+import { EnrollmentStatus, UserRole } from '@tbcn/shared';
 import {
   PaginatedResult,
   createPaginationMeta,
@@ -25,6 +26,11 @@ export const ENROLLMENT_EVENTS = {
   PROGRESS_UPDATED: 'enrollment.progress.updated',
   LESSON_COMPLETED: 'enrollment.lesson.completed',
 };
+
+interface EnrollmentViewerContext {
+  id: string;
+  role: UserRole;
+}
 
 @Injectable()
 export class EnrollmentsService {
@@ -93,6 +99,19 @@ export class EnrollmentsService {
     if (!enrollment) {
       throw new NotFoundException(`Enrollment with ID "${id}" not found`);
     }
+    return enrollment;
+  }
+
+  async findByIdForViewer(
+    id: string,
+    viewer: EnrollmentViewerContext,
+  ): Promise<Enrollment> {
+    const enrollment = await this.findById(id);
+
+    if (!this.canAccessEnrollment(enrollment, viewer)) {
+      throw new ForbiddenException('You do not have access to this enrollment');
+    }
+
     return enrollment;
   }
 
@@ -225,6 +244,29 @@ export class EnrollmentsService {
     if (enrollment.userId !== userId) {
       throw new BadRequestException('You do not have access to this enrollment');
     }
+  }
+
+  private canAccessEnrollment(
+    enrollment: Enrollment,
+    viewer: EnrollmentViewerContext,
+  ): boolean {
+    if (enrollment.userId === viewer.id) {
+      return true;
+    }
+
+    if ([UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(viewer.role)) {
+      return true;
+    }
+
+    if (
+      viewer.role === UserRole.COACH &&
+      !!enrollment.program?.instructorId &&
+      enrollment.program.instructorId === viewer.id
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   private async recalculateEnrollmentProgress(enrollmentId: string): Promise<void> {
