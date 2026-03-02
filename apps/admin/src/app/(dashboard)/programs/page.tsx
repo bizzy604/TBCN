@@ -1,25 +1,31 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowUpRight, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   adminProgramsApi,
   getAdminUserFromCookie,
   PLATFORM_ADMIN_ROLES,
-  type ProgramSummary,
   type ProgramStats,
+  type ProgramSummary,
 } from '@/lib/api/admin-api';
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    draft: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    published: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    archived: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+    draft: 'border-warning/40 bg-warning/10 text-warning',
+    published: 'border-secondary/35 bg-secondary/10 text-secondary',
+    archived: 'border-border bg-muted text-muted-foreground',
   };
+
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${styles[status] || 'bg-muted text-muted-foreground'}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${
+        styles[status] || 'border-border bg-muted text-muted-foreground'
+      }`}
+    >
       {status}
     </span>
   );
@@ -55,9 +61,7 @@ export default function ProgramsPage() {
           setPrograms(programsRes.value.data);
           setTotalPages(programsRes.value.meta.totalPages);
         }
-        if (statsRes.status === 'fulfilled') {
-          setStats(statsRes.value);
-        }
+        if (statsRes.status === 'fulfilled') setStats(statsRes.value);
         return;
       }
 
@@ -79,8 +83,6 @@ export default function ProgramsPage() {
         draft: draftRes.status === 'fulfilled' ? draftRes.value.meta.total : 0,
         totalEnrollments: 0,
       });
-    } catch {
-      // silently fail for now
     } finally {
       setLoading(false);
     }
@@ -129,171 +131,185 @@ export default function ProgramsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Programs</h1>
-          <p className="text-muted-foreground mt-1">Manage coaching programs on the platform.</p>
+      <section className="admin-panel overflow-hidden">
+        <div className="flex flex-col gap-5 bg-sidebar px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-sidebar-foreground/70">
+              Screen 31
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-sidebar-foreground sm:text-3xl">
+              Program & Course Builder
+            </h2>
+            <p className="mt-2 text-sm text-sidebar-foreground/85">
+              Create, publish, and manage programs, modules, lessons, and pricing access.
+            </p>
+          </div>
+          <Link href="/programs/new">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4" />
+              Create Program
+            </Button>
+          </Link>
         </div>
-        <Link href="/programs/new">
-          <Button>+ Create Program</Button>
-        </Link>
-      </div>
+      </section>
 
-      {/* Stats */}
       {stats && (
-        <div className={`grid grid-cols-2 ${isPlatformAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+        <section className={`grid grid-cols-2 gap-4 ${isPlatformAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
           {[
-            { label: 'Total', value: stats.total },
+            { label: 'Total Programs', value: stats.total },
             { label: 'Published', value: stats.published },
             { label: 'Draft', value: stats.draft },
             ...(isPlatformAdmin ? [{ label: 'Enrollments', value: stats.totalEnrollments }] : []),
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="text-2xl font-bold">{s.value}</p>
+          ].map((item) => (
+            <div key={item.label} className="admin-kpi-card">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                {item.label}
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{item.value}</p>
             </div>
           ))}
-        </div>
+        </section>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Search programs..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="sm:max-w-xs"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="archived">Archived</option>
-        </select>
-      </div>
+      <section className="admin-panel p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative sm:max-w-xs sm:flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search programs..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9"
+            />
+          </div>
+          <div className="relative w-full sm:w-56">
+            <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-9 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/30 border-b border-border">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Title</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Difficulty</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Price</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Enrolled</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  <td colSpan={6} className="px-4 py-4">
-                    <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+      <section className="admin-panel overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="border-b border-border bg-muted/55">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Program</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Difficulty</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Price</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Enrolled</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/70">
+              {loading ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={idx}>
+                    <td colSpan={6} className="px-4 py-4">
+                      <div className="h-4 w-4/5 animate-pulse rounded bg-muted" />
+                    </td>
+                  </tr>
+                ))
+              ) : programs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                    No programs found.
                   </td>
                 </tr>
-              ))
-            ) : programs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                  No programs found.
-                </td>
-              </tr>
-            ) : (
-              programs.map((program) => (
-                <tr key={program.id} className="hover:bg-muted/20 transition">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/programs/${program.id}`}
-                      className="font-medium text-foreground hover:text-primary transition"
-                    >
-                      {program.title}
-                    </Link>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Created {new Date(program.createdAt).toLocaleDateString()}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={program.status} />
-                  </td>
-                  <td className="px-4 py-3 capitalize hidden md:table-cell">
-                    {program.difficulty}
-                  </td>
-                  <td className="px-4 py-3 text-right hidden md:table-cell">
-                    {program.isFree ? (
-                      <span className="text-green-600 font-medium">Free</span>
-                    ) : (
-                      `$${Number(program.price).toFixed(2)}`
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">{program.enrollmentCount}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link href={`/programs/${program.id}/edit`}>
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
+              ) : (
+                programs.map((program) => (
+                  <tr key={program.id} className="transition-colors hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/programs/${program.id}`}
+                        className="inline-flex items-center gap-1 font-medium text-foreground hover:text-secondary"
+                      >
+                        {program.title}
+                        <ArrowUpRight className="h-3.5 w-3.5" />
                       </Link>
-                      {program.status === 'draft' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePublish(program.id)}
-                          className="text-green-600"
-                        >
-                          Publish
-                        </Button>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Created {new Date(program.createdAt).toLocaleDateString()}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={program.status} />
+                    </td>
+                    <td className="px-4 py-3 capitalize text-muted-foreground">
+                      {program.difficulty}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {program.isFree ? (
+                        <span className="font-medium text-secondary">Free</span>
+                      ) : (
+                        `$${Number(program.price).toFixed(2)}`
                       )}
-                      {program.status === 'published' && (
-                        isPlatformAdmin ? (
+                    </td>
+                    <td className="px-4 py-3 text-right">{program.enrollmentCount}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/programs/${program.id}/edit`}>
+                          <Button variant="ghost" size="sm">
+                            Edit
+                          </Button>
+                        </Link>
+                        {program.status === 'draft' && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleArchive(program.id)}
+                            onClick={() => handlePublish(program.id)}
+                            className="text-secondary hover:text-secondary"
                           >
+                            Publish
+                          </Button>
+                        )}
+                        {program.status === 'published' && isPlatformAdmin && (
+                          <Button variant="ghost" size="sm" onClick={() => handleArchive(program.id)}>
                             Archive
                           </Button>
-                        ) : null
-                      )}
-                      {isPlatformAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(program.id, program.title)}
-                          className="text-destructive"
-                        >
-                          Delete
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                        )}
+                        {isPlatformAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(program.id, program.title)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <section className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => setPage((prev) => prev - 1)}
           >
             Previous
           </Button>
@@ -304,11 +320,11 @@ export default function ProgramsPage() {
             variant="outline"
             size="sm"
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage((prev) => prev + 1)}
           >
             Next
           </Button>
-        </div>
+        </section>
       )}
     </div>
   );

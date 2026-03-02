@@ -1,13 +1,12 @@
+import { PhaseTwoPanel } from '@/components/dashboard/phase-two-panel';
+
 export default function ContentModerationPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Content Moderation</h1>
-        <p className="text-muted-foreground mt-1">Review and moderate platform content.</p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6">
-        <p className="text-muted-foreground">Content moderation tools coming soon...</p>
-      </div>
-    </div>
+    <PhaseTwoPanel
+      title="Content Approval Queue"
+      subtitle="Review pending courses, posts, events, and coach profiles."
+      promptScreen="Screen 30"
+      note="This module currently has placeholder UI only. Approval workflow and moderation actions are planned for phase 2."
+    />
   );
 }

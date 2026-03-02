@@ -22,8 +22,8 @@ export default function EditProgramPage({ params }: { params: Promise<{ id: stri
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-96 bg-muted animate-pulse rounded-xl" />
+        <div className="h-28 animate-pulse rounded-2xl border border-border bg-muted" />
+        <div className="h-96 animate-pulse rounded-xl bg-muted" />
       </div>
     );
   }
@@ -41,14 +41,19 @@ export default function EditProgramPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Edit: {program.title}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Update program details, modules, and lessons.
-        </p>
-      </div>
+      <section className="admin-panel overflow-hidden">
+        <div className="bg-sidebar px-6 py-6 sm:px-8">
+          <p className="text-xs uppercase tracking-[0.2em] text-sidebar-foreground/70">
+            Screen 31
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-sidebar-foreground sm:text-3xl">
+            Edit Program
+          </h2>
+          <p className="mt-2 truncate text-sm text-sidebar-foreground/85">
+            {program.title}
+          </p>
+        </div>
+      </section>
       <ProgramForm program={program} mode="edit" />
     </div>
   );

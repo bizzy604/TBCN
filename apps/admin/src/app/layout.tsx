@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Outfit, Space_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/theme-provider';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Toaster } from 'react-hot-toast';
 
 const outfit = Outfit({
@@ -27,10 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
-    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
-  ],
+  themeColor: '#f5f0e4',
   width: 'device-width',
   initialScale: 1,
 };
@@ -43,9 +39,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} ${spaceMono.variable} font-sans`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          forcedTheme="light"
+          disableTransitionOnChange
+        >
           {children}
-          <ThemeToggle />
           <Toaster position="top-right" />
         </ThemeProvider>
       </body>

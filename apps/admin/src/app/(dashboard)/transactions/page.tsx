@@ -1,13 +1,12 @@
+import { PhaseTwoPanel } from '@/components/dashboard/phase-two-panel';
+
 export default function TransactionsPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Transactions</h1>
-        <p className="text-muted-foreground mt-1">View and manage platform transactions.</p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6">
-        <p className="text-muted-foreground">Transaction history coming soon...</p>
-      </div>
-    </div>
+    <PhaseTwoPanel
+      title="Store Management"
+      subtitle="Products, orders, and coupons for commerce operations."
+      promptScreen="Screen 33"
+      note="Store and transaction operations are currently placeholder-only in admin and are scheduled for phase 2."
+    />
   );
 }

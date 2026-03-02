@@ -1,13 +1,12 @@
+import { PhaseTwoPanel } from '@/components/dashboard/phase-two-panel';
+
 export default function PartnersPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Partners</h1>
-        <p className="text-muted-foreground mt-1">Manage platform partners and affiliates.</p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6">
-        <p className="text-muted-foreground">Partners management coming soon...</p>
-      </div>
-    </div>
+    <PhaseTwoPanel
+      title="Partners Workspace"
+      subtitle="Affiliate and partner management for platform expansion."
+      promptScreen="Unified Admin Nav"
+      note="Partner operations are not yet implemented in the admin backend integration and remain phase 2."
+    />
   );
 }

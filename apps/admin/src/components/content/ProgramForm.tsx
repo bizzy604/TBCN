@@ -350,15 +350,31 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive px-4 py-3 text-sm">
           {error}
         </div>
       )}
 
+      <section className="admin-panel p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Course Navigator + Content Editor
+            </p>
+            <p className="mt-1 text-sm text-foreground">
+              Configure modules, lessons, pricing, and assessment settings in one flow.
+            </p>
+          </div>
+          <div className="admin-chip border-secondary/35 bg-secondary/10 text-secondary">
+            Autosave roadmap: phase 2
+          </div>
+        </div>
+      </section>
+
       {/* Basic Information */}
-      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+      <section className="admin-panel p-6 space-y-4">
         <h2 className="text-lg font-semibold">Basic Information</h2>
 
         <div className="space-y-2">
@@ -456,7 +472,7 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
       </section>
 
       {/* Learning Outcomes & Prerequisites */}
-      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+      <section className="admin-panel p-6 space-y-4">
         <h2 className="text-lg font-semibold">Learning Outcomes & Prerequisites</h2>
 
         <div className="space-y-2">
@@ -483,7 +499,7 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
       </section>
 
       {/* Curriculum Builder */}
-      <section className="space-y-4">
+      <section className="admin-panel p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Curriculum</h2>
           <Button type="button" variant="outline" size="sm" onClick={addModule}>
@@ -496,8 +512,8 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
             {modules.map((mod, mi) => (
               <SortableModule key={mod.clientId} id={mod.clientId}>
                 {({ attributes, listeners }) => (
-                  <div className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="bg-muted/30 px-6 py-4 flex items-center justify-between">
+                  <div className="overflow-hidden rounded-xl border border-border bg-background/70">
+                    <div className="flex items-center justify-between border-b border-border bg-muted/40 px-6 py-4">
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -589,7 +605,7 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
                               <SortableLesson key={lesson.clientId} id={lesson.clientId}>
                                 {({ attributes: lessonAttributes, listeners: lessonListeners }) => (
                                   <div
-                                    className="rounded-lg border border-border/60 p-4 space-y-3 bg-background"
+                                    className="space-y-3 rounded-lg border border-border/70 bg-card p-4"
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
@@ -693,9 +709,9 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
                                         <button
                                           type="button"
                                           onClick={() => setAssessmentLesson({ id: lesson.id!, title: lesson.title || `Lesson ${li + 1}` })}
-                                          className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition"
+                                          className="ml-auto flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-primary/20"
                                         >
-                                          📝 Assessment
+                                          Assessment
                                         </button>
                                       ) : (
                                         (lesson.contentType === 'quiz' || lesson.contentType === 'assignment') && (
@@ -722,7 +738,7 @@ export function ProgramForm({ program, mode }: ProgramFormProps) {
       </section>
 
       {/* Submit */}
-      <div className="flex items-center justify-end gap-3">
+      <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-xl border border-border bg-background/95 px-4 py-3 backdrop-blur">
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Cancel
         </Button>
