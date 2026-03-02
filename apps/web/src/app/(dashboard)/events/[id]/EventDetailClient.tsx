@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   useEvent,
   useEventAccessLink,
@@ -10,6 +10,7 @@ import {
 } from '@/hooks/use-engagement';
 import { useAuth } from '@/hooks';
 import type { PaymentMethod } from '@/lib/api/payments';
+import { createCheckoutIdempotencyKey } from '@/lib/payment-idempotency';
 
 type PaystackInlineCallbacks = {
   onSuccess?: (payload: { reference?: string }) => void;
@@ -52,6 +53,11 @@ function extractProvider(metadata: unknown): string | null {
   return typeof provider === 'string' ? provider.toLowerCase() : null;
 }
 
+function isPaymentRequiredError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes('complete payment first') || normalized.includes('paid event');
+}
+
 interface EventDetailClientProps {
   eventId: string;
 }
@@ -62,6 +68,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
   const { data: registrations } = useMyEventRegistrations();
   const checkoutEvent = useEventCheckout();
   const registerEvent = useRegisterEvent();
+  const checkoutKeyRef = useRef<string | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [mpesaPhone, setMpesaPhone] = useState('');
@@ -117,6 +124,10 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
     }
 
     try {
+      const idempotencyKey = checkoutKeyRef.current
+        ?? createCheckoutIdempotencyKey('event', eventId);
+      checkoutKeyRef.current = idempotencyKey;
+
       const transaction = await checkoutEvent.mutateAsync({
         id: eventId,
         payload: {
@@ -126,6 +137,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
           phone: paymentMethod === 'mpesa' ? phone : undefined,
           returnPath: `/events/${eventId}`,
           description: `Event access payment: ${event.title}`,
+          idempotencyKey,
         },
       });
 
@@ -155,7 +167,13 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
       await registerEvent.mutateAsync(eventId);
       setMessage('Registration successful. Live link appears below when available.');
     } catch (error: any) {
-      setMessage(error?.error?.message || error?.message || 'Registration failed');
+      const errMessage = error?.error?.message || error?.message || 'Registration failed';
+      if (requiresPayment && isPaymentRequiredError(errMessage)) {
+        setMessage('Payment required. Redirecting to checkout...');
+        await handleCheckout();
+        return;
+      }
+      setMessage(errMessage);
     }
   };
 
@@ -238,10 +256,18 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
           <button
             type="button"
             onClick={handleRegister}
-            disabled={registerEvent.isPending || isRegistered}
+            disabled={registerEvent.isPending || checkoutEvent.isPending || isRegistered}
             className="btn btn-primary mt-4 w-full"
           >
-            {isRegistered ? 'Registered' : registerEvent.isPending ? 'Registering...' : 'Register for Event'}
+            {isRegistered
+              ? 'Registered'
+              : checkoutEvent.isPending
+                ? 'Starting checkout...'
+                : registerEvent.isPending
+                  ? 'Registering...'
+                  : requiresPayment
+                    ? 'Pay & Register'
+                    : 'Register for Event'}
           </button>
         </article>
       </aside>

@@ -96,6 +96,7 @@ export interface ProgramCheckoutPayload {
   returnPath?: string;
   description?: string;
   couponCode?: string;
+  idempotencyKey?: string;
 }
 
 export interface ProgramCheckoutTransaction {

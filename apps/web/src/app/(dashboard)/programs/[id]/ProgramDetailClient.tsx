@@ -183,6 +183,7 @@ export default function ProgramDetailClient({ slug }: { slug: string }) {
               <EnrollmentButton
                 programId={program.id}
                 programSlug={program.slug}
+                programTitle={program.title}
                 isFree={program.isFree}
                 price={Number(program.price)}
                 currency={program.currency || 'KES'}

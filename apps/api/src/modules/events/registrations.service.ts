@@ -124,6 +124,7 @@ export class RegistrationsService {
       type: 'event_registration',
       description: payload.description,
       returnPath: payload.returnPath,
+      idempotencyKey: dto.idempotencyKey,
       metadata: {
         eventId: event.id,
         eventTitle: event.title,

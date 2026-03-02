@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnroll, useProgramEnrollmentCheckout } from '@/hooks/use-enrollments';
 import { useAuth } from '@/hooks/use-auth';
 import type { PaymentMethod } from '@/lib/api/payments';
+import { createCheckoutIdempotencyKey } from '@/lib/payment-idempotency';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -75,6 +76,11 @@ function extractProvider(metadata: unknown): string | null {
   return typeof provider === 'string' ? provider.toLowerCase() : null;
 }
 
+function isPaymentRequiredError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes('complete payment first') || normalized.includes('paid program');
+}
+
 export function EnrollmentButton({
   programId,
   programSlug,
@@ -90,6 +96,7 @@ export function EnrollmentButton({
   const { user } = useAuth();
   const enrollMutation = useEnroll();
   const checkoutMutation = useProgramEnrollmentCheckout();
+  const checkoutKeyRef = useRef<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -146,6 +153,10 @@ export function EnrollmentButton({
     }
 
     try {
+      const idempotencyKey = checkoutKeyRef.current
+        ?? createCheckoutIdempotencyKey('program', programId);
+      checkoutKeyRef.current = idempotencyKey;
+
       const transaction = await checkoutMutation.mutateAsync({
         programId,
         payload: {
@@ -157,6 +168,7 @@ export function EnrollmentButton({
           description: programTitle
             ? `Program enrollment payment: ${programTitle}`
             : 'Program enrollment payment',
+          idempotencyKey,
         },
       });
 
@@ -201,6 +213,12 @@ export function EnrollmentButton({
       router.push('/enrollments');
     } catch (error: any) {
       const errMessage = error?.error?.message || error?.message || 'Failed to enroll. Please try again.';
+      if (!isFree && isPaymentRequiredError(errMessage)) {
+        setMessage('Payment required. Redirecting to checkout...');
+        await handleStartCheckout();
+        return;
+      }
+
       setMessage(errMessage);
       toast.error(errMessage);
     }
@@ -260,23 +278,16 @@ export function EnrollmentButton({
       )}
 
       <button
-        type="button"
-        onClick={handleStartCheckout}
-        disabled={checkoutMutation.isPending}
-        className="btn btn-outline w-full"
-      >
-        {checkoutMutation.isPending
-          ? 'Starting checkout...'
-          : `Pay ${formatPrice(price, currency)}`}
-      </button>
-
-      <button
         onClick={handleEnroll}
-        disabled={enrollMutation.isPending}
+        disabled={enrollMutation.isPending || checkoutMutation.isPending}
         className="btn btn-primary w-full"
         type="button"
       >
-        {enrollMutation.isPending ? 'Enrolling...' : 'Enroll After Payment'}
+        {checkoutMutation.isPending
+          ? 'Starting checkout...'
+          : enrollMutation.isPending
+            ? 'Enrolling...'
+            : `Pay & Enroll (${formatPrice(price, currency)})`}
       </button>
 
       {message && <p className="text-sm text-muted-foreground">{message}</p>}

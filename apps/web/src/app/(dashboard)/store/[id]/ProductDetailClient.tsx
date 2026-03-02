@@ -1,8 +1,9 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useCreateOrder, useProductDetail, useValidateCoupon } from '@/hooks/use-commerce';
 import type { PaymentMethod } from '@/lib/api/payments';
+import { createCheckoutIdempotencyKey } from '@/lib/payment-idempotency';
 
 type PaystackInlineCallbacks = {
   onSuccess?: (payload: { reference?: string }) => void;
@@ -51,6 +52,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
   const { data: product, isLoading } = useProductDetail(productId);
   const createOrder = useCreateOrder();
   const validateCoupon = useValidateCoupon();
+  const checkoutKeyRef = useRef<string | null>(null);
 
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
@@ -129,6 +131,10 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
     }
 
     try {
+      const idempotencyKey = checkoutKeyRef.current
+        ?? createCheckoutIdempotencyKey('order', product.id);
+      checkoutKeyRef.current = idempotencyKey;
+
       const result = await createOrder.mutateAsync({
         items: [{ productId: product.id, quantity }],
         paymentMethod,
@@ -136,6 +142,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
         phone: paymentMethod === 'mpesa' ? phone.trim() : undefined,
         returnPath: '/orders',
         couponCode: couponCode.trim() || undefined,
+        idempotencyKey,
       });
 
       const accessCode = extractPaystackAccessCode(result.transaction.metadata);

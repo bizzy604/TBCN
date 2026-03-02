@@ -54,4 +54,13 @@ export class InitiatePaymentDto {
   @IsString()
   @MaxLength(40)
   couponCode?: string;
+
+  @ApiPropertyOptional({
+    example: 'program:3f2a1f9d-1b6b-4f8f-a2db-0f9a67f7f001:7f0ad8f5b2a74f5b8f7d6e1f0b62f4f6',
+    description: 'Client-generated idempotency key to safely retry checkout without duplicate charge attempts.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  idempotencyKey?: string;
 }

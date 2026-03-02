@@ -56,6 +56,7 @@ export const paymentsApi = {
     phone?: string;
     returnPath?: string;
     couponCode?: string;
+    idempotencyKey?: string;
   }) => api.post<Transaction>('/payments/checkout', payload),
 
   upgradeSubscription: (payload: {
@@ -67,6 +68,7 @@ export const paymentsApi = {
     phone?: string;
     returnPath?: string;
     couponCode?: string;
+    idempotencyKey?: string;
   }) => api.post<Transaction>('/payments/subscription/upgrade', payload),
 
   confirmPayment: (payload: {

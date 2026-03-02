@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { useConfirmPayment } from '@/hooks/use-payments';
@@ -18,6 +18,7 @@ const statusMap: Record<string, PaymentStatus> = {
 export default function PaymentConfirmationPage() {
   const params = useSearchParams();
   const confirm = useConfirmPayment();
+  const attemptedConfirmations = useRef(new Set<string>());
   const [resultMessage, setResultMessage] = useState<string>('Confirming payment status...');
   const [destination, setDestination] = useState<{ href: string; label: string }>({
     href: '/settings/subscription',
@@ -35,6 +36,19 @@ export default function PaymentConfirmationPage() {
       return;
     }
 
+    const confirmationKey = `${provider}:${reference}:${status}`;
+    const sessionKey = `payment-confirmation:${confirmationKey}`;
+    if (typeof window !== 'undefined' && sessionStorage.getItem(sessionKey) === '1') {
+      return;
+    }
+    if (attemptedConfirmations.current.has(confirmationKey)) {
+      return;
+    }
+    attemptedConfirmations.current.add(confirmationKey);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(sessionKey, '1');
+    }
+
     let active = true;
     const run = async () => {
       try {
@@ -42,10 +56,14 @@ export default function PaymentConfirmationPage() {
         const metadata = transaction.metadata ?? {};
         const returnPath = typeof metadata.returnPath === 'string' ? metadata.returnPath : null;
         const eventId = typeof metadata.eventId === 'string' ? metadata.eventId : null;
+        const programSlug = typeof metadata.programSlug === 'string' ? metadata.programSlug : null;
 
         const fallbackDestination = (() => {
           if (transaction.type === 'product') return { href: '/orders', label: 'View My Orders' };
           if (transaction.type === 'event_registration') return { href: eventId ? `/events/${eventId}` : '/events', label: 'Back to Event' };
+          if (transaction.type === 'program_enrollment') {
+            return { href: programSlug ? `/programs/${programSlug}` : '/programs', label: 'Back to Program' };
+          }
           return { href: '/settings/subscription', label: 'Back to Subscription' };
         })();
 
@@ -71,7 +89,7 @@ export default function PaymentConfirmationPage() {
     return () => {
       active = false;
     };
-  }, [confirm, reference, status]);
+  }, [confirm, provider, reference, status]);
 
   return (
     <Card className="overflow-hidden p-0">

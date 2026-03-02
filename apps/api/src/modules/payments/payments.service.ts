@@ -41,6 +41,7 @@ interface InitiateCheckoutOptions {
   returnPath?: string;
   metadata?: Record<string, unknown>;
   skipCoupon?: boolean;
+  idempotencyKey?: string;
 }
 
 @Injectable()
@@ -89,6 +90,21 @@ export class PaymentsService {
       throw new NotFoundException(`User "${userId}" not found`);
     }
 
+    const transactionType = options.type ?? 'subscription';
+    const idempotencyKey = this.normalizeIdempotencyKey(
+      options.idempotencyKey ?? dto.idempotencyKey,
+    );
+    if (idempotencyKey) {
+      const existing = await this.findTransactionByIdempotencyKey(
+        userId,
+        idempotencyKey,
+        transactionType,
+      );
+      if (existing) {
+        return existing;
+      }
+    }
+
     const paymentMethod = dto.paymentMethod ?? PaymentMethod.CARD;
     const reference = `txn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const requestedCurrency = (dto.currency ?? 'KES').toUpperCase();
@@ -98,7 +114,6 @@ export class PaymentsService {
       throw new BadRequestException('Payment amount must be a valid non-negative number.');
     }
 
-    const transactionType = options.type ?? 'subscription';
     const plan = options.plan ?? dto.plan ?? 'pro';
     const checkoutPhone = dto.phone?.trim() || user.phone || undefined;
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -115,6 +130,10 @@ export class PaymentsService {
       returnPath,
       ...options.metadata,
     };
+
+    if (idempotencyKey) {
+      checkoutMetadata.idempotencyKey = idempotencyKey;
+    }
 
     if (transactionType === 'subscription') {
       checkoutMetadata.plan = plan;
@@ -563,6 +582,31 @@ export class PaymentsService {
 
   private roundMoney(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private normalizeIdempotencyKey(value?: string): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    const normalized = value.trim();
+    if (!normalized) {
+      return undefined;
+    }
+    return normalized.slice(0, 120);
+  }
+
+  private async findTransactionByIdempotencyKey(
+    userId: string,
+    idempotencyKey: string,
+    type: string,
+  ): Promise<Transaction | null> {
+    return this.transactionRepo
+      .createQueryBuilder('txn')
+      .where('txn.userId = :userId', { userId })
+      .andWhere('txn.type = :type', { type })
+      .andWhere("txn.metadata ->> 'idempotencyKey' = :idempotencyKey", { idempotencyKey })
+      .orderBy('txn.createdAt', 'DESC')
+      .getOne();
   }
 
   private normalizeStatus(value: string): PaymentStatus {

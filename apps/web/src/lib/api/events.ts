@@ -41,6 +41,7 @@ export interface EventCheckoutPayload {
   returnPath?: string;
   description?: string;
   couponCode?: string;
+  idempotencyKey?: string;
 }
 
 export interface EventCheckoutTransaction {

@@ -72,4 +72,13 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(40)
   couponCode?: string;
+
+  @ApiPropertyOptional({
+    example: 'order:store-8a7c2d09bf3343f1b59bc7d1320f0d2c',
+    description: 'Client-generated idempotency key to prevent duplicate order + checkout creation.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  idempotencyKey?: string;
 }

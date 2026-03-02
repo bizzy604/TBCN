@@ -43,6 +43,25 @@ export class OrdersService {
   ) {}
 
   async createWithCheckout(userId: string, dto: CreateOrderDto) {
+    const idempotencyKey = this.normalizeIdempotencyKey(dto.idempotencyKey);
+    if (idempotencyKey) {
+      const existingOrder = await this.findOrderByIdempotencyKey(userId, idempotencyKey);
+      if (existingOrder) {
+        await this.reconcilePaymentStatus(existingOrder);
+        const transaction = existingOrder.transactionReference
+          ? await this.transactionRepo.findOne({ where: { reference: existingOrder.transactionReference } })
+          : null;
+
+        if (transaction) {
+          return {
+            order: existingOrder,
+            transaction,
+            checkoutUrl: transaction.checkoutUrl,
+          };
+        }
+      }
+    }
+
     const productIds = [...new Set(dto.items.map((item) => item.productId))];
     const products = await this.productRepo.find({
       where: {
@@ -116,6 +135,9 @@ export class OrdersService {
 
     const total = this.roundMoney(Math.max(0, grossTotal - discount));
     const orderMetadata: Record<string, unknown> = { ...(dto.metadata ?? {}) };
+    if (idempotencyKey) {
+      orderMetadata.idempotencyKey = idempotencyKey;
+    }
     if (appliedCoupon) {
       orderMetadata.coupon = {
         code: appliedCoupon.code,
@@ -159,6 +181,7 @@ export class OrdersService {
         returnPath: dto.returnPath ?? '/dashboard/orders',
         description: `Order payment (${savedOrder.invoiceNumber})`,
         skipCoupon: true,
+        idempotencyKey: idempotencyKey ? `order:${idempotencyKey}` : undefined,
         metadata: {
           orderId: savedOrder.id,
           invoiceNumber: savedOrder.invoiceNumber,
@@ -379,5 +402,27 @@ export class OrdersService {
 
   private roundMoney(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private normalizeIdempotencyKey(value?: string): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    const normalized = value.trim();
+    if (!normalized) {
+      return undefined;
+    }
+    return normalized.slice(0, 120);
+  }
+
+  private async findOrderByIdempotencyKey(userId: string, idempotencyKey: string): Promise<Order | null> {
+    return this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'item')
+      .leftJoinAndSelect('item.product', 'product')
+      .where('order.userId = :userId', { userId })
+      .andWhere("order.metadata ->> 'idempotencyKey' = :idempotencyKey", { idempotencyKey })
+      .orderBy('order.createdAt', 'DESC')
+      .getOne();
   }
 }

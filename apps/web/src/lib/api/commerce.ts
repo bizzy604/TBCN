@@ -136,6 +136,7 @@ export interface CreateOrderInput {
   shippingAddress?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
   couponCode?: string;
+  idempotencyKey?: string;
 }
 
 export interface CreateOrderResult {
@@ -314,4 +315,3 @@ export const couponsApi = {
   getAnalytics: () =>
     api.get<CouponAnalytics>('/coupons/admin/analytics'),
 };
-

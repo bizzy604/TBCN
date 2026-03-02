@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/hooks';
 import {
@@ -10,6 +10,7 @@ import {
   useUpgradeSubscription,
 } from '@/hooks/use-payments';
 import type { PaymentMethod } from '@/lib/api/payments';
+import { createCheckoutIdempotencyKey } from '@/lib/payment-idempotency';
 
 type PaystackInlineCallbacks = {
   onSuccess?: (payload: { reference?: string }) => void;
@@ -72,6 +73,7 @@ export default function SubscriptionSettingsPage() {
   const { data: transactions } = useMyTransactions(1, 10);
   const upgrade = useUpgradeSubscription();
   const cancel = useCancelSubscription();
+  const upgradeKeyByPlanRef = useRef<Record<string, string>>({});
 
   const currentPlan = subscription?.plan ?? 'free';
 
@@ -117,6 +119,10 @@ export default function SubscriptionSettingsPage() {
     }
 
     try {
+      const idempotencyKey = upgradeKeyByPlanRef.current[planId]
+        ?? createCheckoutIdempotencyKey('subscription', planId);
+      upgradeKeyByPlanRef.current[planId] = idempotencyKey;
+
       const tx = await upgrade.mutateAsync({
         amount,
         currency,
@@ -126,6 +132,7 @@ export default function SubscriptionSettingsPage() {
         phone: paymentMethod === 'mpesa' ? phone : undefined,
         returnPath: '/settings/subscription',
         couponCode: couponCode.trim() || undefined,
+        idempotencyKey,
       });
 
       const provider = extractProvider(tx.metadata);

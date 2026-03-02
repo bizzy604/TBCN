@@ -12,6 +12,7 @@ import { EnrollmentsRepository } from './enrollments.repository';
 import { ProgramsService } from '../programs/programs.service';
 import { Transaction } from '../payments/entities/transaction.entity';
 import { PaymentsService } from '../payments/payments.service';
+import { PaymentMethod } from '../payments/enums/payment-method.enum';
 
 describe('EnrollmentsService', () => {
   let service: EnrollmentsService;
@@ -157,7 +158,7 @@ describe('EnrollmentsService', () => {
 
       const result = await service.initiateCheckout('program-1', 'user-1', {
         amount: 1200,
-        paymentMethod: 'card',
+        paymentMethod: PaymentMethod.CARD,
       });
 
       expect(result.id).toBe('txn-1');

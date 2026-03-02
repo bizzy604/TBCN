@@ -158,6 +158,7 @@ export class EnrollmentsService {
       type: 'program_enrollment',
       description: payload.description,
       returnPath: payload.returnPath,
+      idempotencyKey: dto.idempotencyKey,
       metadata: {
         programId: program.id,
         programSlug: program.slug,
