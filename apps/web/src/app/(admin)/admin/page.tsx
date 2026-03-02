@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
       trend: 'up' as const,
     },
     {
-      icon: <CreditCard className="text-green-600" />,
+      icon: <CreditCard className="text-secondary" />,
       label: 'Revenue',
       value: `$${(metrics?.revenueTotal ?? 0).toFixed(2)}`,
       change: `${metrics?.transactionsTotal ?? 0} successful tx`,
@@ -152,7 +152,7 @@ function StatCard({
     <div className="rounded-xl border border-border bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
         <div className="rounded-lg bg-muted p-2">{icon}</div>
-        <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-600' : 'text-destructive'}`}>
+        <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-secondary' : 'text-destructive'}`}>
           {trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
           {change}
         </div>

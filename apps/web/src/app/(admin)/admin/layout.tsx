@@ -53,7 +53,7 @@ export default function AdminLayout({
 
   return (
     <AdminRoute>
-      <div className="min-h-screen bg-muted">
+      <div className="min-h-screen bg-background">
         {/* Mobile sidebar backdrop */}
         {sidebarOpen && (
           <div
@@ -139,7 +139,7 @@ export default function AdminLayout({
         {/* Main content */}
         <div className="lg:pl-64">
           {/* Header */}
-          <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-muted-foreground hover:text-foreground"

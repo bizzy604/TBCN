@@ -1,16 +1,15 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { authApi } from '@/lib/api';
-import toast from 'react-hot-toast';
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().email('Enter a valid email address'),
 });
 
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
@@ -29,12 +28,10 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
-    
     try {
       await authApi.forgotPassword(data.email);
       setIsSubmitted(true);
-    } catch (error) {
-      // Always show success to prevent email enumeration
+    } catch {
       setIsSubmitted(true);
     } finally {
       setIsLoading(false);
@@ -43,21 +40,18 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="space-y-6 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
-          <CheckCircle className="w-8 h-8 text-green-600" />
-        </div>
-        
+      <div className="space-y-5 text-center">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+          <CheckCircle className="h-7 w-7" />
+        </span>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Check your email</h1>
-          <p className="mt-2 text-muted-foreground">
-            If an account with that email exists, we've sent you a password reset link.
-            Please check your inbox and spam folder.
+          <h1 className="text-2xl font-semibold">Check your email</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            If an account exists for that email, a password reset link was sent.
           </p>
         </div>
-        
-        <Link href="/login" className="btn-primary inline-flex items-center gap-2">
-          <ArrowLeft size={20} />
+        <Link href="/login" className="btn btn-outline w-full">
+          <ArrowLeft size={16} />
           Back to login
         </Link>
       </div>
@@ -65,42 +59,23 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center lg:text-left">
-        <h1 className="text-3xl font-bold text-foreground">Forgot password?</h1>
-        <p className="mt-2 text-muted-foreground">
-          Enter your email and we'll send you a reset link
-        </p>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold">Forgot password?</h1>
+        <p className="text-sm text-muted-foreground">Enter your email and we will send a reset link.</p>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            className={`input ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
-            placeholder="you@example.com"
-            {...register('email')}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <label>
+          <span className="label">Email</span>
+          <input className={`input ${errors.email ? 'input-error' : ''}`} placeholder="you@example.com" {...register('email')} />
+          {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
+        </label>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="btn-primary w-full flex items-center justify-center gap-2"
-        >
+        <button type="submit" disabled={isLoading} className="btn btn-primary w-full">
           {isLoading ? (
             <>
-              <Loader2 size={20} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" />
               Sending...
             </>
           ) : (
@@ -109,13 +84,9 @@ export default function ForgotPasswordPage() {
         </button>
       </form>
 
-      {/* Back to login */}
-      <p className="text-center">
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
-        >
-          <ArrowLeft size={16} />
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/login" className="inline-flex items-center gap-2 font-medium text-secondary hover:text-primary">
+          <ArrowLeft size={14} />
           Back to login
         </Link>
       </p>

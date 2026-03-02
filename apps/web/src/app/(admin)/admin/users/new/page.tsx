@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,99 +52,58 @@ export default function AdminCreateUserPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create User</h1>
-          <p className="text-gray-500">Add a new user account to the platform.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Create User</h1>
+          <p className="text-sm text-muted-foreground">Add a new user account to the platform.</p>
         </div>
-        <Link href="/admin/users" className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+        <Link href="/admin/users" className="btn btn-outline">
           Back to Users
         </Link>
       </div>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
+      <section className="card p-5">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">First Name</label>
-            <input
-              required
-              value={form.firstName}
-              onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
-              placeholder="e.g. Alice"
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">First Name</span>
+            <input required value={form.firstName} onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))} placeholder="Alice" className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Last Name</label>
-            <input
-              required
-              value={form.lastName}
-              onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
-              placeholder="e.g. Otieno"
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">Last Name</span>
+            <input required value={form.lastName} onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))} placeholder="Otieno" className="input" />
+          </label>
 
-          <div className="space-y-1 md:col-span-2">
-            <label className="text-sm font-medium text-gray-700">Email Address</label>
-            <input
-              required
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-              placeholder="user@example.com"
-              className="input"
-            />
-          </div>
+          <label className="md:col-span-2">
+            <span className="label">Email Address</span>
+            <input required type="email" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} placeholder="user@example.com" className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Role</label>
-            <select
-              value={form.role}
-              onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as UserRole }))}
-              className="input"
-            >
+          <label>
+            <span className="label">Role</span>
+            <select value={form.role} onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as UserRole }))} className="input">
               <option value={UserRole.MEMBER}>Member</option>
               <option value={UserRole.PARTNER}>Partner</option>
               <option value={UserRole.COACH}>Coach</option>
               <option value={UserRole.ADMIN}>Admin</option>
               <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
             </select>
-          </div>
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Temporary Password</label>
-            <input
-              required
-              minLength={8}
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-              placeholder="At least 8 characters"
-              className="input"
-            />
-            <p className="text-xs text-gray-500">
-              User can reset this later through the forgot password flow.
-            </p>
-          </div>
+          <label>
+            <span className="label">Temporary Password</span>
+            <input required minLength={8} type="password" value={form.password} onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))} placeholder="At least 8 characters" className="input" />
+            <p className="mt-1 text-xs text-muted-foreground">User can reset this later through forgot-password flow.</p>
+          </label>
 
-          {error && (
-            <p className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          )}
+          {error && <p className="md:col-span-2 rounded-xl border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-          <div className="md:col-span-2 flex gap-3">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
+          <div className="md:col-span-2 flex flex-wrap gap-2">
+            <button type="submit" disabled={submitting} className="btn btn-primary">
               {submitting ? 'Creating...' : 'Create User'}
             </button>
-            <Link href="/admin/users" className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+            <Link href="/admin/users" className="btn btn-outline">
               Cancel
             </Link>
           </div>

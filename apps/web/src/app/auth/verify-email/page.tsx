@@ -1,132 +1,104 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, Mail, XCircle } from 'lucide-react';
+import { authApi } from '@/lib/api';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get('token');
+  const email = searchParams.get('email') || 'your@email.com';
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Verifying your email...');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'idle'>('idle');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!token) {
-      setStatus('error');
-      setMessage('No verification token provided.');
+      setStatus('idle');
       return;
     }
 
-    const verifyEmail = async () => {
+    let mounted = true;
+    const run = async () => {
+      setStatus('loading');
+      setMessage('Verifying your email...');
       try {
-        const res = await fetch(`${API_URL}/auth/verify-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setStatus('success');
-          setMessage(data.message || 'Email verified successfully!');
-        } else {
-          setStatus('error');
-          setMessage(data.message || 'Verification failed. The token may be invalid or expired.');
-        }
-      } catch {
+        const response = await authApi.verifyEmail(token);
+        if (!mounted) return;
+        setStatus('success');
+        setMessage(response.message || 'Email verified successfully.');
+      } catch (error: any) {
+        if (!mounted) return;
         setStatus('error');
-        setMessage('An error occurred while verifying your email. Please try again.');
+        setMessage(error?.response?.data?.message || error?.message || 'Verification failed.');
       }
     };
 
-    verifyEmail();
+    void run();
+    return () => {
+      mounted = false;
+    };
   }, [token]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-6 text-center">
-        {/* Status Icon */}
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-          {status === 'loading' && (
-            <div className="relative h-10 w-10">
-              <div className="absolute inset-0 rounded-full border-4 border-muted-foreground/20" />
-              <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="card w-full max-w-md p-6 text-center sm:p-8">
+        <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-accent/16 text-accent">
+          {status === 'success' ? <CheckCircle2 className="h-8 w-8" /> : status === 'error' ? <XCircle className="h-8 w-8" /> : <Mail className="h-8 w-8" />}
+        </div>
+
+        {status === 'idle' && (
+          <>
+            <h1 className="text-2xl font-semibold">Verify your email</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We sent a verification link to {email}. Open your inbox and click the link to activate your account.
+            </p>
+
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              <a className="btn btn-outline" href="https://mail.google.com" target="_blank" rel="noreferrer">
+                Open Gmail
+              </a>
+              <a className="btn btn-outline" href="https://outlook.live.com" target="_blank" rel="noreferrer">
+                Open Outlook
+              </a>
             </div>
-          )}
-          {status === 'success' && (
-            <svg
-              className="h-10 w-10 text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
-          {status === 'error' && (
-            <svg
-              className="h-10 w-10 text-red-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          )}
-        </div>
 
-        {/* Title */}
-        <h1 className="text-2xl font-bold tracking-tight">
-          {status === 'loading' && 'Verifying Email...'}
-          {status === 'success' && 'Email Verified!'}
-          {status === 'error' && 'Verification Failed'}
-        </h1>
-
-        {/* Message */}
-        <p className="text-muted-foreground">{message}</p>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-3">
-          {status === 'success' && (
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Continue to Login
-            </Link>
-          )}
-          {status === 'error' && (
-            <>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Go to Login
+            <div className="mt-3">
+              <Link href="/login" className="text-sm font-medium text-secondary hover:text-primary">
+                Back to login
               </Link>
-              <p className="text-sm text-muted-foreground">
-                Need a new link?{' '}
-                <Link href="/register" className="text-primary hover:underline">
-                  Register again
-                </Link>
-              </p>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
+
+        {status === 'loading' && (
+          <>
+            <h1 className="text-2xl font-semibold">Verifying email</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+          </>
+        )}
+
+        {status === 'success' && (
+          <>
+            <h1 className="text-2xl font-semibold">Email verified</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+            <Link href="/dashboard" className="btn btn-primary mt-6 w-full">
+              Go to Dashboard
+            </Link>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <h1 className="text-2xl font-semibold">Verification failed</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+            <Link href="/register" className="btn btn-outline mt-6 w-full">
+              Register again
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

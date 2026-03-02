@@ -23,6 +23,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { UserRole } from '@tbcn/shared';
+import { InitiatePaymentDto } from '../payments/dto/initiate-payment.dto';
 
 @ApiTags('Enrollments')
 @Controller('enrollments')
@@ -40,6 +41,17 @@ export class EnrollmentsController {
     @Body() dto: CreateEnrollmentDto,
   ) {
     return this.enrollmentsService.enroll(userId, dto);
+  }
+
+  @Post(':programId/checkout')
+  @ApiOperation({ summary: 'Initiate program enrollment checkout' })
+  @ApiResponse({ status: 201, description: 'Program checkout initiated' })
+  async checkout(
+    @Param('programId', ParseUUIDPipe) programId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: InitiatePaymentDto,
+  ) {
+    return this.enrollmentsService.initiateCheckout(programId, userId, dto);
   }
 
   @Get('me')

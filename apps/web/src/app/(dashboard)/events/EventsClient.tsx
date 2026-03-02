@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -11,8 +11,10 @@ import {
 import { useAuthStore } from '@/lib/store';
 import type { LocationType } from '@/lib/api/events';
 
+type EventsTab = 'upcoming' | 'registered' | 'replays';
+
 function toDateTimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (value: number) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
@@ -20,11 +22,14 @@ export default function EventsClient() {
   const role = useAuthStore((state) => state.user?.role ?? null);
   const canCreateEvent = role === 'coach' || role === 'admin' || role === 'super_admin';
 
+  const [tab, setTab] = useState<EventsTab>('upcoming');
+  const [locationFilter, setLocationFilter] = useState<'all' | LocationType>('all');
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
   const { data, isLoading } = useEvents({ upcoming: true });
   const { data: registrations } = useMyEventRegistrations();
   const registerEvent = useRegisterEvent();
   const createEvent = useCreateEvent();
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const defaultTimes = useMemo(() => {
     const start = new Date();
@@ -52,11 +57,20 @@ export default function EventsClient() {
   });
 
   const events = data?.data ?? [];
-  const registeredIds = new Set(
-    (registrations ?? [])
-      .filter((r) => r.status === 'registered')
-      .map((r) => r.eventId),
-  );
+  const registeredMap = new Set((registrations ?? []).filter((item) => item.status === 'registered').map((item) => item.eventId));
+
+  const visibleEvents = useMemo(() => {
+    let rows = [...events];
+    if (tab === 'registered') {
+      rows = rows.filter((item) => registeredMap.has(item.id));
+    } else if (tab === 'replays') {
+      rows = [];
+    }
+    if (locationFilter !== 'all') {
+      rows = rows.filter((item) => item.locationType === locationFilter);
+    }
+    return rows;
+  }, [events, registeredMap, tab, locationFilter]);
 
   const handleRegister = async (eventId: string) => {
     try {
@@ -70,7 +84,6 @@ export default function EventsClient() {
   const handleCreateEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedbackMessage(null);
-
     try {
       await createEvent.mutateAsync({
         title: form.title.trim(),
@@ -86,218 +99,189 @@ export default function EventsClient() {
         status: 'published',
       });
       setFeedbackMessage('Event created and published successfully.');
-      setForm((prev) => ({
-        ...prev,
-        title: '',
-        description: '',
-      }));
+      setForm((prev) => ({ ...prev, title: '', description: '' }));
     } catch (error: any) {
       setFeedbackMessage(error?.error?.message || error?.message || 'Could not create event.');
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2, 3].map((n) => (
-          <div
-            key={n}
-            className="h-24 animate-pulse rounded-lg border border-border bg-muted/30"
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2">
+        <TabButton active={tab === 'upcoming'} onClick={() => setTab('upcoming')}>
+          Upcoming
+        </TabButton>
+        <TabButton active={tab === 'registered'} onClick={() => setTab('registered')}>
+          Registered
+        </TabButton>
+        <TabButton active={tab === 'replays'} onClick={() => setTab('replays')}>
+          Replays
+        </TabButton>
+
+        <select
+          value={locationFilter}
+          onChange={(event) => setLocationFilter(event.target.value as 'all' | LocationType)}
+          className="input ml-auto max-w-[180px]"
+        >
+          <option value="all">All Locations</option>
+          <option value="virtual">Virtual</option>
+          <option value="physical">In-person</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+
       {canCreateEvent && (
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="dashboard-panel">
           <h2 className="text-lg font-semibold">Create Event</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Coaches and admins can publish events directly from this page.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Publish workshops and masterclasses directly from this screen.</p>
 
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleCreateEvent}>
-            <div className="space-y-1 md:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Title</label>
+            <label className="md:col-span-2">
+              <span className="label">Title</span>
               <input
                 required
                 value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g. Personal Branding Masterclass"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                className="input"
+                placeholder="Personal Branding Masterclass"
               />
-            </div>
+            </label>
 
-            <div className="space-y-1 md:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
+            <label className="md:col-span-2">
+              <span className="label">Description</span>
               <textarea
                 required
                 value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe the event agenda and expected outcomes."
-                className="min-h-[90px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                className="input min-h-[100px]"
               />
-            </div>
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Start Time</label>
-              <input
-                required
-                type="datetime-local"
-                value={form.startAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, startAt: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Start Time</span>
+              <input type="datetime-local" value={form.startAt} onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))} className="input" required />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">End Time</label>
-              <input
-                required
-                type="datetime-local"
-                value={form.endAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, endAt: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">End Time</span>
+              <input type="datetime-local" value={form.endAt} onChange={(event) => setForm((prev) => ({ ...prev, endAt: event.target.value }))} className="input" required />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Location Type</label>
-              <select
-                value={form.locationType}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, locationType: e.target.value as LocationType }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              >
+            <label>
+              <span className="label">Location Type</span>
+              <select value={form.locationType} onChange={(event) => setForm((prev) => ({ ...prev, locationType: event.target.value as LocationType }))} className="input">
                 <option value="virtual">Virtual</option>
                 <option value="physical">Physical</option>
                 <option value="hybrid">Hybrid</option>
               </select>
-            </div>
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Capacity</label>
-              <input
-                type="number"
-                min={1}
-                value={form.capacity}
-                onChange={(e) => setForm((prev) => ({ ...prev, capacity: Number(e.target.value) }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Capacity</span>
+              <input type="number" min={1} value={form.capacity} onChange={(event) => setForm((prev) => ({ ...prev, capacity: Number(event.target.value) }))} className="input" />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Location (optional)</label>
-              <input
-                value={form.location}
-                onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                placeholder="e.g. Nairobi Garage, Westlands"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Location (optional)</span>
+              <input value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} className="input" />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Meeting URL (optional)</label>
-              <input
-                value={form.meetingUrl}
-                onChange={(e) => setForm((prev) => ({ ...prev, meetingUrl: e.target.value }))}
-                placeholder="https://meet.google.com/..."
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Meeting URL (optional)</span>
+              <input value={form.meetingUrl} onChange={(event) => setForm((prev) => ({ ...prev, meetingUrl: event.target.value }))} className="input" />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Price</label>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Price</span>
+              <input type="number" min={0} step="0.01" value={form.price} onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))} className="input" />
+            </label>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Currency</label>
-              <input
-                value={form.currency}
-                onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value.toUpperCase() }))}
-                placeholder="KES"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <label>
+              <span className="label">Currency</span>
+              <input value={form.currency} onChange={(event) => setForm((prev) => ({ ...prev, currency: event.target.value.toUpperCase() }))} className="input" />
+            </label>
 
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={createEvent.isPending}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-              >
-                {createEvent.isPending ? 'Creating...' : 'Create Event'}
-              </button>
-            </div>
+            <button type="submit" disabled={createEvent.isPending} className="btn btn-primary md:col-span-2 w-fit">
+              {createEvent.isPending ? 'Creating...' : 'Create Event'}
+            </button>
           </form>
         </section>
       )}
 
       {feedbackMessage && <p className="text-sm text-muted-foreground">{feedbackMessage}</p>}
 
-      {events.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
-          No upcoming events available right now.
+      {isLoading ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {[1, 2, 3, 4].map((index) => (
+            <div key={index} className="card h-44 animate-pulse bg-muted/55" />
+          ))}
+        </div>
+      ) : visibleEvents.length === 0 ? (
+        <div className="card p-10 text-center text-sm text-muted-foreground">
+          {tab === 'replays' ? 'Replays are not available yet.' : 'No events found for the selected filters.'}
         </div>
       ) : (
-        events.map((event) => {
-          const registered = registeredIds.has(event.id);
-          return (
-            <article key={event.id} className="rounded-lg border border-border bg-card p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold">{event.title}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                    {event.description}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {new Date(event.startAt).toLocaleString()} - {event.locationType}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {event.currency} {event.price} - {event.registrationCount} registered
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/events/${event.id}`}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    View
-                  </Link>
-                  {Number(event.price) > 0 && !registered ? (
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-                    >
-                      Pay & Register
+        <div className="grid gap-3 md:grid-cols-2">
+          {visibleEvents.map((event) => {
+            const registered = registeredMap.has(event.id);
+            const paid = Number(event.price) > 0;
+
+            return (
+              <article key={event.id} className="card-hover overflow-hidden">
+                <div className="h-32 bg-gradient-to-br from-secondary/30 to-accent/35" />
+                <div className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground line-clamp-1">{event.title}</h2>
+                      <p className="text-xs text-muted-foreground">{new Date(event.startAt).toLocaleString()}</p>
+                    </div>
+                    <span className={`badge ${event.locationType === 'physical' ? 'bg-accent/20 text-amber-900' : 'bg-secondary/15 text-secondary'}`}>
+                      {event.locationType}
+                    </span>
+                  </div>
+
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-foreground">
+                      {paid ? `${event.currency} ${event.price}` : 'Free'}
+                    </span>
+                    <span className="text-muted-foreground">{event.registrationCount} registered</span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Link href={`/events/${event.id}`} className="btn btn-sm btn-outline">
+                      View
                     </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={registered || registerEvent.isPending}
-                      onClick={() => handleRegister(event.id)}
-                      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-                    >
-                      {registered ? 'Registered' : 'Register'}
-                    </button>
-                  )}
+                    {paid && !registered ? (
+                      <Link href={`/events/${event.id}`} className="btn btn-sm btn-primary">
+                        Pay & Register
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRegister(event.id)}
+                        disabled={registered || registerEvent.isPending}
+                        className="btn btn-sm btn-primary"
+                      >
+                        {registered ? 'Registered' : 'Register'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </article>
-          );
-        })
+              </article>
+            );
+          })}
+        </div>
       )}
     </div>
+  );
+}
+
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} className={`btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`}>
+      {children}
+    </button>
   );
 }

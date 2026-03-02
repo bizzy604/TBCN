@@ -1,13 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
-/**
- * Global error boundary
- * Catches and displays runtime errors
- */
 export default function Error({
   error,
   reset,
@@ -16,45 +11,25 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to reporting service
     console.error('Application error:', error);
   }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="mx-auto max-w-md text-center">
-        {/* Error icon */}
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/30">
-          <ExclamationTriangleIcon className="h-8 w-8 text-error-600 dark:text-error-400" />
-        </div>
-
-        {/* Title */}
-        <h1 className="mb-2 text-2xl font-bold text-foreground">
-          Something went wrong
-        </h1>
-
-        {/* Description */}
-        <p className="mb-6 text-muted-foreground">
-          We encountered an unexpected error. Our team has been notified and is working on a fix.
+      <div className="card max-w-lg p-10 text-center">
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Error 500</p>
+        <h1 className="mt-2 text-4xl font-semibold">Something Went Wrong</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          We are already tracking this issue. Please retry in a moment.
         </p>
 
-        {/* Error digest (for debugging) */}
-        {error.digest && (
-          <p className="mb-6 font-mono text-xs text-muted-foreground">
-            Error ID: {error.digest}
-          </p>
-        )}
+        {error.digest && <p className="mt-4 text-xs font-mono text-muted-foreground">Error ID: {error.digest}</p>}
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
-            onClick={reset}
-            className="btn-primary inline-flex items-center justify-center gap-2"
-          >
-            <ArrowPathIcon className="h-4 w-4" />
-            Try Again
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button onClick={reset} className="btn btn-primary" type="button">
+            Retry
           </button>
-          <Link href="/" className="btn-secondary">
+          <Link href="/" className="btn btn-outline">
             Go Home
           </Link>
         </div>

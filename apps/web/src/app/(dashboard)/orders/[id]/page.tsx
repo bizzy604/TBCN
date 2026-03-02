@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Card } from '@/components/ui/Card';
 import OrderDetailClient from './OrderDetailClient';
 
@@ -11,15 +11,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
 
   return (
-    <Card className="p-6">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Order Details</h1>
-          <p className="mt-2 text-muted-foreground">View invoice breakdown and fulfillment status.</p>
-        </div>
+    <Card className="overflow-hidden p-0">
+      <div className="border-b border-border bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+        <p className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/70">Order Detail</p>
+        <h1 className="mt-2 text-3xl font-semibold text-white">Invoice & Fulfillment</h1>
+      </div>
+      <div className="p-5 sm:p-6">
         <OrderDetailClient orderId={id} />
       </div>
     </Card>
   );
 }
-

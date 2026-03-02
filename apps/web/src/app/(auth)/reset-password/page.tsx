@@ -1,8 +1,19 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { authApi } from '@/lib/api';
+
+function scorePassword(value: string): number {
+  let score = 0;
+  if (value.length >= 8) score += 1;
+  if (/[A-Z]/.test(value)) score += 1;
+  if (/[a-z]/.test(value)) score += 1;
+  if (/\d/.test(value)) score += 1;
+  return score;
+}
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -12,145 +23,132 @@ export default function ResetPasswordPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
 
+  const passwordScore = scorePassword(password);
+  const passwordStrength = ['Weak', 'Fair', 'Good', 'Strong'][Math.max(0, passwordScore - 1)] || 'Weak';
+
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Invalid Reset Link</h1>
-          <p className="text-gray-600">
-            This password reset link is invalid or has expired.
-          </p>
-          <Link
-            href="/forgot-password"
-            className="inline-block rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
-          >
-            Request New Link
-          </Link>
-        </div>
+      <div className="space-y-4 text-center">
+        <h1 className="text-2xl font-semibold">Invalid reset link</h1>
+        <p className="text-sm text-muted-foreground">This password reset link is invalid or has expired.</p>
+        <Link href="/forgot-password" className="btn btn-primary w-full">
+          Request new link
+        </Link>
       </div>
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Password must be at least 8 characters.');
       return;
     }
 
     setStatus('loading');
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/reset-password`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, password }),
-        },
-      );
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to reset password');
-      }
-
+      await authApi.resetPassword(token, password, confirmPassword);
       setStatus('success');
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+      setError(err?.response?.data?.message || err?.message || 'Could not reset password.');
       setStatus('error');
     }
   };
 
   if (status === 'success') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Password Reset!</h1>
-          <p className="text-gray-600">
-            Your password has been reset successfully.
-          </p>
-          <Link
-            href="/login"
-            className="inline-block rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
-          >
-            Sign In
-          </Link>
+      <div className="space-y-5 text-center">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+          <CheckCircle className="h-7 w-7" />
+        </span>
+        <div>
+          <h1 className="text-2xl font-semibold">Password updated</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Your password has been updated successfully.</p>
         </div>
+        <Link href="/login" className="btn btn-primary w-full">
+          Sign in
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
-          <p className="mt-2 text-gray-600">Enter your new password below.</p>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold">Reset password</h1>
+        <p className="text-sm text-muted-foreground">Enter your new password to continue.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <p className="rounded-xl border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+        <label>
+          <span className="label">New Password</span>
+          <input
+            type="password"
+            minLength={8}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="input"
+            placeholder="Enter a strong password"
+          />
+        </label>
+
+        <div className="space-y-2 rounded-xl border border-border bg-muted/45 p-3">
+          <div className="h-2 overflow-hidden rounded-full bg-border">
+            <div
+              className={`h-full transition-all ${
+                passwordScore <= 1
+                  ? 'bg-destructive'
+                  : passwordScore === 2
+                    ? 'bg-accent'
+                    : passwordScore === 3
+                      ? 'bg-secondary'
+                      : 'bg-primary'
+              }`}
+              style={{ width: `${(passwordScore / 4) * 100}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Strength: {passwordStrength}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </div>
+        <label>
+          <span className="label">Confirm Password</span>
+          <input
+            type="password"
+            minLength={8}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="input"
+            placeholder="Confirm your password"
+          />
+        </label>
+
+        <button type="submit" disabled={status === 'loading'} className="btn btn-primary w-full">
+          {status === 'loading' ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            'Reset Password'
           )}
+        </button>
+      </form>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              New Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Resetting...' : 'Reset Password'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-600">
-          Remember your password?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/login" className="font-medium text-secondary hover:text-primary">
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -18,14 +18,12 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
   const { data: invoice } = useOrderInvoice(orderId);
   const cancelOrder = useCancelOrder();
   const requestDownload = useRequestOrderDownload();
-
   const [message, setMessage] = useState<string | null>(null);
 
   const canCancel = order?.status === 'pending_payment';
+
   const totals = useMemo(() => {
-    if (!order) {
-      return null;
-    }
+    if (!order) return null;
     return {
       subtotal: Number(order.subtotal),
       tax: Number(order.tax),
@@ -35,9 +33,7 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
   }, [order]);
 
   const handleCancelOrder = async () => {
-    if (!order) {
-      return;
-    }
+    if (!order) return;
     setMessage(null);
     try {
       await cancelOrder.mutateAsync(order.id);
@@ -61,78 +57,51 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
   };
 
   if (isLoading) {
-    return <div className="h-56 animate-pulse rounded-lg border border-border bg-muted/30" />;
+    return <div className="card h-72 animate-pulse bg-muted/55" />;
   }
 
   if (!order) {
-    return (
-      <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
-        Order not found.
-      </div>
-    );
+    return <div className="card p-8 text-sm text-muted-foreground">Order not found.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-card p-5">
+    <div className="space-y-4">
+      <section className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">{order.invoiceNumber}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Status: <span className="capitalize">{order.status.replace('_', ' ')}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Created: {new Date(order.createdAt).toLocaleString()}
-            </p>
-            {order.couponCode && (
-              <p className="text-sm text-muted-foreground">Coupon: {order.couponCode}</p>
-            )}
+            <h2 className="text-xl font-semibold text-foreground">{order.invoiceNumber}</h2>
+            <p className="mt-1 text-sm text-muted-foreground capitalize">Status: {order.status.replace('_', ' ')}</p>
+            <p className="text-sm text-muted-foreground">Created: {new Date(order.createdAt).toLocaleString()}</p>
+            {order.couponCode && <p className="text-sm text-muted-foreground">Coupon: {order.couponCode}</p>}
           </div>
 
           <div className="flex gap-2">
-            <Link
-              href="/orders"
-              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-            >
+            <Link href="/orders" className="btn btn-outline btn-sm">
               Back
             </Link>
-            <button
-              type="button"
-              disabled={!canCancel || cancelOrder.isPending}
-              onClick={handleCancelOrder}
-              className="rounded-md border border-border px-3 py-2 text-sm disabled:opacity-50"
-            >
+            <button type="button" disabled={!canCancel || cancelOrder.isPending} onClick={handleCancelOrder} className="btn btn-outline btn-sm">
               Cancel Order
             </button>
           </div>
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="card p-5">
         <h3 className="text-lg font-semibold">Items</h3>
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-2">
           {order.items.map((item) => (
-            <article key={item.id} className="rounded-md border border-border p-3">
+            <article key={item.id} className="rounded-xl border border-border bg-background p-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium">{item.productTitle}</p>
+                  <p className="font-semibold text-foreground">{item.productTitle}</p>
                   <p className="text-sm text-muted-foreground">
-                    Qty {item.quantity} • {order.currency} {Number(item.lineTotal).toFixed(2)}
+                    Qty {item.quantity} · {order.currency} {Number(item.lineTotal).toFixed(2)}
                   </p>
-                  {item.isDigital && (
-                    <p className="text-xs text-muted-foreground">
-                      Remaining downloads: {item.remainingDownloads}
-                    </p>
-                  )}
+                  {item.isDigital && <p className="text-xs text-muted-foreground">Remaining downloads: {item.remainingDownloads}</p>}
                 </div>
 
                 {item.isDigital && order.status === 'paid' && (
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(item.id)}
-                    disabled={requestDownload.isPending}
-                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-                  >
+                  <button type="button" onClick={() => handleDownload(item.id)} disabled={requestDownload.isPending} className="btn btn-sm btn-primary">
                     Download
                   </button>
                 )}
@@ -142,53 +111,29 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
         </div>
       </section>
 
-      {invoice && (
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-lg font-semibold">Invoice Summary</h3>
-          <div className="mt-3 space-y-1 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{invoice.currency} {Number(invoice.subtotal).toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Tax</span>
-              <span>{invoice.currency} {Number(invoice.tax).toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Discount</span>
-              <span>- {invoice.currency} {Number(invoice.discount).toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-border pt-2 font-semibold">
-              <span>Total</span>
-              <span>{invoice.currency} {Number(invoice.total).toFixed(2)}</span>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {totals && !invoice && (
-        <section className="rounded-lg border border-border bg-card p-5 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{order.currency} {totals.subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Tax</span>
-            <span>{order.currency} {totals.tax.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Discount</span>
-            <span>- {order.currency} {totals.discount.toFixed(2)}</span>
-          </div>
+      <section className="card p-5">
+        <h3 className="text-lg font-semibold">Invoice Summary</h3>
+        <div className="mt-3 space-y-1 text-sm">
+          <SummaryRow label="Subtotal" value={`${order.currency} ${(invoice ? Number(invoice.subtotal) : totals?.subtotal || 0).toFixed(2)}`} />
+          <SummaryRow label="Tax" value={`${order.currency} ${(invoice ? Number(invoice.tax) : totals?.tax || 0).toFixed(2)}`} />
+          <SummaryRow label="Discount" value={`- ${order.currency} ${(invoice ? Number(invoice.discount) : totals?.discount || 0).toFixed(2)}`} />
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-semibold">
             <span>Total</span>
-            <span>{order.currency} {totals.total.toFixed(2)}</span>
+            <span>{order.currency} {(invoice ? Number(invoice.total) : totals?.total || 0).toFixed(2)}</span>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
 }
 
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value}</span>
+    </div>
+  );
+}

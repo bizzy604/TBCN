@@ -6,6 +6,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { EnrollmentsRepository } from './enrollments.repository';
 import { ProgramsService } from '../programs/programs.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
@@ -18,6 +20,10 @@ import {
   createPaginationMeta,
   createPaginatedResult,
 } from '../../common/dto';
+import { InitiatePaymentDto } from '../payments/dto/initiate-payment.dto';
+import { Transaction } from '../payments/entities/transaction.entity';
+import { PaymentsService } from '../payments/payments.service';
+import { PaymentStatus } from '../payments/enums/payment-status.enum';
 
 export const ENROLLMENT_EVENTS = {
   CREATED: 'enrollment.created',
@@ -37,6 +43,9 @@ export class EnrollmentsService {
   constructor(
     private readonly repository: EnrollmentsRepository,
     private readonly programsService: ProgramsService,
+    @InjectRepository(Transaction)
+    private readonly transactionRepo: Repository<Transaction>,
+    private readonly paymentsService: PaymentsService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -46,6 +55,7 @@ export class EnrollmentsService {
 
   async enroll(userId: string, dto: CreateEnrollmentDto): Promise<Enrollment> {
     const program = await this.programsService.findById(dto.programId);
+    const programPrice = Number(program.price || 0);
 
     // Check if already enrolled
     const existing = await this.repository.findByUserAndProgram(userId, dto.programId);
@@ -56,6 +66,16 @@ export class EnrollmentsService {
       if (existing.status === EnrollmentStatus.COMPLETED) {
         throw new ConflictException('You have already completed this program');
       }
+
+      if (programPrice > 0) {
+        const hasPaid = await this.hasSuccessfulProgramPayment(userId, dto.programId);
+        if (!hasPaid) {
+          throw new BadRequestException(
+            'This is a paid program. Complete payment first, then enroll.',
+          );
+        }
+      }
+
       // Re-enroll if dropped/expired
       const reEnrolled = await this.repository.update(existing.id, {
         status: EnrollmentStatus.ACTIVE,
@@ -65,6 +85,15 @@ export class EnrollmentsService {
         lastAccessedAt: new Date(),
       });
       return reEnrolled;
+    }
+
+    if (programPrice > 0) {
+      const hasPaid = await this.hasSuccessfulProgramPayment(userId, dto.programId);
+      if (!hasPaid) {
+        throw new BadRequestException(
+          'This is a paid program. Complete payment first, then enroll.',
+        );
+      }
     }
 
     // Check capacity
@@ -92,6 +121,49 @@ export class EnrollmentsService {
     });
 
     return this.repository.findById(enrollment.id, ['program']);
+  }
+
+  async initiateCheckout(
+    programId: string,
+    userId: string,
+    dto: InitiatePaymentDto,
+  ): Promise<Transaction> {
+    const program = await this.programsService.findById(programId);
+    const programPrice = Number(program.price || 0);
+
+    if (programPrice <= 0 || program.isFree) {
+      throw new BadRequestException('This program is free. No payment is required.');
+    }
+
+    if (dto.amount && Math.abs(dto.amount - programPrice) > 0.01) {
+      throw new BadRequestException('Payment amount must match the program price.');
+    }
+
+    const hasPaid = await this.hasSuccessfulProgramPayment(userId, programId);
+    if (hasPaid) {
+      throw new BadRequestException(
+        'Payment for this program is already completed. Proceed to enroll.',
+      );
+    }
+
+    const payload: InitiatePaymentDto = {
+      ...dto,
+      amount: programPrice,
+      currency: program.currency,
+      description: dto.description || `Program enrollment payment: ${program.title}`,
+      returnPath: dto.returnPath || `/programs/${program.slug}`,
+    };
+
+    return this.paymentsService.initiateCheckout(userId, payload, {
+      type: 'program_enrollment',
+      description: payload.description,
+      returnPath: payload.returnPath,
+      metadata: {
+        programId: program.id,
+        programSlug: program.slug,
+        programTitle: program.title,
+      },
+    });
   }
 
   async findById(id: string): Promise<Enrollment> {
@@ -244,6 +316,19 @@ export class EnrollmentsService {
     if (enrollment.userId !== userId) {
       throw new BadRequestException('You do not have access to this enrollment');
     }
+  }
+
+  private async hasSuccessfulProgramPayment(userId: string, programId: string): Promise<boolean> {
+    const transaction = await this.transactionRepo
+      .createQueryBuilder('txn')
+      .where('txn.userId = :userId', { userId })
+      .andWhere('txn.type = :type', { type: 'program_enrollment' })
+      .andWhere('txn.status = :status', { status: PaymentStatus.SUCCESS })
+      .andWhere("txn.metadata ->> 'programId' = :programId", { programId })
+      .orderBy('txn.createdAt', 'DESC')
+      .getOne();
+
+    return !!transaction;
   }
 
   private canAccessEnrollment(

@@ -1,74 +1,74 @@
-'use client';
+﻿'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useProgramBySlug } from '@/hooks/use-programs';
-import { useMyEnrollments, useLessonProgress, useUpdateProgress } from '@/hooks/use-enrollments';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LessonContent } from '@/components/lessons/LessonContent';
 import { LessonNavigation } from '@/components/lessons/LessonNavigation';
 import { ProgressTracker } from '@/components/lessons/ProgressTracker';
+import { useMyEnrollments, useLessonProgress, useUpdateProgress } from '@/hooks/use-enrollments';
+import { useProgramBySlug } from '@/hooks/use-programs';
+import type { Enrollment, LessonProgress } from '@/lib/api/enrollments';
 import type { Lesson, ProgramModule } from '@/lib/api/programs';
-import type { LessonProgress, Enrollment } from '@/lib/api/enrollments';
 
 interface LessonPlayerProps {
   programSlug: string;
   lessonId: string;
 }
 
-/** Find a lesson across all modules */
 function findLesson(modules: ProgramModule[], lessonId: string): Lesson | null {
-  for (const mod of modules) {
-    const lesson = mod.lessons?.find((l) => l.id === lessonId);
-    if (lesson) return lesson;
+  for (const module of modules) {
+    const lesson = module.lessons?.find((entry) => entry.id === lessonId);
+    if (lesson) {
+      return lesson;
+    }
   }
   return null;
 }
 
-/** Get previous/next lesson IDs */
 function getAdjacentLessons(modules: ProgramModule[], lessonId: string) {
-  const flatLessons: Lesson[] = [];
-  for (const mod of modules) {
-    if (mod.lessons) flatLessons.push(...mod.lessons);
-  }
-  const idx = flatLessons.findIndex((l) => l.id === lessonId);
+  const lessons: Lesson[] = [];
+  modules.forEach((module) => {
+    if (module.lessons) {
+      lessons.push(...module.lessons);
+    }
+  });
+  const index = lessons.findIndex((lesson) => lesson.id === lessonId);
   return {
-    prev: idx > 0 ? flatLessons[idx - 1] : null,
-    next: idx < flatLessons.length - 1 ? flatLessons[idx + 1] : null,
-    currentIndex: idx,
-    total: flatLessons.length,
+    prev: index > 0 ? lessons[index - 1] : null,
+    next: index < lessons.length - 1 ? lessons[index + 1] : null,
+    currentIndex: index,
+    total: lessons.length,
   };
 }
 
 export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlayerProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: program, isLoading: programLoading } = useProgramBySlug(programSlug);
-
-  // Open sidebar by default on desktop, closed on mobile
-  useEffect(() => {
-    const mql = window.matchMedia('(min-width: 1024px)');
-    setSidebarOpen(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setSidebarOpen(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const { data: enrollmentsData } = useMyEnrollments(1, 100);
   const updateProgress = useUpdateProgress();
 
-  // Find the enrollment for this program
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    setSidebarOpen(mediaQuery.matches);
+    const handler = (event: MediaQueryListEvent) => setSidebarOpen(event.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
   const enrollment: Enrollment | undefined = useMemo(() => {
-    if (!enrollmentsData?.data || !program) return undefined;
-    return enrollmentsData.data.find((e: Enrollment) => e.programId === program.id);
-  }, [enrollmentsData, program]);
+    if (!program || !enrollmentsData?.data) {
+      return undefined;
+    }
+    return enrollmentsData.data.find((item: Enrollment) => item.programId === program.id);
+  }, [enrollmentsData?.data, program]);
 
   const { data: progressData } = useLessonProgress(enrollment?.id || '');
 
-  // Build progress map
   const progressMap = useMemo(() => {
     const map: Record<string, LessonProgress> = {};
     if (Array.isArray(progressData)) {
-      progressData.forEach((p: LessonProgress) => {
-        map[p.lessonId] = p;
+      progressData.forEach((entry: LessonProgress) => {
+        map[entry.lessonId] = entry;
       });
     }
     return map;
@@ -79,7 +79,6 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
     ? getAdjacentLessons(program.modules, lessonId)
     : { prev: null, next: null, currentIndex: -1, total: 0 };
 
-  // Mark lesson as accessed / update progress
   const handleVideoTimeUpdate = useCallback(
     (currentTime: number) => {
       if (!enrollment) return;
@@ -91,15 +90,7 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
     [enrollment, lessonId, updateProgress],
   );
 
-  const handleVideoComplete = useCallback(() => {
-    if (!enrollment) return;
-    updateProgress.mutate({
-      enrollmentId: enrollment.id,
-      data: { lessonId, completed: true },
-    });
-  }, [enrollment, lessonId, updateProgress]);
-
-  const handleMarkComplete = useCallback(() => {
+  const markComplete = useCallback(() => {
     if (!enrollment) return;
     updateProgress.mutate({
       enrollmentId: enrollment.id,
@@ -108,193 +99,108 @@ export default function LessonPlayerClient({ programSlug, lessonId }: LessonPlay
   }, [enrollment, lessonId, updateProgress]);
 
   if (programLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative h-12 w-12">
-            <div className="absolute inset-0 rounded-full border-4 border-muted" />
-            <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-          <p className="text-sm text-muted-foreground">Loading lesson...</p>
-        </div>
-      </div>
-    );
+    return <div className="card h-80 animate-pulse bg-muted/55" />;
   }
 
   if (!program || !lesson) {
     return (
-      <div className="text-center py-20">
-        <div className="text-4xl mb-4">😕</div>
-        <h2 className="text-xl font-semibold mb-2">Lesson Not Found</h2>
-        <p className="text-muted-foreground mb-6">
-          This lesson doesn&apos;t exist or you don&apos;t have access.
-        </p>
-        <Link
-          href={`/programs/${programSlug}`}
-          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition"
-        >
+      <div className="card p-10 text-center">
+        <h2 className="text-2xl font-semibold">Lesson not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground">This lesson does not exist or is unavailable.</p>
+        <Link href={`/programs/${programSlug}`} className="btn btn-primary mt-5">
           Back to Program
         </Link>
       </div>
     );
   }
 
-  const isCompleted = progressMap[lessonId]?.completed;
+  const completed = !!progressMap[lessonId]?.completed;
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="-mx-4 -mt-8 flex h-[calc(100vh-5rem)] sm:-mx-6 lg:-mx-8">
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/35 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar — overlay on mobile, inline on desktop */}
-      <div
-        className={`
-          fixed inset-y-0 left-0 z-40 w-80 border-r border-border bg-card overflow-y-auto transition-transform duration-300 ease-in-out
-          lg:static lg:z-auto lg:transition-all lg:duration-200 lg:translate-x-0
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:w-0 lg:border-r-0'}
-          ${sidebarOpen ? 'lg:w-80' : ''}
-        `}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-border bg-card transition-transform duration-200 lg:static lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:w-0 lg:border-r-0'
+        }`}
       >
-        {/* Close button — mobile only */}
-        <div className="flex items-center justify-end p-2 lg:hidden">
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-muted transition"
-            aria-label="Close sidebar"
-          >
-            <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="p-4 space-y-4">
-          {/* Program title */}
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">{program.title}</h2>
+        <div className="h-full overflow-y-auto p-4">
+          <div className="mb-4 rounded-xl border border-border bg-background p-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Course Navigation</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{program.title}</p>
           </div>
-
-          {/* Progress tracker */}
           {enrollment && <ProgressTracker enrollment={enrollment} compact />}
-
-          {/* Lesson navigation */}
-          <LessonNavigation
-            modules={program.modules || []}
-            currentLessonId={lessonId}
-            programSlug={programSlug}
-            progressMap={progressMap}
-          />
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-lg hover:bg-muted transition shrink-0"
-              title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-            >
-              <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-semibold text-foreground truncate">{lesson.title}</h1>
-              <p className="text-xs text-muted-foreground">
-                Lesson {currentIndex + 1} of {total}
-              </p>
-            </div>
+          <div className="mt-4">
+            <LessonNavigation
+              modules={program.modules || []}
+              currentLessonId={lessonId}
+              programSlug={programSlug}
+              progressMap={progressMap}
+            />
           </div>
-
-          {/* Completion toggle */}
-          {enrollment && (
-            <button
-              onClick={handleMarkComplete}
-              disabled={isCompleted || updateProgress.isPending}
-              className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition shrink-0 ${
-                isCompleted
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'border border-border text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              {isCompleted ? (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Completed
-                </>
-              ) : (
-                'Mark Complete'
-              )}
-            </button>
-          )}
         </div>
+      </aside>
 
-        {/* Lesson body */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
-          {/* Description */}
-          {lesson.description && (
-            <p className="text-muted-foreground">{lesson.description}</p>
-          )}
+      <section className="flex-1 overflow-y-auto">
+        <header className="sticky top-0 z-20 border-b border-border bg-sidebar px-4 py-3 text-sidebar-foreground sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              className="btn btn-sm border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+            >
+              {sidebarOpen ? 'Hide Outline' : 'Show Outline'}
+            </button>
+            <div className="min-w-0 flex-1 text-right sm:text-left">
+              <p className="truncate text-sm font-semibold text-white">{lesson.title}</p>
+              <p className="text-xs text-sidebar-foreground/75">Lesson {currentIndex + 1} of {total}</p>
+            </div>
+            {enrollment && (
+              <button
+                type="button"
+                onClick={markComplete}
+                disabled={completed || updateProgress.isPending}
+                className={`btn btn-sm ${completed ? 'btn-secondary' : 'btn-primary'}`}
+              >
+                {completed ? 'Completed' : 'Mark as Complete'}
+              </button>
+            )}
+          </div>
+        </header>
 
-          {/* Content */}
+        <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+          {lesson.description && <p className="text-sm text-muted-foreground">{lesson.description}</p>}
+
           <LessonContent
             lesson={lesson}
             programSlug={programSlug}
             lessonId={lessonId}
             startPosition={progressMap[lessonId]?.lastPosition}
             onVideoTimeUpdate={handleVideoTimeUpdate}
-            onVideoComplete={handleVideoComplete}
+            onVideoComplete={markComplete}
           />
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-8 border-t border-border">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-5 text-sm">
             {prev ? (
-              <Link
-                href={`/programs/${programSlug}/lessons/${prev.id}`}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="max-w-[200px] truncate">{prev.title}</span>
+              <Link href={`/programs/${programSlug}/lessons/${prev.id}`} className="btn btn-outline btn-sm">
+                Previous Lesson
               </Link>
             ) : (
-              <div />
+              <span />
             )}
             {next ? (
-              <Link
-                href={`/programs/${programSlug}/lessons/${next.id}`}
-                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline transition"
-              >
-                <span className="max-w-[200px] truncate">{next.title}</span>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Link href={`/programs/${programSlug}/lessons/${next.id}`} className="btn btn-primary btn-sm">
+                Next Lesson
               </Link>
             ) : (
-              <Link
-                href={`/programs/${programSlug}`}
-                className="flex items-center gap-2 text-sm font-medium text-green-600 hover:underline transition"
-              >
-                Finish &amp; Back to Program
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+              <Link href={`/programs/${programSlug}`} className="btn btn-secondary btn-sm">
+                Finish and Return
               </Link>
             )}
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

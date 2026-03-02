@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -52,7 +52,7 @@ export default function AdminEditUserPage() {
     };
 
     if (userId) {
-      load();
+      void load();
     }
   }, [userId]);
 
@@ -83,137 +83,92 @@ export default function AdminEditUserPage() {
   };
 
   if (loading) {
-    return <p className="text-sm text-gray-500">Loading user...</p>;
+    return <p className="text-sm text-muted-foreground">Loading user...</p>;
   }
 
   if (!form) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-red-600">{error || 'User not found'}</p>
-        <Link href="/admin/users" className="text-sm text-primary hover:underline">
-          Back to Users
+        <p className="text-sm text-destructive">{error || 'User not found'}</p>
+        <Link href="/admin/users" className="text-sm font-medium text-secondary hover:text-primary">
+          Back to users
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit User</h1>
-          <p className="text-gray-500">Update role, status, and profile basics.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Edit User</h1>
+          <p className="text-sm text-muted-foreground">Update role, status, and profile basics.</p>
         </div>
-        <Link href="/admin/users" className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+        <Link href="/admin/users" className="btn btn-outline">
           Back to Users
         </Link>
       </div>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
+      <section className="card p-5">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">First Name</label>
-            <input
-              required
-              value={form.firstName}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, firstName: event.target.value }) : prev)}
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">First Name</span>
+            <input required value={form.firstName} onChange={(event) => setForm((prev) => prev ? ({ ...prev, firstName: event.target.value }) : prev)} className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Last Name</label>
-            <input
-              required
-              value={form.lastName}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, lastName: event.target.value }) : prev)}
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">Last Name</span>
+            <input required value={form.lastName} onChange={(event) => setForm((prev) => prev ? ({ ...prev, lastName: event.target.value }) : prev)} className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Phone</label>
-            <input
-              value={form.phone}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, phone: event.target.value }) : prev)}
-              placeholder="+254..."
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">Phone</span>
+            <input value={form.phone} onChange={(event) => setForm((prev) => prev ? ({ ...prev, phone: event.target.value }) : prev)} placeholder="+254..." className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Timezone</label>
-            <input
-              value={form.timezone}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, timezone: event.target.value }) : prev)}
-              placeholder="Africa/Nairobi"
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">Timezone</span>
+            <input value={form.timezone} onChange={(event) => setForm((prev) => prev ? ({ ...prev, timezone: event.target.value }) : prev)} placeholder="Africa/Nairobi" className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Locale</label>
-            <input
-              value={form.locale}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, locale: event.target.value }) : prev)}
-              placeholder="en"
-              className="input"
-            />
-          </div>
+          <label>
+            <span className="label">Locale</span>
+            <input value={form.locale} onChange={(event) => setForm((prev) => prev ? ({ ...prev, locale: event.target.value }) : prev)} placeholder="en" className="input" />
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Role</label>
-            <select
-              value={form.role}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, role: event.target.value as UserRole }) : prev)}
-              className="input"
-            >
+          <label>
+            <span className="label">Role</span>
+            <select value={form.role} onChange={(event) => setForm((prev) => prev ? ({ ...prev, role: event.target.value as UserRole }) : prev)} className="input">
               <option value={UserRole.MEMBER}>Member</option>
               <option value={UserRole.PARTNER}>Partner</option>
               <option value={UserRole.COACH}>Coach</option>
               <option value={UserRole.ADMIN}>Admin</option>
               <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
             </select>
-          </div>
+          </label>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Status</label>
-            <select
-              value={form.status}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, status: event.target.value as UserStatus }) : prev)}
-              className="input"
-            >
+          <label>
+            <span className="label">Status</span>
+            <select value={form.status} onChange={(event) => setForm((prev) => prev ? ({ ...prev, status: event.target.value as UserStatus }) : prev)} className="input">
               <option value={UserStatus.PENDING}>Pending</option>
               <option value={UserStatus.ACTIVE}>Active</option>
               <option value={UserStatus.SUSPENDED}>Suspended</option>
               <option value={UserStatus.DEACTIVATED}>Deactivated</option>
             </select>
-          </div>
+          </label>
 
-          <label className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.emailVerified}
-              onChange={(event) => setForm((prev) => prev ? ({ ...prev, emailVerified: event.target.checked }) : prev)}
-            />
+          <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm md:col-span-2">
+            <input type="checkbox" checked={form.emailVerified} onChange={(event) => setForm((prev) => prev ? ({ ...prev, emailVerified: event.target.checked }) : prev)} />
             Email Verified
           </label>
 
-          {error && (
-            <p className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          )}
+          {error && <p className="md:col-span-2 rounded-xl border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-          <div className="md:col-span-2 flex gap-3">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
+          <div className="md:col-span-2 flex flex-wrap gap-2">
+            <button type="submit" disabled={submitting} className="btn btn-primary">
               {submitting ? 'Saving...' : 'Save Changes'}
             </button>
-            <Link href="/admin/users" className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+            <Link href="/admin/users" className="btn btn-outline">
               Cancel
             </Link>
           </div>

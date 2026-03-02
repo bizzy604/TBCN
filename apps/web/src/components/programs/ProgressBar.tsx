@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { cn } from '@/lib/utils';
 
@@ -24,41 +24,28 @@ export function ProgressBar({
   const sizeClasses = {
     sm: 'h-1.5',
     md: 'h-2.5',
-    lg: 'h-4',
+    lg: 'h-3.5',
   };
 
   const variantClasses = {
-    default: 'bg-yellow-500',
-    success: 'bg-green-500',
-    warning: 'bg-orange-500',
+    default: 'bg-primary',
+    success: 'bg-secondary',
+    warning: 'bg-accent',
   };
 
-  const resolvedVariant =
-    percentage === 100 ? 'success' : percentage > 60 ? variant : variant;
+  const tone = percentage >= 100 ? 'success' : variant;
 
   return (
     <div className={cn('w-full', className)}>
       {showLabel && (
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-            Progress
-          </span>
-          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-            {Math.round(percentage)}%
-          </span>
+        <div className="mb-1 flex items-center justify-between text-xs">
+          <span className="font-medium text-muted-foreground">Progress</span>
+          <span className="font-semibold text-foreground">{Math.round(percentage)}%</span>
         </div>
       )}
-      <div
-        className={cn(
-          'w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden',
-          sizeClasses[size],
-        )}
-      >
+      <div className={cn('w-full overflow-hidden rounded-full bg-muted', sizeClasses[size])}>
         <div
-          className={cn(
-            'h-full rounded-full transition-all duration-500 ease-out',
-            percentage === 100 ? 'bg-green-500' : variantClasses[resolvedVariant],
-          )}
+          className={cn('h-full rounded-full transition-all duration-500 ease-out', variantClasses[tone])}
           style={{ width: `${percentage}%` }}
           role="progressbar"
           aria-valuenow={value}

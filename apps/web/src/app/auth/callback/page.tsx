@@ -101,23 +101,23 @@ export default function OAuthCallbackPage() {
   }, [searchParams, router, setUser, setTokens]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-6 p-8 max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="card w-full max-w-md space-y-6 p-8 text-center">
         {/* Status Icon */}
         <div className="flex justify-center">
           {status === 'processing' && (
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/14">
               <Loader2 size={32} className="animate-spin text-primary" />
             </div>
           )}
           {status === 'success' && (
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle size={32} className="text-green-600" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary/16">
+              <CheckCircle size={32} className="text-secondary" />
             </div>
           )}
           {status === 'error' && (
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-              <XCircle size={32} className="text-red-600" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/16">
+              <XCircle size={32} className="text-destructive" />
             </div>
           )}
         </div>
@@ -134,10 +134,7 @@ export default function OAuthCallbackPage() {
 
         {/* Manual redirect link */}
         {status === 'error' && (
-          <button
-            onClick={() => router.push('/login')}
-            className="btn-primary px-6 py-2"
-          >
+          <button onClick={() => router.push('/login')} className="btn btn-primary w-full">
             Back to Login
           </button>
         )}

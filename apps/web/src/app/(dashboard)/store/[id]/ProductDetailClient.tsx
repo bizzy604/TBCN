@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useCreateOrder, useProductDetail, useValidateCoupon } from '@/hooks/use-commerce';
@@ -79,15 +79,11 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
   };
 
   if (isLoading) {
-    return <div className="h-64 animate-pulse rounded-lg border border-border bg-muted/30" />;
+    return <div className="card h-80 animate-pulse bg-muted/55" />;
   }
 
   if (!product) {
-    return (
-      <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
-        Product not found.
-      </div>
-    );
+    return <div className="card p-8 text-sm text-muted-foreground">Product not found.</div>;
   }
 
   const subtotal = Number(product.price) * quantity;
@@ -149,7 +145,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
           await openPaystackInline(accessCode, result.transaction.reference);
           return;
         } catch {
-          // fall back to normal redirect below
+          // fall back to redirect below
         }
       }
 
@@ -165,115 +161,98 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <section className="space-y-5 lg:col-span-2">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <div className="mb-4 h-56 rounded-md bg-muted/30">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr),360px]">
+      <section className="space-y-4">
+        <article className="card overflow-hidden p-0">
+          <div className="h-60 bg-gradient-to-br from-secondary/30 to-accent/30">
             {product.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.thumbnailUrl}
-                alt={product.title}
-                className="h-full w-full rounded-md object-cover"
-              />
+              <img src={product.thumbnailUrl} alt={product.title} className="h-full w-full object-cover" />
             ) : null}
           </div>
 
-          <div className="space-y-3">
-            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-muted-foreground">
-              {product.type.replace('_', ' ')}
-            </span>
-            <h2 className="text-2xl font-semibold">{product.title}</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{product.description}</p>
-            <p className="text-lg font-semibold">{formatPrice(product.currency, product.price)}</p>
+          <div className="space-y-3 p-5">
+            <span className="badge bg-muted text-foreground capitalize">{product.type.replace('_', ' ')}</span>
+            <h2 className="text-2xl font-semibold text-foreground">{product.title}</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
+            <p className="text-lg font-semibold text-foreground">{formatPrice(product.currency, product.price)}</p>
           </div>
-        </div>
+        </article>
       </section>
 
-      <aside className="space-y-4">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-lg font-semibold">Checkout</h3>
+      <aside>
+        <article className="card sticky top-24 p-5">
+          <h3 className="text-lg font-semibold">Checkout & Payment</h3>
 
           <div className="mt-4 space-y-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Quantity</label>
+            <label>
+              <span className="label">Quantity</span>
               <input
                 type="number"
                 min={1}
                 value={quantity}
                 onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="input"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Payment Method</label>
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              >
-                <option value="card">Card (Paystack)</option>
+            <label>
+              <span className="label">Payment Method</span>
+              <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)} className="input">
+                <option value="card">Stripe/Card</option>
                 <option value="mpesa">M-PESA</option>
-                <option value="flutterwave">Flutterwave</option>
                 <option value="paypal">PayPal</option>
+                <option value="flutterwave">Flutterwave</option>
               </select>
-            </div>
+            </label>
 
             {paymentMethod === 'mpesa' && (
-              <div>
-                <label className="mb-1 block text-sm font-medium">M-PESA Phone</label>
+              <label>
+                <span className="label">M-PESA Phone</span>
                 <input
-                  type="tel"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   placeholder="07XXXXXXXX or 2547XXXXXXXX"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="input"
                 />
-              </div>
+                <p className="mt-1 text-xs text-muted-foreground">You will receive an STK push prompt.</p>
+              </label>
             )}
 
             <div>
-              <label className="mb-1 block text-sm font-medium">Coupon Code (Optional)</label>
+              <span className="label">Promo Code</span>
               <div className="flex gap-2">
                 <input
-                  type="text"
                   value={couponCode}
                   onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
                   placeholder="WELCOME20"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="input"
                 />
-                <button
-                  type="button"
-                  onClick={handleValidateCoupon}
-                  disabled={validateCoupon.isPending}
-                  className="rounded-md border border-border px-3 py-2 text-sm"
-                >
-                  Validate
+                <button type="button" onClick={handleValidateCoupon} disabled={validateCoupon.isPending} className="btn btn-outline">
+                  Apply
                 </button>
               </div>
               {couponFeedback && <p className="mt-2 text-xs text-muted-foreground">{couponFeedback}</p>}
             </div>
 
-            <div className="rounded-md bg-muted/30 p-3 text-sm">
+            <div className="rounded-xl border border-border bg-background p-3 text-sm">
               <div className="flex items-center justify-between">
-                <span>Subtotal</span>
-                <span>{formatPrice(product.currency, subtotal)}</span>
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium text-foreground">{formatPrice(product.currency, subtotal)}</span>
               </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
+              Secure checkout protected by encrypted payment processing.
             </div>
 
             {feedback && <p className="text-sm text-muted-foreground">{feedback}</p>}
 
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={createOrder.isPending}
-              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-            >
-              {createOrder.isPending ? 'Starting Checkout...' : 'Proceed to Payment'}
+            <button type="button" onClick={handleCheckout} disabled={createOrder.isPending} className="btn btn-primary w-full">
+              {createOrder.isPending ? 'Starting checkout...' : 'Complete Payment'}
             </button>
           </div>
-        </div>
+        </article>
       </aside>
     </div>
   );

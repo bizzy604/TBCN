@@ -115,6 +115,22 @@ export function useSubmitAssessment() {
   });
 }
 
+export function useProgramEnrollmentCheckout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      programId,
+      payload,
+    }: {
+      programId: string;
+      payload: Parameters<typeof enrollmentsApi.checkout>[1];
+    }) => enrollmentsApi.checkout(programId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: enrollmentKeys.all });
+    },
+  });
+}
+
 export function useMyAssessmentSubmissions(assessmentId: string) {
   return useQuery({
     queryKey: enrollmentKeys.assessmentSubmissions(assessmentId),

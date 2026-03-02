@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
-import { ProgressBar } from '@/components/programs/ProgressBar';
 import type { Enrollment } from '@/lib/api/enrollments';
+import { ProgressBar } from '@/components/programs/ProgressBar';
 
 interface ProgressTrackerProps {
   enrollment: Enrollment;
@@ -9,62 +9,30 @@ interface ProgressTrackerProps {
 }
 
 export function ProgressTracker({ enrollment, compact = false }: ProgressTrackerProps) {
-  const percentage = Math.round(enrollment.progressPercentage);
-  const isCompleted = enrollment.status === 'completed';
+  const percentage = Math.round(Number(enrollment.progressPercentage || 0));
+  const completed = (enrollment.status || '').toUpperCase() === 'COMPLETED';
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3">
-        <ProgressBar value={enrollment.progressPercentage} size="sm" className="flex-1" />
-        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-          {percentage}%
-        </span>
+      <div className="rounded-xl border border-border bg-background p-3">
+        <ProgressBar value={percentage} size="sm" showLabel={false} />
+        <p className="mt-1 text-xs text-muted-foreground">{percentage}% complete</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Your Progress</h3>
-        {isCompleted && (
-          <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Completed
-          </span>
-        )}
+    <div className="card p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">Your Progress</p>
+        {completed && <span className="badge-success">Completed</span>}
       </div>
 
-      <ProgressBar value={enrollment.progressPercentage} size="md" />
+      <ProgressBar value={percentage} />
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {enrollment.completedLessons} of {enrollment.totalLessons} lessons
-        </span>
-        <span className="font-medium text-foreground">{percentage}%</span>
-      </div>
-
-      {enrollment.lastAccessedAt && (
-        <p className="text-xs text-muted-foreground">
-          Last studied {new Date(enrollment.lastAccessedAt).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </p>
-      )}
-
-      {isCompleted && enrollment.completedAt && (
-        <p className="text-xs text-green-600 dark:text-green-400">
-          Completed on {new Date(enrollment.completedAt).toLocaleDateString(undefined, {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </p>
-      )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        {enrollment.completedLessons} of {enrollment.totalLessons} lessons completed
+      </p>
     </div>
   );
 }

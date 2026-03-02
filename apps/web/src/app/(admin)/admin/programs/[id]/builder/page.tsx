@@ -290,7 +290,7 @@ export default function ProgramBuilderPage() {
         <h1 className="text-2xl font-bold text-foreground">Program Builder</h1>
         <div className="flex items-center gap-2">
           <Link href="/admin/programs" className="rounded-lg border border-border px-3 py-2 text-sm">Back</Link>
-          <button onClick={() => setProgramStatus('published')} className="rounded-lg bg-green-600 px-3 py-2 text-sm text-white">Publish</button>
+          <button onClick={() => setProgramStatus('published')} className="btn btn-primary btn-sm">Publish</button>
           <button onClick={() => setProgramStatus('archived')} className="rounded-lg bg-amber-600 px-3 py-2 text-sm text-white">Archive</button>
         </div>
       </div>
@@ -359,4 +359,3 @@ export default function ProgramBuilderPage() {
     </div>
   );
 }
-

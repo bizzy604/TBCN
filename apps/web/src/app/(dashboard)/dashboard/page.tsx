@@ -1,517 +1,213 @@
-'use client';
+﻿'use client';
 
-import { useMemo } from 'react';
-import { useAuth, useMyEnrollments, useProgramCatalog } from '@/hooks';
 import Link from 'next/link';
 import {
-  BookOpen,
-  Users,
-  Calendar,
-  MessageSquare,
-  TrendingUp,
-  ArrowRight,
-  GraduationCap,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  Inbox,
-} from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+  AcademicCapIcon,
+  ArrowRightIcon,
+  ChartBarIcon,
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
+  DocumentCheckIcon,
+} from '@heroicons/react/24/outline';
+import { useMemo } from 'react';
+import { useAuth, useCommunityPosts, useEvents, useMyEnrollments, useProgramCatalog } from '@/hooks';
 import type { Enrollment } from '@/lib/api/enrollments';
-import { canAccessPartnerWorkspace, canManageCoachingSessions } from '@/lib/auth/rbac';
+import { Card } from '@/components/ui/Card';
+
+function normalizeStatus(value?: string) {
+  return (value || '').toUpperCase();
+}
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const canManageSessions = canManageCoachingSessions(user?.role ?? null);
-  const canOpenPartnerWorkspace = canAccessPartnerWorkspace(user?.role ?? null);
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useMyEnrollments(1, 50);
-  const { data: catalogData, isLoading: catalogLoading } = useProgramCatalog({ limit: 100 });
+  const { data: catalogData } = useProgramCatalog({ page: 1, limit: 6, status: 'published' });
+  const { data: eventsData } = useEvents({ upcoming: true });
+  const { data: postsData } = useCommunityPosts();
 
   const enrollments = enrollmentsData?.data ?? [];
-  const totalPrograms = catalogData?.meta?.total ?? 0;
 
-  // Derived stats
   const stats = useMemo(() => {
-    const active = enrollments.filter((e: Enrollment) => e.status === 'ACTIVE');
-    const completed = enrollments.filter((e: Enrollment) => e.status === 'COMPLETED');
-    const totalLessons = enrollments.reduce((sum: number, e: Enrollment) => sum + (e.totalLessons || 0), 0);
-    const completedLessons = enrollments.reduce((sum: number, e: Enrollment) => sum + (e.completedLessons || 0), 0);
-    const avgProgress = enrollments.length > 0
-      ? Math.round(enrollments.reduce((sum: number, e: Enrollment) => sum + (e.progressPercentage || 0), 0) / enrollments.length)
-      : 0;
+    const completed = enrollments.filter((item: Enrollment) => normalizeStatus(item.status) === 'COMPLETED').length;
+    const totalHours = Math.round(
+      enrollments.reduce((sum: number, item: Enrollment) => sum + Number(item.totalLessons || 0) * 0.6, 0),
+    );
+    const certificates = enrollments.filter((item: Enrollment) => !!item.certificateId).length;
 
     return {
       enrolled: enrollments.length,
-      active: active.length,
-      completed: completed.length,
-      totalLessons,
-      completedLessons,
-      avgProgress,
-      totalPrograms,
+      completed,
+      hours: totalHours,
+      certificates,
+      posts: postsData?.data?.length || 0,
     };
-  }, [enrollments, totalPrograms]);
+  }, [enrollments, postsData?.data?.length]);
 
-  // Sort enrollments by most recent activity
-  const recentEnrollments = useMemo(() => {
+  const continueLearning = useMemo(() => {
     return [...enrollments]
+      .filter((item: Enrollment) => normalizeStatus(item.status) !== 'COMPLETED')
       .sort((a: Enrollment, b: Enrollment) => {
-        const dateA = a.lastAccessedAt || a.enrolledAt;
-        const dateB = b.lastAccessedAt || b.enrolledAt;
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
+        const aDate = new Date(a.lastAccessedAt || a.enrolledAt).getTime();
+        const bDate = new Date(b.lastAccessedAt || b.enrolledAt).getTime();
+        return bDate - aDate;
       })
       .slice(0, 5);
   }, [enrollments]);
 
-  const isLoading = authLoading || enrollmentsLoading;
+  const profileCompletion = useMemo(() => {
+    if (!user) return 0;
+    const checks = [
+      user.firstName,
+      user.lastName,
+      user.email,
+      user.phone,
+      user.avatarUrl,
+      user.timezone,
+    ];
+    const complete = checks.filter(Boolean).length;
+    return Math.round((complete / checks.length) * 100);
+  }, [user]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+  if (authLoading || enrollmentsLoading) {
+    return <div className="card h-80 animate-pulse bg-muted/55" />;
   }
 
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
-      {/* Welcome Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back, {user?.firstName || 'Member'}!
-        </h1>
-        <p className="text-muted-foreground">
-          Role: {user?.role?.replace('_', ' ') || 'member'}.
-        </p>
-      </div>
-
-      {/* Stat Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Programs Enrolled"
-          value={stats.enrolled}
-          subtitle={`${stats.active} active`}
-          icon={<BookOpen size={20} />}
-          variant="primary"
-        />
-        <StatCard
-          title="Completed"
-          value={stats.completed}
-          subtitle={`of ${stats.enrolled} enrolled`}
-          icon={<CheckCircle2 size={20} />}
-          variant="secondary"
-        />
-        <StatCard
-          title="Lessons Completed"
-          value={stats.completedLessons}
-          subtitle={`of ${stats.totalLessons} total`}
-          icon={<GraduationCap size={20} />}
-          variant="accent"
-        />
-        <StatCard
-          title="Avg. Progress"
-          value={`${stats.avgProgress}%`}
-          subtitle="across all programs"
-          icon={<TrendingUp size={20} />}
-          variant="default"
-        />
-      </div>
-
-      {/* Two-column: Enrollments + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-        {/* My Enrollments Table */}
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>My Enrollments</CardTitle>
-                <CardDescription>Your current and recent programs</CardDescription>
-              </div>
-              <Link href="/enrollments" className="text-sm text-primary hover:underline">
-                View all
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="px-0">
-            {recentEnrollments.length === 0 ? (
-              <EmptyState
-                message="No enrollments yet"
-                action={{ label: 'Browse Programs', href: '/programs' }}
-              />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left font-medium text-muted-foreground px-6 py-3">Program</th>
-                      <th className="text-left font-medium text-muted-foreground px-6 py-3">Status</th>
-                      <th className="text-left font-medium text-muted-foreground px-6 py-3">Progress</th>
-                      <th className="text-left font-medium text-muted-foreground px-6 py-3">Lessons</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentEnrollments.map((enrollment: Enrollment) => (
-                      <tr
-                        key={enrollment.id}
-                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-6 py-3.5">
-                          <Link
-                            href={`/enrollments/${enrollment.id}`}
-                            className="font-medium text-foreground hover:text-primary"
-                          >
-                            {enrollment.program?.title ?? 'Untitled Program'}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-3.5">
-                          <EnrollmentStatusBadge status={enrollment.status} />
-                        </td>
-                        <td className="px-6 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-20 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary transition-all"
-                                style={{ width: `${enrollment.progressPercentage ?? 0}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {enrollment.progressPercentage ?? 0}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3.5 text-muted-foreground">
-                          {enrollment.completedLessons}/{enrollment.totalLessons}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Jump into what matters</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <QuickAction
-              href="/programs"
-              icon={<BookOpen size={18} />}
-              title="Browse Programs"
-              description={`${stats.totalPrograms} programs available`}
-            />
-            <QuickAction
-              href="/enrollments"
-              icon={<GraduationCap size={18} />}
-              title="My Learning"
-              description={`${stats.active} active enrollments`}
-            />
-            <QuickAction
-              href="/community"
-              icon={<MessageSquare size={18} />}
-              title="Community"
-              description="Connect with other members"
-            />
-            <QuickAction
-              href="/settings/profile"
-              icon={<Users size={18} />}
-              title="Edit Profile"
-              description="Complete your account setup"
-            />
-            {canManageSessions && (
-              <QuickAction
-                href="/coach/workspace"
-                icon={<Calendar size={18} />}
-                title="Coach Workspace"
-                description="Manage mentee sessions and delivery"
-              />
-            )}
-            {canOpenPartnerWorkspace && (
-              <QuickAction
-                href="/partner/workspace"
-                icon={<Users size={18} />}
-                title="Partner Workspace"
-                description="Manage organizational activities"
-              />
-            )}
-            {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <QuickAction
-                href="/admin"
-                icon={<TrendingUp size={18} />}
-                title="Admin Panel"
-                description="Open governance and moderation tools"
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom row: Enrollment Breakdown + Available Programs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Enrollment Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Enrollment Overview</CardTitle>
-            <CardDescription>Status distribution</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {enrollments.length === 0 ? (
-              <EmptyState
-                message="No enrollment data yet"
-                action={{ label: 'Enroll in a Program', href: '/programs' }}
-              />
-            ) : (
-              <>
-                <div className="flex items-center justify-center py-4">
-                  <EnrollmentDonut enrollments={enrollments} />
-                </div>
-                <div className="flex flex-wrap justify-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-primary" />
-                    <span className="text-muted-foreground">
-                      Active ({enrollments.filter((e: Enrollment) => e.status === 'ACTIVE').length})
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-green-500" />
-                    <span className="text-muted-foreground">
-                      Completed ({enrollments.filter((e: Enrollment) => e.status === 'COMPLETED').length})
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      Other ({enrollments.filter((e: Enrollment) => !['ACTIVE', 'COMPLETED'].includes(e.status)).length})
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Programs from Catalog */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Explore Programs</CardTitle>
-                <CardDescription>Discover something new</CardDescription>
-              </div>
-              <Link href="/programs" className="text-sm text-primary hover:underline">
-                View all
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {catalogLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (catalogData?.data ?? []).length === 0 ? (
-              <EmptyState message="No programs available yet" />
-            ) : (
-              (catalogData?.data ?? []).slice(0, 4).map((program: any) => (
-                <Link
-                  key={program.id}
-                  href={`/programs/${program.slug}`}
-                  className="flex items-center gap-4 rounded-lg border border-border p-3 hover:border-primary hover:bg-muted/30 transition-all group"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20">
-                    <BookOpen size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{program.title}</p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {program.difficulty?.toLowerCase() ?? 'All levels'}
-                      {program.price ? ` · $${program.price}` : ' · Free'}
-                    </p>
-                  </div>
-                  <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary shrink-0" />
-                </Link>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      </div>
-    </Card>
-  );
-}
-
-/* ─── Sub-components ─── */
-
-const STAT_VARIANTS = {
-  default: {
-    card: 'bg-card border border-border',
-    icon: 'bg-muted text-foreground',
-    title: 'text-muted-foreground',
-    value: 'text-foreground',
-    subtitle: 'text-muted-foreground',
-  },
-  primary: {
-    card: 'bg-primary text-primary-foreground border-0',
-    icon: 'bg-primary-foreground/20 text-primary-foreground',
-    title: 'opacity-80',
-    value: '',
-    subtitle: 'opacity-70 border-primary-foreground/20',
-  },
-  secondary: {
-    card: 'bg-secondary text-secondary-foreground border-0',
-    icon: 'bg-secondary-foreground/20 text-secondary-foreground',
-    title: 'opacity-80',
-    value: '',
-    subtitle: 'opacity-70 border-secondary-foreground/20',
-  },
-  accent: {
-    card: 'bg-accent text-accent-foreground border-0',
-    icon: 'bg-accent-foreground/20 text-accent-foreground',
-    title: 'opacity-80',
-    value: '',
-    subtitle: 'opacity-70 border-accent-foreground/20',
-  },
-};
-
-function StatCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  variant = 'default',
-}: {
-  title: string;
-  value: string | number;
-  subtitle: string;
-  icon?: React.ReactNode;
-  variant?: keyof typeof STAT_VARIANTS;
-}) {
-  const s = STAT_VARIANTS[variant];
-  return (
-    <div className={`relative overflow-hidden rounded-xl p-6 transition-all hover:shadow-lg ${s.card}`}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className={`text-sm font-medium ${s.title}`}>{title}</p>
-          <p className={`text-3xl font-bold tracking-tight ${s.value}`}>{value}</p>
-          <p className={`text-sm ${s.subtitle}`}>{subtitle}</p>
+    <div className="space-y-6">
+      {profileCompletion < 80 && (
+        <div className="rounded-xl border border-accent/40 bg-accent/18 px-4 py-3 text-sm text-amber-900">
+          <strong>Profile completion is {profileCompletion}%.</strong> Add missing profile details to improve recommendations.
+          <Link href="/settings/profile/edit" className="ml-2 font-semibold underline">
+            Complete profile
+          </Link>
         </div>
-        {icon && (
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${s.icon}`}>
-            {icon}
+      )}
+
+      <Card className="overflow-hidden p-0">
+        <div className="border-b border-border bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+          <p className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/70">Member Dashboard</p>
+          <h1 className="mt-2 text-3xl font-semibold text-white">Welcome back, {user?.firstName || 'Member'}</h1>
+          <p className="mt-2 text-sm text-sidebar-foreground/80">Track your learning and manage upcoming activities from one place.</p>
+        </div>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+          <StatCard icon={<AcademicCapIcon className="h-5 w-5" />} label="Courses Enrolled" value={stats.enrolled} />
+          <StatCard icon={<ClockIcon className="h-5 w-5" />} label="Hours Learned" value={stats.hours} accent="secondary" />
+          <StatCard icon={<DocumentCheckIcon className="h-5 w-5" />} label="Certificates" value={stats.certificates} accent="accent" />
+          <StatCard icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />} label="Community Posts" value={stats.posts} />
+        </div>
+      </Card>
+
+      <section className="dashboard-panel">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-xl font-semibold">Continue Learning</h2>
+          <Link href="/enrollments" className="text-sm font-medium text-secondary hover:text-primary">
+            View all
+          </Link>
+        </div>
+
+        {continueLearning.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No active enrollments yet.</p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {continueLearning.map((item) => (
+              <Link key={item.id} href={`/programs/${item.program?.slug || item.programId}`} className="card-hover p-4">
+                <p className="text-sm font-semibold text-foreground">{item.program?.title || 'Program'}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.completedLessons}/{item.totalLessons} lessons complete
+                </p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, Number(item.progressPercentage || 0))}%` }} />
+                </div>
+                <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary">
+                  Continue
+                  <ArrowRightIcon className="h-3.5 w-3.5" />
+                </div>
+              </Link>
+            ))}
           </div>
         )}
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <section className="dashboard-panel">
+          <h2 className="text-xl font-semibold">Upcoming Events</h2>
+          <div className="mt-4 space-y-3">
+            {(eventsData?.data ?? []).slice(0, 3).map((event) => (
+              <Link key={event.id} href={`/events/${event.id}`} className="card-hover flex items-center justify-between p-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{event.title}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(event.startAt).toLocaleString()}</p>
+                </div>
+                <span className="badge bg-secondary/15 text-secondary">{event.locationType}</span>
+              </Link>
+            ))}
+            {(eventsData?.data ?? []).length === 0 && <p className="text-sm text-muted-foreground">No upcoming events.</p>}
+          </div>
+        </section>
+
+        <section className="dashboard-panel">
+          <h2 className="text-xl font-semibold">Community Activity</h2>
+          <div className="mt-4 space-y-3">
+            {(postsData?.data ?? []).slice(0, 3).map((post) => (
+              <Link key={post.id} href={`/community/posts/${post.id}`} className="card-hover block p-3">
+                <p className="text-sm font-semibold text-foreground line-clamp-1">{post.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{post.content}</p>
+              </Link>
+            ))}
+            {(postsData?.data ?? []).length === 0 && <p className="text-sm text-muted-foreground">No recent community posts.</p>}
+          </div>
+        </section>
       </div>
+
+      <section className="dashboard-panel">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-xl font-semibold">Recommended for You</h2>
+          <Link href="/programs" className="text-sm font-medium text-secondary hover:text-primary">
+            Browse catalog
+          </Link>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {(catalogData?.data ?? []).slice(0, 3).map((program) => (
+            <Link key={program.id} href={`/programs/${program.slug}`} className="card-hover p-4">
+              <p className="text-sm font-semibold text-foreground">{program.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{program.shortDescription || 'Practical learning path for your next stage.'}</p>
+              <p className="mt-3 text-xs font-semibold text-primary">View Program</p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
 
-function QuickAction({
-  href,
+function StatCard({
   icon,
-  title,
-  description,
+  label,
+  value,
+  accent = 'primary',
 }: {
-  href: string;
   icon: React.ReactNode;
-  title: string;
-  description: string;
+  label: string;
+  value: number;
+  accent?: 'primary' | 'secondary' | 'accent';
 }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-4 rounded-lg border border-border p-3 hover:border-primary hover:bg-muted/30 transition-all group"
-    >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-    </Link>
-  );
-}
-
-function EmptyState({
-  message,
-  action,
-}: {
-  message: string;
-  action?: { label: string; href: string };
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <Inbox size={32} className="text-muted-foreground mb-3" />
-      <p className="text-sm text-muted-foreground">{message}</p>
-      {action && (
-        <Link
-          href={action.href}
-          className="mt-3 text-sm font-medium text-primary hover:underline flex items-center gap-1"
-        >
-          {action.label} <ArrowRight size={14} />
-        </Link>
-      )}
-    </div>
-  );
-}
-
-function EnrollmentStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
-    ACTIVE: { variant: 'default', label: 'Active' },
-    COMPLETED: { variant: 'secondary', label: 'Completed' },
-    PAUSED: { variant: 'outline', label: 'Paused' },
-    CANCELLED: { variant: 'destructive', label: 'Cancelled' },
-    EXPIRED: { variant: 'destructive', label: 'Expired' },
+  const tones = {
+    primary: 'bg-primary/12 text-primary',
+    secondary: 'bg-secondary/12 text-secondary',
+    accent: 'bg-accent/18 text-amber-900',
   };
-  const config = variants[status] ?? { variant: 'outline' as const, label: status };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
-}
-
-function EnrollmentDonut({ enrollments }: { enrollments: Enrollment[] }) {
-  const active = enrollments.filter((e) => e.status === 'ACTIVE').length;
-  const completed = enrollments.filter((e) => e.status === 'COMPLETED').length;
-  const other = enrollments.length - active - completed;
-  const total = enrollments.length;
-
-  const circumference = 2 * Math.PI * 38; // r=38
-  const activeArc = total > 0 ? (active / total) * circumference : 0;
-  const completedArc = total > 0 ? (completed / total) * circumference : 0;
-  const otherArc = total > 0 ? (other / total) * circumference : 0;
 
   return (
-    <div className="relative w-40 h-40">
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted" />
-        {activeArc > 0 && (
-          <circle
-            cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12"
-            className="text-primary" strokeDasharray={`${activeArc} ${circumference - activeArc}`}
-            strokeLinecap="round"
-          />
-        )}
-        {completedArc > 0 && (
-          <circle
-            cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12"
-            className="text-green-500" strokeDasharray={`${completedArc} ${circumference - completedArc}`}
-            strokeDashoffset={`${-activeArc}`} strokeLinecap="round"
-          />
-        )}
-        {otherArc > 0 && (
-          <circle
-            cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="12"
-            className="text-muted-foreground" strokeDasharray={`${otherArc} ${circumference - otherArc}`}
-            strokeDashoffset={`${-(activeArc + completedArc)}`} strokeLinecap="round"
-          />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-foreground">{total}</span>
-        <span className="text-xs text-muted-foreground">Enrolled</span>
+    <article className="card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+        </div>
+        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${tones[accent]}`}>{icon}</span>
       </div>
-    </div>
+    </article>
   );
 }

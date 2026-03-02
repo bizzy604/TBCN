@@ -6,6 +6,8 @@ import { EnrollmentsRepository } from './enrollments.repository';
 import { Enrollment } from './entities/enrollment.entity';
 import { LessonProgress } from './entities/lesson-progress.entity';
 import { ProgramsModule } from '../programs/programs.module';
+import { Transaction } from '../payments/entities/transaction.entity';
+import { PaymentsModule } from '../payments/payments.module';
 
 /**
  * Enrollments Module
@@ -17,8 +19,9 @@ import { ProgramsModule } from '../programs/programs.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Enrollment, LessonProgress]),
+    TypeOrmModule.forFeature([Enrollment, LessonProgress, Transaction]),
     ProgramsModule,
+    PaymentsModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService, EnrollmentsRepository],

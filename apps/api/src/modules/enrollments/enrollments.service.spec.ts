@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  BadRequestException,
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { EnrollmentStatus } from '@tbcn/shared';
 import { EnrollmentsService } from './enrollments.service';
 import { EnrollmentsRepository } from './enrollments.repository';
 import { ProgramsService } from '../programs/programs.service';
+import { Transaction } from '../payments/entities/transaction.entity';
+import { PaymentsService } from '../payments/payments.service';
 
 describe('EnrollmentsService', () => {
   let service: EnrollmentsService;
@@ -37,18 +41,39 @@ describe('EnrollmentsService', () => {
     emit: jest.fn(),
   };
 
+  const mockPaymentsService = {
+    initiateCheckout: jest.fn(),
+  };
+
+  const mockQueryBuilder = {
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
+  };
+
+  const mockTransactionRepo = {
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EnrollmentsService,
         { provide: EnrollmentsRepository, useValue: mockRepository },
         { provide: ProgramsService, useValue: mockProgramsService },
+        { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
+        { provide: PaymentsService, useValue: mockPaymentsService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 
     service = module.get<EnrollmentsService>(EnrollmentsService);
     jest.clearAllMocks();
+    mockQueryBuilder.where.mockReturnThis();
+    mockQueryBuilder.andWhere.mockReturnThis();
+    mockQueryBuilder.orderBy.mockReturnThis();
+    mockQueryBuilder.getOne.mockReset();
   });
 
   it('should be defined', () => {
@@ -57,7 +82,12 @@ describe('EnrollmentsService', () => {
 
   describe('enroll', () => {
     it('should create enrollment and increment program count', async () => {
-      mockProgramsService.findById.mockResolvedValueOnce({ id: 'program-1', hasCapacity: true });
+      mockProgramsService.findById.mockResolvedValueOnce({
+        id: 'program-1',
+        hasCapacity: true,
+        price: 0,
+        isFree: true,
+      });
       mockRepository.findByUserAndProgram.mockResolvedValueOnce(null);
       mockProgramsService.countLessonsByProgramId.mockResolvedValueOnce(6);
       mockRepository.create.mockResolvedValueOnce({ id: 'enrollment-1' });
@@ -91,6 +121,60 @@ describe('EnrollmentsService', () => {
       await expect(
         service.enroll('user-1', { programId: 'program-1' }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject paid enrollment when payment is not completed', async () => {
+      mockProgramsService.findById.mockResolvedValueOnce({
+        id: 'program-1',
+        hasCapacity: true,
+        price: 1200,
+        isFree: false,
+      });
+      mockRepository.findByUserAndProgram.mockResolvedValueOnce(null);
+      mockQueryBuilder.getOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.enroll('user-1', { programId: 'program-1' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('initiateCheckout', () => {
+    it('should initialize checkout for paid programs', async () => {
+      mockProgramsService.findById.mockResolvedValueOnce({
+        id: 'program-1',
+        slug: 'brand-mastery',
+        title: 'Brand Mastery',
+        price: 1200,
+        currency: 'KES',
+        isFree: false,
+      });
+      mockQueryBuilder.getOne.mockResolvedValueOnce(null);
+      mockPaymentsService.initiateCheckout.mockResolvedValueOnce({
+        id: 'txn-1',
+        reference: 'txn_ref',
+      });
+
+      const result = await service.initiateCheckout('program-1', 'user-1', {
+        amount: 1200,
+        paymentMethod: 'card',
+      });
+
+      expect(result.id).toBe('txn-1');
+      expect(mockPaymentsService.initiateCheckout).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          amount: 1200,
+          currency: 'KES',
+          returnPath: '/programs/brand-mastery',
+        }),
+        expect.objectContaining({
+          type: 'program_enrollment',
+          metadata: expect.objectContaining({
+            programId: 'program-1',
+          }),
+        }),
+      );
     });
   });
 
@@ -174,4 +258,3 @@ describe('EnrollmentsService', () => {
     });
   });
 });
-

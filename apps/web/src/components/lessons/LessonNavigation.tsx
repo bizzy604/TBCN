@@ -1,16 +1,23 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
-import type { ProgramModule, Lesson } from '@/lib/api/programs';
+import type { ProgramModule } from '@/lib/api/programs';
 import type { LessonProgress } from '@/lib/api/enrollments';
 
 interface LessonNavigationProps {
   modules: ProgramModule[];
   currentLessonId: string;
   programSlug: string;
-  /** Map of lessonId => LessonProgress */
   progressMap?: Record<string, LessonProgress>;
   onLessonSelect?: (lessonId: string) => void;
+}
+
+function lessonTypeLabel(contentType: string) {
+  if (contentType === 'video') return 'Video';
+  if (contentType === 'text') return 'Reading';
+  if (contentType === 'quiz') return 'Quiz';
+  if (contentType === 'assignment') return 'Assignment';
+  return 'Lesson';
 }
 
 export function LessonNavigation({
@@ -21,77 +28,44 @@ export function LessonNavigation({
   onLessonSelect,
 }: LessonNavigationProps) {
   return (
-    <div className="space-y-1">
-      {modules.map((mod, modIdx) => (
-        <div key={mod.id}>
-          {/* Module header */}
-          <div className="px-3 py-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Module {modIdx + 1}
-            </p>
-            <p className="text-sm font-medium text-foreground">{mod.title}</p>
-          </div>
+    <div className="space-y-4">
+      {modules.map((module, moduleIndex) => (
+        <section key={module.id}>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Module {moduleIndex + 1}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{module.title}</p>
 
-          {/* Lessons */}
-          <div className="space-y-0.5 ml-1">
-            {mod.lessons?.map((lesson, lessonIdx) => {
+          <div className="mt-2 space-y-1.5">
+            {module.lessons?.map((lesson, lessonIndex) => {
               const isCurrent = lesson.id === currentLessonId;
-              const progress = progressMap[lesson.id];
-              const isCompleted = progress?.completed;
-
+              const isCompleted = !!progressMap[lesson.id]?.completed;
               return (
                 <Link
                   key={lesson.id}
                   href={`/programs/${programSlug}/lessons/${lesson.id}`}
-                  onClick={(e) => {
+                  onClick={(event) => {
                     if (onLessonSelect) {
-                      e.preventDefault();
+                      event.preventDefault();
                       onLessonSelect(lesson.id);
                     }
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
+                  className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition ${
                     isCurrent
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border bg-card text-muted-foreground hover:bg-muted/55'
                   }`}
                 >
-                  {/* Status icon */}
-                  <span className="shrink-0">
-                    {isCompleted ? (
-                      <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    ) : isCurrent ? (
-                      <span className="flex w-4 h-4 items-center justify-center">
-                        <span className="w-2 h-2 rounded-full bg-primary" />
-                      </span>
-                    ) : (
-                      <span className="flex w-4 h-4 items-center justify-center text-xs text-muted-foreground">
-                        {lessonIdx + 1}
-                      </span>
-                    )}
-                  </span>
-
-                  {/* Title */}
-                  <span className="truncate flex-1">{lesson.title}</span>
-
-                  {/* Type indicator */}
-                  <span className="text-xs shrink-0">
-                    {lesson.contentType === 'video' && '▶'}
-                    {lesson.contentType === 'text' && '📄'}
-                    {lesson.contentType === 'quiz' && '📝'}
-                    {lesson.contentType === 'assignment' && '✏️'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
+                      {isCompleted ? 'OK' : lessonIndex + 1}
+                    </span>
+                    <span className="truncate">{lesson.title}</span>
+                  </div>
+                  <span className="text-[11px] uppercase tracking-[0.08em]">{lessonTypeLabel(lesson.contentType)}</span>
                 </Link>
               );
             })}
           </div>
-
-          {/* divider between modules */}
-          {modIdx < modules.length - 1 && (
-            <div className="my-2 border-t border-border/50" />
-          )}
-        </div>
+        </section>
       ))}
     </div>
   );

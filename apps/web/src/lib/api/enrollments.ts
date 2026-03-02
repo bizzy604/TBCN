@@ -1,5 +1,6 @@
 import { api } from './client';
 import type { PaginatedResponse } from './programs';
+import type { PaymentMethod, PaymentStatus } from './payments';
 
 export interface Enrollment {
   id: string;
@@ -87,10 +88,34 @@ export interface AssessmentSubmission {
   submittedAt: string;
 }
 
+export interface ProgramCheckoutPayload {
+  amount: number;
+  currency?: string;
+  paymentMethod?: PaymentMethod;
+  phone?: string;
+  returnPath?: string;
+  description?: string;
+  couponCode?: string;
+}
+
+export interface ProgramCheckoutTransaction {
+  id: string;
+  reference: string;
+  status: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  amount: number;
+  currency: string;
+  checkoutUrl: string | null;
+  metadata: Record<string, unknown>;
+}
+
 export const enrollmentsApi = {
   // Enroll
   enroll: (programId: string) =>
     api.post<Enrollment>('/enrollments', { programId }),
+
+  checkout: (programId: string, payload: ProgramCheckoutPayload) =>
+    api.post<ProgramCheckoutTransaction>(`/enrollments/${programId}/checkout`, payload),
 
   // My enrollments
   getMyEnrollments: (page = 1, limit = 10) =>

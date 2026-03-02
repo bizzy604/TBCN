@@ -41,6 +41,16 @@ export default function CoachDetailClient({ coachId }: CoachDetailClientProps) {
       .map((slot) => ({ date: day.date, startAt: slot.startAt, endAt: slot.endAt })),
   );
 
+  const selectedSlotLabel = selectedSlot
+    ? new Date(selectedSlot).toLocaleString([], {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'No slot selected';
+
   const handleBook = async () => {
     if (!selectedSlot) {
       setMessage('Select an available slot first.');
@@ -60,7 +70,7 @@ export default function CoachDetailClient({ coachId }: CoachDetailClientProps) {
         topic: topic.trim(),
         notes: notes.trim() || undefined,
       });
-      setMessage('Session booked successfully. Check Sessions page for details.');
+      setMessage('Session booked successfully. Open Sessions to manage it.');
       setSelectedSlot(null);
       setNotes('');
     } catch (error: any) {
@@ -70,106 +80,161 @@ export default function CoachDetailClient({ coachId }: CoachDetailClientProps) {
   };
 
   if (coachLoading) {
-    return <div className="h-40 animate-pulse rounded-lg border border-border bg-muted/30" />;
+    return <div className="card h-56 animate-pulse bg-muted/55" />;
   }
 
   if (!coach) {
-    return <div className="rounded-lg border border-dashed border-muted-foreground/30 p-6">Coach not found.</div>;
+    return <div className="card p-6 text-sm text-muted-foreground">Coach not found.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-xl font-semibold">{coach.fullName}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{coach.tagline || 'Professional Coach'}</p>
-        <p className="mt-3 text-sm text-muted-foreground">{coach.bio || 'No coach bio provided yet.'}</p>
-        <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <p>{coach.currency} {coach.hourlyRate}/hour</p>
-          <p>{coach.yearsExperience} years experience</p>
-          <p>Rating {coach.stats.averageRating.toFixed(1)} ({coach.stats.reviewCount} reviews)</p>
-          <p>{coach.stats.totalSessions} sessions</p>
-        </div>
-      </section>
+    <div className="grid gap-5 xl:grid-cols-[1.3fr,0.9fr]">
+      <section className="space-y-5">
+        <article className="card p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Step 1</p>
+          <h2 className="mt-2 text-xl font-semibold">Coach Profile Summary</h2>
 
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h3 className="text-lg font-semibold">Book Session</h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm">
-            <span className="mb-1 block text-muted-foreground">Topic</span>
-            <input
-              className="w-full rounded-md border border-border bg-background px-3 py-2"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+          <div className="mt-4 flex items-start gap-4">
+            <div className="h-16 w-16 overflow-hidden rounded-full bg-muted">
+              {coach.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coach.avatarUrl} alt={coach.fullName} className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-lg font-semibold text-muted-foreground">
+                  {coach.fullName.slice(0, 1)}
+                </span>
+              )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">{coach.fullName}</p>
+              <p className="text-sm text-muted-foreground">{coach.tagline || 'Professional coach'}</p>
+              <div className="flex flex-wrap gap-2">
+                {coach.specialties.slice(0, 4).map((specialty) => (
+                  <span key={specialty} className="badge bg-secondary/16 text-secondary">
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+            <p>Rating: {coach.stats.averageRating.toFixed(1)} ({coach.stats.reviewCount} reviews)</p>
+            <p>Experience: {coach.yearsExperience} years</p>
+            <p>Sessions delivered: {coach.stats.totalSessions}</p>
+            <p>Rate: {coach.currency} {Number(coach.hourlyRate).toFixed(0)} / hour</p>
+          </div>
+
+          {coach.bio && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{coach.bio}</p>}
+        </article>
+
+        <article className="card p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Step 2</p>
+          <h2 className="mt-2 text-xl font-semibold">Schedule</h2>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label>
+              <span className="label">Session Type / Topic</span>
+              <input value={topic} onChange={(event) => setTopic(event.target.value)} className="input" />
+            </label>
+
+            <label>
+              <span className="label">Duration</span>
+              <select
+                value={durationMinutes}
+                onChange={(event) => setDurationMinutes(parseInt(event.target.value, 10))}
+                className="input"
+              >
+                <option value={30}>30 minutes</option>
+                <option value={45}>45 minutes</option>
+                <option value={60}>60 minutes</option>
+                <option value={90}>90 minutes</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-foreground">Available time slots (next 14 days)</p>
+            {availabilityLoading ? (
+              <div className="mt-2 h-16 animate-pulse rounded-xl bg-muted/55" />
+            ) : availableSlots.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">No open slots for this duration.</p>
+            ) : (
+              <div className="mt-3 grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                {availableSlots.slice(0, 24).map((slot) => {
+                  const selected = selectedSlot === slot.startAt;
+                  return (
+                    <button
+                      key={slot.startAt}
+                      type="button"
+                      onClick={() => setSelectedSlot(slot.startAt)}
+                      className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
+                        selected
+                          ? 'border-primary bg-primary/12 text-foreground'
+                          : 'border-border bg-card hover:bg-muted/55'
+                      }`}
+                    >
+                      <p className="font-medium text-foreground">{new Date(slot.startAt).toLocaleDateString()}</p>
+                      <p className="text-muted-foreground">
+                        {new Date(slot.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <label className="mt-4 block">
+            <span className="label">Notes (optional)</span>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              className="input"
             />
           </label>
-
-          <label className="text-sm">
-            <span className="mb-1 block text-muted-foreground">Duration</span>
-            <select
-              className="w-full rounded-md border border-border bg-background px-3 py-2"
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))}
-            >
-              <option value={30}>30 minutes</option>
-              <option value={45}>45 minutes</option>
-              <option value={60}>60 minutes</option>
-              <option value={90}>90 minutes</option>
-            </select>
-          </label>
-        </div>
-
-        <label className="mt-4 block text-sm">
-          <span className="mb-1 block text-muted-foreground">Notes (optional)</span>
-          <textarea
-            className="w-full rounded-md border border-border bg-background px-3 py-2"
-            rows={3}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </label>
-
-        <div className="mt-4">
-          <p className="mb-2 text-sm text-muted-foreground">Available slots (next 14 days)</p>
-          {availabilityLoading ? (
-            <div className="h-20 animate-pulse rounded-md border border-border bg-muted/30" />
-          ) : availableSlots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No open slots for the selected duration.</p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {availableSlots.slice(0, 16).map((slot) => {
-                const selected = selectedSlot === slot.startAt;
-                return (
-                  <button
-                    key={slot.startAt}
-                    type="button"
-                    onClick={() => setSelectedSlot(slot.startAt)}
-                    className={`rounded-md border px-3 py-2 text-left text-sm ${selected ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/40'}`}
-                  >
-                    <div>{new Date(slot.startAt).toLocaleDateString()}</div>
-                    <div className="text-muted-foreground">
-                      {new Date(slot.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {message && (
-          <p className="mt-4 text-sm text-muted-foreground">{message}</p>
-        )}
-
-        <button
-          type="button"
-          onClick={handleBook}
-          disabled={createSession.isPending}
-          className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-        >
-          {createSession.isPending ? 'Booking...' : 'Book Session'}
-        </button>
+        </article>
       </section>
+
+      <aside>
+        <article className="card sticky top-24 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Step 3</p>
+          <h2 className="mt-2 text-xl font-semibold">Confirm Booking</h2>
+
+          <div className="mt-4 space-y-3 rounded-xl border border-border bg-background p-4 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Coach</span>
+              <span className="font-medium text-foreground">{coach.fullName}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Date & Time</span>
+              <span className="font-medium text-foreground">{selectedSlotLabel}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Duration</span>
+              <span className="font-medium text-foreground">{durationMinutes} mins</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <span className="text-muted-foreground">Estimated Fee</span>
+              <span className="text-base font-semibold text-foreground">
+                {coach.currency} {Math.round((Number(coach.hourlyRate) / 60) * durationMinutes)}
+              </span>
+            </div>
+          </div>
+
+          {message && <p className="mt-4 text-sm text-muted-foreground">{message}</p>}
+
+          <button
+            type="button"
+            onClick={handleBook}
+            disabled={createSession.isPending}
+            className="btn btn-primary mt-5 w-full"
+          >
+            {createSession.isPending ? 'Booking...' : 'Confirm Booking'}
+          </button>
+        </article>
+      </aside>
     </div>
   );
 }
-

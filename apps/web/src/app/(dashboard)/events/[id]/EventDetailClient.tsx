@@ -1,7 +1,6 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/hooks';
 import {
   useEvent,
   useEventAccessLink,
@@ -9,6 +8,7 @@ import {
   useMyEventRegistrations,
   useRegisterEvent,
 } from '@/hooks/use-engagement';
+import { useAuth } from '@/hooks';
 import type { PaymentMethod } from '@/lib/api/payments';
 
 type PaystackInlineCallbacks = {
@@ -62,12 +62,13 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
   const { data: registrations } = useMyEventRegistrations();
   const checkoutEvent = useEventCheckout();
   const registerEvent = useRegisterEvent();
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
   const registration = useMemo(
-    () => (registrations ?? []).find((item) => item.eventId === eventId && item.status !== 'cancelled'),
+    () => (registrations ?? []).find((entry) => entry.eventId === eventId && entry.status !== 'cancelled'),
     [registrations, eventId],
   );
   const isRegistered = !!registration;
@@ -130,11 +131,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
 
       const provider = extractProvider(transaction.metadata);
       const accessCode = extractPaystackAccessCode(transaction.metadata);
-      const shouldUsePaystackInline = (
-        paymentMethod === 'card'
-        || paymentMethod === 'paystack'
-        || provider === 'paystack'
-      );
+      const shouldUsePaystackInline = paymentMethod === 'card' || paymentMethod === 'paystack' || provider === 'paystack';
 
       if (shouldUsePaystackInline && accessCode) {
         await openPaystackInline(accessCode, transaction.reference);
@@ -156,100 +153,98 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
     setMessage(null);
     try {
       await registerEvent.mutateAsync(eventId);
-      setMessage('Registration successful. Live link appears below when access requirements are met.');
+      setMessage('Registration successful. Live link appears below when available.');
     } catch (error: any) {
       setMessage(error?.error?.message || error?.message || 'Registration failed');
     }
   };
 
   if (isLoading) {
-    return <div className="h-40 animate-pulse rounded-lg border border-border bg-muted/30" />;
+    return <div className="card h-72 animate-pulse bg-muted/55" />;
   }
 
   if (!event) {
-    return <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8">Event not found.</div>;
+    return <div className="card p-8 text-sm text-muted-foreground">Event not found.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-2xl font-semibold">{event.title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr),360px]">
+      <section className="space-y-4">
+        <article className="card overflow-hidden p-0">
+          <div className="h-52 bg-gradient-to-br from-secondary/35 to-accent/35" />
+          <div className="space-y-3 p-5">
+            <h2 className="text-2xl font-semibold text-foreground">{event.title}</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{event.description}</p>
 
-        <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <p>Start: {new Date(event.startAt).toLocaleString()}</p>
-          <p>End: {new Date(event.endAt).toLocaleString()}</p>
-          <p>Format: {event.locationType}</p>
-          <p>Price: {event.currency} {event.price}</p>
-          {event.location && <p>Location: {event.location}</p>}
-          <p className="sm:col-span-2">
-            Live link: available only after registration
-            {requiresPayment ? ' and successful payment.' : '.'}
-          </p>
-        </div>
-
-        {message && <p className="mt-4 text-sm text-muted-foreground">{message}</p>}
-
-        {requiresPayment && !isRegistered && (
-          <div className="mt-4 space-y-3 rounded-md border border-border p-3">
-            <p className="text-sm font-medium">Paid Event Checkout</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-              >
-                <option value="card">Card (Paystack)</option>
-                <option value="mpesa">M-PESA</option>
-                <option value="flutterwave">Flutterwave</option>
-                <option value="paypal">PayPal</option>
-              </select>
-              {paymentMethod === 'mpesa' && (
-                <input
-                  type="tel"
-                  value={mpesaPhone}
-                  onChange={(event) => setMpesaPhone(event.target.value)}
-                  placeholder="07XXXXXXXX or 2547XXXXXXXX"
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                />
-              )}
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <p>Start: {new Date(event.startAt).toLocaleString()}</p>
+              <p>End: {new Date(event.endAt).toLocaleString()}</p>
+              <p>Format: {event.locationType}</p>
+              <p>Price: {event.currency} {event.price}</p>
+              {event.location && <p className="sm:col-span-2">Location: {event.location}</p>}
             </div>
-
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={checkoutEvent.isPending}
-              className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60"
-            >
-              {checkoutEvent.isPending ? 'Processing...' : `Pay ${event.currency} ${event.price}`}
-            </button>
           </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleRegister}
-          disabled={registerEvent.isPending || isRegistered}
-          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-        >
-          {isRegistered ? 'Registered' : registerEvent.isPending ? 'Registering...' : 'Register for Event'}
-        </button>
+        </article>
 
         {isRegistered && accessLink.data?.meetingUrl && (
-          <div className="mt-4 rounded-md border border-border bg-muted/20 p-3 text-sm">
-            <p className="font-medium">Live Event Link</p>
-            <a
-              href={accessLink.data.meetingUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary underline break-all"
-            >
+          <article className="card p-4">
+            <p className="text-sm font-semibold text-foreground">Live Event Link</p>
+            <a href={accessLink.data.meetingUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block break-all text-sm font-medium text-secondary underline">
               {accessLink.data.meetingUrl}
             </a>
-          </div>
+          </article>
         )}
+
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </section>
+
+      <aside>
+        <article className="card sticky top-24 p-5">
+          <h3 className="text-lg font-semibold">Registration</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {requiresPayment ? 'Complete checkout then register for event access.' : 'Register now to reserve your slot.'}
+          </p>
+
+          {requiresPayment && !isRegistered && (
+            <div className="mt-4 space-y-3 rounded-xl border border-border bg-background p-3">
+              <label>
+                <span className="label">Payment Method</span>
+                <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)} className="input">
+                  <option value="card">Card (Paystack)</option>
+                  <option value="mpesa">M-PESA</option>
+                  <option value="flutterwave">Flutterwave</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+              </label>
+
+              {paymentMethod === 'mpesa' && (
+                <label>
+                  <span className="label">M-PESA Phone</span>
+                  <input
+                    value={mpesaPhone}
+                    onChange={(event) => setMpesaPhone(event.target.value)}
+                    className="input"
+                    placeholder="07XXXXXXXX or 2547XXXXXXXX"
+                  />
+                </label>
+              )}
+
+              <button type="button" onClick={handleCheckout} disabled={checkoutEvent.isPending} className="btn btn-outline w-full">
+                {checkoutEvent.isPending ? 'Processing...' : `Pay ${event.currency} ${event.price}`}
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleRegister}
+            disabled={registerEvent.isPending || isRegistered}
+            className="btn btn-primary mt-4 w-full"
+          >
+            {isRegistered ? 'Registered' : registerEvent.isPending ? 'Registering...' : 'Register for Event'}
+          </button>
+        </article>
+      </aside>
     </div>
   );
 }
-

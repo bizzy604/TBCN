@@ -1,9 +1,9 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useCommunityComments } from '@/hooks/use-engagement';
 import { communityApi } from '@/lib/api/community';
-import { useQuery } from '@tanstack/react-query';
 
 interface CommunityPostDetailClientProps {
   postId: string;
@@ -35,55 +35,48 @@ export default function CommunityPostDetailClient({ postId }: CommunityPostDetai
   };
 
   if (postQuery.isLoading) {
-    return <div className="h-40 animate-pulse rounded-lg border border-border bg-muted/30" />;
+    return <div className="card h-64 animate-pulse bg-muted/55" />;
   }
 
   if (!postQuery.data) {
-    return <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8">Post not found.</div>;
+    return <div className="card p-8 text-sm text-muted-foreground">Post not found.</div>;
   }
 
   const post = postQuery.data;
   const comments = commentsQuery.data ?? [];
 
   return (
-    <div className="space-y-6">
-      <article className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-2xl font-semibold">{post.title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {post.author?.firstName} {post.author?.lastName} • {new Date(post.createdAt).toLocaleString()}
+    <div className="space-y-4">
+      <article className="card p-5">
+        <h2 className="text-2xl font-semibold text-foreground">{post.title}</h2>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {post.author?.firstName} {post.author?.lastName} · {new Date(post.createdAt).toLocaleString()}
         </p>
-        <p className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground">{post.content}</p>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{post.content}</p>
       </article>
 
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="card p-5">
         <h3 className="text-lg font-semibold">Discussion ({comments.length})</h3>
 
-        <div className="mt-4 space-y-3">
-          {comments.map((item) => (
-            <div key={item.id} className="rounded-md border border-border bg-muted/20 p-3">
-              <p className="text-sm font-medium">{item.author?.firstName} {item.author?.lastName}</p>
-              <p className="text-sm text-muted-foreground">{item.content}</p>
+        <div className="mt-4 space-y-2">
+          {comments.map((entry) => (
+            <div key={entry.id} className="rounded-xl border border-border bg-background p-3">
+              <p className="text-sm font-semibold text-foreground">
+                {entry.author?.firstName} {entry.author?.lastName}
+              </p>
+              <p className="text-sm text-muted-foreground">{entry.content}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-4 flex gap-2">
-          <input
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Add your response"
-          />
-          <button
-            type="button"
-            onClick={handleComment}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
+          <input className="input" value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add your response" />
+          <button type="button" onClick={handleComment} className="btn btn-primary">
             Comment
           </button>
         </div>
 
-        {message && <p className="mt-3 text-sm text-muted-foreground">{message}</p>}
+        {message && <p className="mt-2 text-sm text-muted-foreground">{message}</p>}
       </section>
     </div>
   );

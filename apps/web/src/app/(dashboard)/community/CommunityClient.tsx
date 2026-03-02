@@ -1,13 +1,15 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  useCommunityPosts,
-  useCreatePost,
-  useCreateComment,
   useCommunityComments,
+  useCommunityPosts,
+  useCreateComment,
+  useCreatePost,
   useTogglePostReaction,
 } from '@/hooks/use-engagement';
+
+const categories = ['all', 'discussion', 'success_story', 'question', 'project'];
 
 export default function CommunityClient() {
   const [title, setTitle] = useState('');
@@ -15,6 +17,7 @@ export default function CommunityClient() {
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   const postsQuery = useCommunityPosts();
   const createPost = useCreatePost();
@@ -22,7 +25,19 @@ export default function CommunityClient() {
   const commentsQuery = useCommunityComments(activePostId || '');
   const createComment = useCreateComment(activePostId || '');
 
-  const posts = postsQuery.data?.data ?? [];
+  const posts = useMemo(() => {
+    const rows = postsQuery.data?.data ?? [];
+    if (categoryFilter === 'all') {
+      return rows;
+    }
+    return rows.filter((post) => post.category === categoryFilter);
+  }, [postsQuery.data?.data, categoryFilter]);
+
+  const trending = useMemo(() => {
+    return [...(postsQuery.data?.data ?? [])]
+      .sort((a, b) => (b.reactionCount + b.commentCount) - (a.reactionCount + a.commentCount))
+      .slice(0, 5);
+  }, [postsQuery.data?.data]);
 
   const handleCreatePost = async () => {
     if (!title.trim() || !content.trim()) {
@@ -51,115 +66,135 @@ export default function CommunityClient() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-lg font-semibold">Create Post</h2>
-        <div className="mt-3 space-y-3">
-          <input
-            className="w-full rounded-md border border-border bg-background px-3 py-2"
-            placeholder="Post title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <textarea
-            className="w-full rounded-md border border-border bg-background px-3 py-2"
-            rows={4}
-            placeholder="Share your update or question"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={handleCreatePost}
-            disabled={createPost.isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-          >
-            {createPost.isPending ? 'Posting...' : 'Publish Post'}
-          </button>
+    <div className="grid gap-4 xl:grid-cols-[220px,minmax(0,1fr),260px]">
+      <aside className="dashboard-panel h-fit">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Categories</h2>
+        <div className="mt-3 space-y-1.5">
+          {categories.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setCategoryFilter(item)}
+              className={`w-full rounded-lg px-3 py-2 text-left text-sm capitalize ${
+                categoryFilter === item ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-foreground hover:bg-muted'
+              }`}
+            >
+              {item.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      <section className="space-y-4">
+        <article className="dashboard-panel">
+          <h2 className="text-lg font-semibold">Create Post</h2>
+          <div className="mt-3 space-y-3">
+            <input
+              className="input"
+              placeholder="Post title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <textarea
+              className="input min-h-[120px]"
+              rows={4}
+              placeholder="Share something with the community"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+            />
+            <button type="button" onClick={handleCreatePost} disabled={createPost.isPending} className="btn btn-primary">
+              {createPost.isPending ? 'Posting...' : 'Publish Post'}
+            </button>
+          </div>
+        </article>
+
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
+
+        <div className="space-y-3">
+          {postsQuery.isLoading ? (
+            [1, 2, 3].map((index) => <div key={index} className="card h-36 animate-pulse bg-muted/55" />)
+          ) : posts.length === 0 ? (
+            <div className="card p-10 text-center text-sm text-muted-foreground">No posts yet in this category.</div>
+          ) : (
+            posts.map((post) => (
+              <article key={post.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">{post.title}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {post.author?.firstName} {post.author?.lastName} · {new Date(post.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <span className="badge-brand capitalize">{post.category.replace('_', ' ')}</span>
+                </div>
+
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{post.content}</p>
+
+                <div className="mt-4 flex flex-wrap gap-2 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggleReaction.mutate({ postId: post.id })}
+                    className="btn btn-sm btn-outline"
+                  >
+                    Like ({post.reactionCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePostId((prev) => (prev === post.id ? null : post.id))}
+                    className="btn btn-sm btn-outline"
+                  >
+                    Comments ({post.commentCount})
+                  </button>
+                </div>
+
+                {activePostId === post.id && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-border bg-background p-3">
+                    {commentsQuery.isLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading comments...</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {(commentsQuery.data ?? []).map((comment) => (
+                          <div key={comment.id} className="rounded-lg border border-border bg-card p-2 text-sm">
+                            <p className="font-semibold text-foreground">
+                              {comment.author?.firstName} {comment.author?.lastName}
+                            </p>
+                            <p className="text-muted-foreground">{comment.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <input
+                        className="input"
+                        placeholder="Add a comment"
+                        value={commentText}
+                        onChange={(event) => setCommentText(event.target.value)}
+                      />
+                      <button type="button" onClick={handleCreateComment} disabled={createComment.isPending} className="btn btn-primary">
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))
+          )}
         </div>
       </section>
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
-
-      <section className="space-y-4">
-        {postsQuery.isLoading ? (
-          [1, 2, 3].map((n) => (
-            <div key={n} className="h-28 animate-pulse rounded-lg border border-border bg-muted/30" />
-          ))
-        ) : posts.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
-            No posts yet. Start the conversation.
-          </div>
-        ) : (
-          posts.map((post) => (
-            <article key={post.id} className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold">{post.title}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    By {post.author?.firstName} {post.author?.lastName} • {new Date(post.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <span className="rounded-full border border-border px-2 py-1 text-xs capitalize">{post.category}</span>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">{post.content}</p>
-              <div className="mt-4 flex items-center gap-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleReaction.mutate({ postId: post.id })}
-                  className="rounded-md border border-border px-3 py-1.5 hover:bg-muted"
-                >
-                  React ({post.reactionCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActivePostId((prev) => (prev === post.id ? null : post.id))}
-                  className="rounded-md border border-border px-3 py-1.5 hover:bg-muted"
-                >
-                  Comments ({post.commentCount})
-                </button>
-              </div>
-
-              {activePostId === post.id && (
-                <div className="mt-4 space-y-3 rounded-md border border-border p-3">
-                  {commentsQuery.isLoading ? (
-                    <div className="text-sm text-muted-foreground">Loading comments...</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {(commentsQuery.data ?? []).map((comment) => (
-                        <div key={comment.id} className="rounded-md bg-muted/30 p-2 text-sm">
-                          <p className="font-medium">
-                            {comment.author?.firstName} {comment.author?.lastName}
-                          </p>
-                          <p className="text-muted-foreground">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <input
-                      className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                      placeholder="Add a comment"
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCreateComment}
-                      disabled={createComment.isPending}
-                      className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              )}
-            </article>
-          ))
-        )}
-      </section>
+      <aside className="dashboard-panel h-fit">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Trending</h2>
+        <div className="mt-3 space-y-2">
+          {trending.map((post) => (
+            <div key={post.id} className="rounded-lg border border-border bg-background p-3">
+              <p className="line-clamp-1 text-sm font-semibold text-foreground">{post.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{post.reactionCount + post.commentCount} interactions</p>
+            </div>
+          ))}
+          {!trending.length && <p className="text-sm text-muted-foreground">No trending posts yet.</p>}
+        </div>
+      </aside>
     </div>
   );
 }
-
