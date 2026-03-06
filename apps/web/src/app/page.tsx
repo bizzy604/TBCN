@@ -1,313 +1,520 @@
 ﻿import type { Metadata } from 'next';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import {
-  ArrowRightIcon,
-  BookOpenIcon,
-  CalendarDaysIcon,
-  SparklesIcon,
-  StarIcon,
-  UserGroupIcon,
-} from '@heroicons/react/24/outline';
+import { Cormorant_Garamond, DM_Sans, Syne } from 'next/font/google';
+import LandingPageEffects from './landing-page-effects';
+import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'The Brand Coach Network | Everyone is a Brand',
   description:
-    'Personal branding and entrepreneurship coaching for African professionals. Learn, build, and scale with a practical member ecosystem.',
+    'A cinematic journey from invisibility to impact. Discover your brand, build visibility, and thrive with The Brand Coach Network.',
 };
 
-const valueCards = [
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['300', '400', '600', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+});
+
+const syne = Syne({
+  subsets: ['latin'],
+  variable: '--font-ui',
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-body',
+  weight: ['300', '400', '500'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+});
+
+const painCards = [
   {
-    title: 'Structured Learning Paths',
-    body: 'Progressive programs for personal branding, business growth, and leadership with clear weekly outcomes.',
-    icon: BookOpenIcon,
+    icon: 'MIRROR',
+    title: 'No Clarity on Who You Are',
+    body: "You've achieved things, but you can't articulate your value in a room that matters. You don't know how to present yourself online, on stage, or on paper.",
   },
   {
-    title: 'Coaching That Converts',
-    body: 'Book practical sessions with vetted coaches and leave each session with a concrete execution plan.',
-    icon: UserGroupIcon,
+    icon: 'VOICE',
+    title: 'Visibility Without Strategy',
+    body: "You're posting, showing up, and networking, but nothing is converting. Visibility without a brand story is just noise.",
   },
   {
-    title: 'Community + Accountability',
-    body: 'Stay visible and consistent through peer groups, events, and feedback loops designed for momentum.',
-    icon: CalendarDaysIcon,
+    icon: 'LINK',
+    title: 'Isolated From the Right Community',
+    body: "Growth does not happen alone. Finding mentors, collaborators, and people who get your path still feels impossible.",
   },
 ];
 
-const featuredPrograms = [
+const stats = [
+  { value: '10K+', label: 'Individuals empowered across Africa and beyond' },
+  { value: '4+', label: 'Integrated schools and academies in the ecosystem' },
+  { value: '20+', label: 'Countries represented in the global community' },
+  { value: '1B', label: 'Lives to touch through the #ABillionLivesGlobally mission' },
+];
+
+const journeyTiers = [
   {
-    title: 'Personal Brand Foundation',
-    coach: 'Winston Eboyi',
-    price: 'KES 9,500',
-    tier: 'Build',
-    description: 'Clarify your positioning, message, and market presence in 6 weeks.',
+    badge: 'Free · Tier 1',
+    title: 'Discover',
+    tagline: 'Start your journey - discover the brand within you.',
+    description:
+      "You've arrived. Something brought you here: a feeling, a question, or the quiet sense that you're capable of more. No commitment. No cost. Just the first honest look at who you are and what you're building.",
+    features: [
+      'Introductory branding courses and insights',
+      'Community forum access and live webinars',
+      'Personal brand profile - your first digital identity',
+      'Monthly newsletter and ecosystem updates',
+    ],
   },
   {
-    title: 'Authority Content System',
-    coach: 'Sarah Njeri',
-    price: 'KES 12,000',
-    tier: 'Thrive',
-    description: 'Build a repeatable content engine that attracts aligned opportunities.',
+    badge: 'Premium · Tier 2',
+    title: 'Build',
+    tagline: 'Build your visibility, influence, and income.',
+    description:
+      'You know what you want. Now you need the tools, structure, and people who push you further. This is where clarity becomes strategy, and strategy becomes measurable results.',
+    features: [
+      'Full Personal Branding Academy and SME School access',
+      'Downloadable brand audit and business toolkits',
+      'Mentorship circles and mastermind sessions',
+      'Certified completion - your brand credentialled',
+    ],
   },
   {
-    title: 'Enterprise Influence Lab',
-    coach: 'James Okoth',
-    price: 'KES 18,500',
-    tier: 'Impact',
-    description: 'Advanced executive communication and thought leadership for scale.',
+    badge: 'Pro · Tier 3',
+    title: 'Thrive',
+    tagline: 'Your brand now powers others.',
+    description:
+      "You've done the work. Now it's time to lead. Teach, coach, and co-create while building a legacy that outlasts a single program.",
+    features: [
+      'Host and teach branded programs in the ecosystem',
+      'Featured listing in The Brand Coach Directory',
+      'Co-branding and partnership opportunities',
+      'Priority access to #ABillionLivesGlobally initiatives',
+    ],
+  },
+  {
+    badge: 'Enterprise · Tier 4',
+    title: 'Impact',
+    tagline: 'Empower communities through partnership.',
+    description:
+      "This is where organizations and development partners come to create real change at scale through co-branded learning spaces, Community Empowerment Centres, and meaningful impact data.",
+    features: [
+      'Co-branded learning spaces for teams and communities',
+      'Community Empowerment Centre partnership model',
+      'Custom impact analytics and quarterly strategy sessions',
+      'Exclusive sponsorship visibility across the ecosystem',
+    ],
   },
 ];
 
-const steps = [
-  'Create your profile and define your goals.',
-  'Choose a program, coach, or event aligned to your stage.',
-  'Execute weekly actions, track progress, and showcase outcomes.',
-];
-
-const testimonials = [
+const stories = [
   {
-    quote: 'I moved from uncertainty to a clear brand strategy in one month. The structure is excellent.',
-    name: 'Grace Achieng',
-    role: 'SME Founder, Kampala',
+    initials: 'AK',
+    before: 'Invisible Professional',
+    after: 'Thought Leader',
+    quote:
+      "I had 12 years of experience and couldn't explain what I did in a sentence that made people lean in. Three months in the Branding Academy and I had offers I never thought possible.",
+    name: 'Amara O.',
+    role: 'Corporate Strategist -> Brand Consultant, Lagos',
   },
   {
-    quote: 'The coaching sessions are practical and direct. Every session ends with actions I can execute immediately.',
-    name: 'Paul Mwangi',
-    role: 'Consultant, Nairobi',
+    initials: 'JN',
+    before: 'Struggling SME',
+    after: 'Market-Ready Brand',
+    quote:
+      "My product was good but my brand was invisible. The SME School didn't just teach me marketing, it showed me how to own the story my business was already telling.",
+    name: 'James N.',
+    role: 'SME Founder, Nairobi -> Regional Distribution Partner',
   },
   {
-    quote: 'Our team used the platform to sharpen leadership messaging and improve client confidence.',
-    name: 'Linda Okoye',
-    role: 'Partner Lead, Lagos',
-  },
-];
-
-const plans = [
-  {
-    name: 'Discover',
-    price: 'Free',
-    details: ['Community access', 'Selected intro lessons', 'Events preview'],
-  },
-  {
-    name: 'Build',
-    price: 'KES 4,500/mo',
-    details: ['Program access', 'Progress tracking', 'Resource downloads'],
-    featured: true,
-  },
-  {
-    name: 'Thrive',
-    price: 'KES 8,500/mo',
-    details: ['Everything in Build', 'Coach booking priority', 'Advanced analytics'],
-  },
-  {
-    name: 'Impact',
-    price: 'Custom',
-    details: ['Team onboarding', 'Partner reporting', 'Dedicated support'],
+    initials: 'FD',
+    before: 'Recent Graduate',
+    after: 'Brand Champion',
+    quote:
+      'I started on the free tier with no money, just curiosity. That decision changed the direction of my entire career. I now coach others through the same journey.',
+    name: 'Fatima D.',
+    role: 'Graduate -> Certified Brand Coach, Accra',
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <section className="relative overflow-hidden border-b border-border bg-background">
-          <div className="absolute inset-0 subtle-grid opacity-40" aria-hidden="true" />
-          <div className="container-app relative py-16 md:py-24">
-            <div className="grid items-center gap-12 lg:grid-cols-2">
-              <div className="space-y-6 animate-reveal-up">
-                <p className="inline-flex items-center gap-2 rounded-full bg-primary/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-                  <SparklesIcon className="h-4 w-4" />
-                  Personal Branding + Entrepreneurship
-                </p>
-                <h1 className="max-w-xl text-4xl font-semibold leading-tight text-foreground md:text-5xl">
-                  Everyone is a <span className="text-gradient">Brand</span>
-                </h1>
-                <p className="max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                  Build a visible personal brand, strengthen business leadership, and create measurable impact with practical coaching and community-led execution.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <Link href="/register" className="btn btn-lg btn-primary">
-                    Get Started
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </Link>
-                  <Link href="/programs" className="btn btn-lg btn-secondary">
-                    View Programs
-                  </Link>
-                </div>
+    <div className={`${styles.page} ${cormorant.variable} ${syne.variable} ${dmSans.variable}`}>
+      <div className={styles.shell}>
+        <LandingPageEffects
+          navClass={styles.nav}
+          navScrolledClass={styles.navScrolled}
+          revealClass={styles.reveal}
+          visibleClass={styles.visible}
+        />
+
+        <nav className={styles.nav} aria-label="Primary navigation" data-landing-nav="true">
+          <div className={styles.navLogo}>
+            <span className={styles.logoMark}>BCN</span>
+            The Brand Coach Network
+          </div>
+          <ul className={styles.navLinks}>
+            <li><a href="#programs">Programs</a></li>
+            <li><a href="#community">Community</a></li>
+            <li><a href="#programs">Coaches</a></li>
+            <li><a href="#programs">Partners</a></li>
+            <li><a href="#about">About</a></li>
+          </ul>
+          <button type="button" data-href="/register" className={styles.navCta} aria-label="Start your journey">
+            Start Your Journey
+          </button>
+        </nav>
+
+        <main>
+          <section className={styles.hero} aria-label="Act 1 The Mirror">
+            <div className={styles.heroGrid} />
+            <div className={styles.heroGlow} />
+            <div className={styles.heroContent}>
+              <div className={styles.eyebrow}>
+                <div className={styles.eyebrowLine} />
+                <span className={styles.label}>Everyone is a Brand(TM)</span>
+                <div className={styles.eyebrowLine} />
               </div>
-
-              <div className="animate-reveal-up">
-                <div className="relative rounded-2xl border border-border bg-card p-6 shadow-sm">
-                  <div className="absolute -left-4 -top-4 h-20 w-20 rounded-2xl bg-accent/25 blur-xl" aria-hidden="true" />
-                  <div className="space-y-5">
-                    <div className="rounded-xl border border-border bg-background p-4">
-                      <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">This Week</p>
-                      <p className="mt-2 text-2xl font-semibold text-foreground">8,240 learning hours</p>
-                      <p className="text-sm text-muted-foreground">Across members, coaches, and cohorts</p>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-border bg-background p-4">
-                        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Programs</p>
-                        <p className="mt-1 text-xl font-semibold">120+</p>
-                      </div>
-                      <div className="rounded-xl border border-border bg-background p-4">
-                        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Certified Coaches</p>
-                        <p className="mt-1 text-xl font-semibold">70+</p>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-primary/25 bg-primary/8 p-4">
-                      <p className="text-sm text-foreground">Join professionals from Nairobi, Lagos, Kampala, Kigali, and beyond.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section-padding">
-          <div className="container-app">
-            <div className="grid gap-4 md:grid-cols-3">
-              {valueCards.map((item) => (
-                <article key={item.title} className="card-hover p-6">
-                  <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/16 text-secondary">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <h2 className="text-xl font-semibold">{item.title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="featured-programs" className="section-padding pt-0">
-          <div className="container-app space-y-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Featured Programs</p>
-                <h2 className="mt-2">Build Skills That Scale</h2>
-              </div>
-              <Link href="/programs" className="btn btn-outline">
-                Explore Catalog
-              </Link>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-3">
-              {featuredPrograms.map((program) => (
-                <article key={program.title} className="card-hover p-5">
-                  <div className="mb-4 aspect-[16/9] rounded-xl bg-gradient-to-br from-secondary/30 to-accent/35" />
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="badge-brand">{program.tier}</span>
-                    <span className="text-sm font-semibold text-foreground">{program.price}</span>
-                  </div>
-                  <h3 className="text-xl font-semibold">{program.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">Coach: {program.coach}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{program.description}</p>
-                  <Link href="/programs" className="btn btn-primary mt-4 w-full">
-                    Enroll
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="how-it-works" className="section-padding bg-card/65">
-          <div className="container-app">
-            <h2 className="mb-8 text-center">How It Works</h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              {steps.map((step, index) => (
-                <article key={step} className="card p-5 text-center">
-                  <span className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{step}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section-padding">
-          <div className="container-app space-y-8">
-            <div className="text-center">
-              <h2>Testimonials</h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {testimonials.map((item) => (
-                <article key={item.name} className="card p-5">
-                  <div className="mb-3 flex items-center gap-1 text-accent">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <StarIcon key={`${item.name}-${idx}`} className="h-4 w-4" />
-                    ))}
-                  </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">"{item.quote}"</p>
-                  <p className="mt-4 text-sm font-semibold text-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.role}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="section-padding bg-card/65">
-          <div className="container-app">
-            <h2 className="mb-8 text-center">Pricing Tiers</h2>
-            <div className="grid gap-4 lg:grid-cols-4">
-              {plans.map((plan) => (
-                <article
-                  key={plan.name}
-                  className={`card p-5 ${plan.featured ? 'border-primary ring-1 ring-primary/35' : ''}`}
-                >
-                  <h3 className="text-lg font-semibold">{plan.name}</h3>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{plan.price}</p>
-                  <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    {plan.details.map((detail) => (
-                      <li key={`${plan.name}-${detail}`}>- {detail}</li>
-                    ))}
-                  </ul>
-                  <Link href="/register" className={`btn mt-5 w-full ${plan.featured ? 'btn-primary' : 'btn-outline'}`}>
-                    Choose {plan.name}
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section-padding pt-10">
-          <div className="container-app">
-            <div className="rounded-2xl border border-border bg-sidebar px-6 py-8 text-sidebar-foreground md:px-10">
-              <p className="text-xs uppercase tracking-[0.18em] text-sidebar-foreground/70">Trusted by Teams and Partners</p>
-              <div className="mt-5 grid gap-3 text-center text-sm font-semibold sm:grid-cols-2 lg:grid-cols-5">
-                <span className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-4 py-3">Impact Hub</span>
-                <span className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-4 py-3">SME Growth Forum</span>
-                <span className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-4 py-3">Women in Tech Africa</span>
-                <span className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-4 py-3">Leadership Circle</span>
-                <span className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-4 py-3">Youth Enterprise Lab</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section-padding pt-0">
-          <div className="container-app">
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 p-8 text-center md:p-10">
-              <h2 className="text-3xl font-semibold">Ready to Build Your Brand?</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                Start with Discover or jump into Build to accelerate your transformation with structured coaching, community, and execution support.
+              <h1 className={styles.headline}>
+                <span className={styles.headlineLine1}>You were never just a</span>
+                <em className={styles.headlineLine2}>person trying to get by.</em>
+                <span className={styles.breakRed}>You were always a Brand.</span>
+              </h1>
+              <p className={styles.sub}>
+                The world does not reward the most talented. It rewards the most visible.
+                The Brand Coach Network exists to change that for you, and for a billion lives like yours.
               </p>
-              <Link href="/register" className="btn btn-primary mt-6">
-                Create Your Account
-                <ArrowRightIcon className="h-4 w-4" />
-              </Link>
+              <div className={styles.ctas}>
+                <button type="button" data-href="/register" className={styles.btnPrimary} aria-label="Discover your brand for free">
+                  Discover Your Brand - Free
+                </button>
+                <a href="#programs" className={styles.btnGhost}>See How It Works</a>
+              </div>
+            </div>
+            <div className={styles.scrollIndicator}>
+              <div className={styles.scrollLine} />
+              <span className={styles.scrollLabel}>scroll</span>
+            </div>
+          </section>
+
+          <section className={`${styles.section} ${styles.wound}`} aria-label="Act 2 The Wound">
+            <div className={styles.woundTexture} />
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act II - The Reality</span>
+            </div>
+            <div className={styles.inner}>
+              <div className={styles.introGrid}>
+                <div>
+                  <div className={styles.largeNum}>02</div>
+                  <h2 className={styles.sectionHeadline}>
+                    Talented.<br />
+                    Hard-working.<br />
+                    <strong>Still invisible.</strong>
+                  </h2>
+                </div>
+                <div>
+                  <p className={styles.statement}>
+                    You've put in the work. You have the skills, the hustle, the ideas, but somehow the right opportunities keep going to
+                    <span> people who know how to show up</span>. It's not that you're not good enough.
+                  </p>
+                  <p className={styles.statement}>
+                    It's that the world can't see what you're worth, because
+                    <span> nobody taught you how to own your brand</span>. Your career, your business, your impact, all of it is held back by one missing piece.
+                  </p>
+                  <p className={styles.statement}>
+                    This is the gap. And it costs more than most people realize, not just in income, but in
+                    <span> purpose, belonging, and momentum</span>. You were built to thrive. What's stopping you?
+                  </p>
+                </div>
+              </div>
+              <div className={styles.pains}>
+                {painCards.map((pain, index) => (
+                  <article
+                    key={pain.title}
+                    className={`${styles.painCard} ${styles.reveal} ${index === 1 ? styles.delay1 : ''} ${index === 2 ? styles.delay2 : ''}`}
+                  >
+                    <span className={styles.painIcon}>{pain.icon}</span>
+                    <h3 className={styles.painTitle}>{pain.title}</h3>
+                    <p className={styles.painDesc}>{pain.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className={`${styles.section} ${styles.reframe}`} aria-label="Act 3 The Reframe">
+            <div className={styles.reframeCircle} />
+            <div className={styles.reframeCircle2} />
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act III - The Shift</span>
+            </div>
+            <div className={`${styles.inner} ${styles.reveal}`}>
+              <div className={styles.reframeMark} />
+              <p className={styles.reframeQuote}>
+                &quot;Everyone is a Brand
+                <span className={styles.registered}>(TM)</span>
+                &quot;
+              </p>
+              <p className={styles.reframeSub}>
+                Not a slogan. A declaration. You carry a story, a set of values, and a unique impact only you can make.
+                The Brand Coach Network was built on one belief: when people understand and own their brand,
+                they do not just succeed. They transform, and their transformation transforms the people around them.
+              </p>
+            </div>
+          </section>
+
+          <section id="about" className={`${styles.section} ${styles.guide}`} aria-label="Act 4 The Guide">
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act IV - The Network</span>
+            </div>
+            <div className={styles.guideGrid}>
+              <div className={styles.reveal}>
+                <span className={styles.guideLabel}>Who We Are</span>
+                <h2 className={styles.guideHeadline}>
+                  We don't just teach branding.
+                  <br />
+                  <strong>We walk with you through it.</strong>
+                </h2>
+                <p className={styles.guideBody}>
+                  The Brand Coach Network is Africa's most integrated personal and business branding ecosystem,
+                  connecting the SME School, the Branding Academy, Personal Development Institute, and Community Empowerment Centres under one digital home.
+                </p>
+                <p className={styles.guideBody}>
+                  We've walked with entrepreneurs who had nothing but a dream, professionals who had lost their spark,
+                  and communities that needed someone to believe in their potential. Every time, the outcome is the same:
+                  clarity leads to confidence, confidence leads to action, and action leads to transformation.
+                </p>
+                <div className={styles.missionBadge}>
+                  <span className={styles.dot} />
+                  #ABillionLivesGlobally
+                </div>
+              </div>
+              <div className={styles.reveal}>
+                <div className={styles.statGrid}>
+                  {stats.map((stat) => (
+                    <article key={stat.value} className={styles.stat}>
+                      <p className={styles.statNum}>{stat.value.replace('+', '')}{stat.value.includes('+') ? <span>+</span> : null}</p>
+                      <p className={styles.statDesc}>{stat.label}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="programs" className={`${styles.section} ${styles.ecosystem}`} aria-label="Act 5 The Map">
+            <div className={styles.ecoAccent} />
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act V - Your Journey</span>
+            </div>
+            <div className={`${styles.ecoHeader} ${styles.reveal}`}>
+              <span className={styles.label}>The Path From Surviving to Thriving</span>
+              <h2 className={styles.ecoHeadline}>
+                Your journey starts <em>wherever you are.</em>
+                <br />
+                And it ends where you choose.
+              </h2>
+              <p className={styles.ecoSub}>
+                Every transformation is unique. That's why the Brand Coach Network is a living ecosystem: four entry points,
+                one continuous path. Find where you are, and take the next step.
+              </p>
+            </div>
+
+            <div className={styles.journey}>
+              {journeyTiers.map((tier, index) => {
+                const rightAligned = index % 2 === 1;
+
+                return (
+                  <div key={tier.title} className={`${styles.tierRow} ${rightAligned ? styles.rightCard : ''}`}>
+                    <div className={styles.tierCard}>
+                      <span className={styles.tierBadge}>{tier.badge}</span>
+                      <h3 className={styles.tierTitle}>{tier.title}</h3>
+                      <p className={styles.tierTagline}>{tier.tagline}</p>
+                      <p className={styles.tierDesc}>{tier.description}</p>
+                      <ul className={styles.tierFeatures}>
+                        {tier.features.map((feature) => (
+                          <li key={`${tier.title}-${feature}`}>{feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className={styles.tierNode}>
+                      <div className={styles.tierDot} />
+                      <span className={styles.tierNum}>{`0${index + 1}`}</span>
+                    </div>
+                    <div className={styles.tierSpacer} />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={styles.centerCta}>
+              <p className={styles.centerCtaLabel}>Not sure where to start? Take the free Brand Discovery assessment, it finds your entry point for you.</p>
+              <button type="button" data-href="/register" className={styles.btnPrimary} aria-label="Take the free assessment">
+                Take the Free Assessment
+              </button>
+            </div>
+          </section>
+
+          <section id="community" className={`${styles.section} ${styles.community}`} aria-label="Act 6 Community and Proof">
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act VI - The Community</span>
+            </div>
+            <div className={styles.communityHeader}>
+              <div className={styles.reveal}>
+                <span className={styles.label}>Real People. Real Transformations.</span>
+                <h2 className={styles.communityHeadline}>
+                  You won't be learning
+                  <br />
+                  <strong>in a vacuum.</strong>
+                  <br />
+                  You'll be rising
+                  <br />
+                  <strong>with a movement.</strong>
+                </h2>
+              </div>
+              <div className={`${styles.communitySub} ${styles.reveal}`}>
+                <p>
+                  The most powerful thing about The Brand Coach Network isn't the curriculum.
+                  It's the community that forms around it, coaches, entrepreneurs, professionals, and changemakers who chose to stop surviving and start thriving.
+                </p>
+                <p>
+                  When you join, you don't just get programs. You get people, people a few steps ahead,
+                  a few steps behind, and right beside you moving toward brand, purpose, and impact.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.storyGrid}>
+              {stories.map((story) => (
+                <article key={story.name} className={styles.storyCard}>
+                  <div className={styles.storyAvatar}>{story.initials}</div>
+                  <div className={styles.storyTags}>
+                    <span className={styles.storyBefore}>{story.before}</span>
+                    <span className={styles.storyArrow}>-&gt;</span>
+                    <span className={styles.storyAfter}>{story.after}</span>
+                  </div>
+                  <p className={styles.storyQuote}>&quot;{story.quote}&quot;</p>
+                  <p className={styles.storyName}>{story.name}</p>
+                  <p className={styles.storyRole}>{story.role}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className={styles.pulse}>
+              <div className={styles.pulseLive}>
+                <div className={styles.pulseDot} />
+                <span className={styles.pulseLabel}>Community Live</span>
+              </div>
+              <div className={styles.pulseMetrics}>
+                <div>
+                  <p className={styles.pulseMetricNum}>4,200<span>+</span></p>
+                  <p className={styles.pulseMetricLabel}>Active Members</p>
+                </div>
+                <div>
+                  <p className={styles.pulseMetricNum}>20<span>+</span></p>
+                  <p className={styles.pulseMetricLabel}>Countries Represented</p>
+                </div>
+                <div>
+                  <p className={styles.pulseMetricNum}>380<span>+</span></p>
+                  <p className={styles.pulseMetricLabel}>Programs Completed This Month</p>
+                </div>
+                <div>
+                  <p className={styles.pulseMetricNum}>62<span>+</span></p>
+                  <p className={styles.pulseMetricLabel}>Certified Coaches</p>
+                </div>
+              </div>
+              <Link href="/register" className={styles.pulseCta}>Join the Community -&gt;</Link>
+            </div>
+          </section>
+
+          <section id="join" className={`${styles.section} ${styles.call}`} aria-label="Act 7 The Call">
+            <div className={styles.callBg} />
+            <div className={styles.sectionFloater}>
+              <div className={styles.sectionLine} />
+              <span className={styles.label}>Act VII - Your Move</span>
+            </div>
+            <div className={`${styles.callInner} ${styles.reveal}`}>
+              <p className={styles.callPre}>- You've seen the path. You know what's possible. -</p>
+              <h2 className={styles.callHeadline}>
+                The only question left is
+                <br />
+                <em>how long you'll wait</em>
+                <strong>to become who you already are.</strong>
+              </h2>
+              <p className={styles.callBody}>
+                Your brand is already there. It's been waiting for you to claim it. Start free. Start today.
+                Join a community of thousands across Africa and beyond who chose to stop surviving and started building something that outlasts them.
+              </p>
+              <div className={styles.ctas}>
+                <button type="button" data-href="/register" className={`${styles.btnPrimary} ${styles.largeCta}`} aria-label="Start your journey for free">
+                  Start Your Journey - It's Free
+                </button>
+                <a href="#programs" className={styles.btnGhost}>Explore Premium Programs</a>
+              </div>
+              <p className={styles.callNote}>No credit card required · Cancel anytime · Part of a global cause</p>
+            </div>
+          </section>
+        </main>
+
+        <footer className={styles.footer}>
+          <div>
+            <div className={styles.footerBrand}>
+              <span className={styles.logoMark}>BCN</span>
+              The Brand Coach Network
+            </div>
+            <p className={styles.footerTag}>From Surviving Individuals to Thriving Brands(TM)</p>
+            <div className={styles.footerMission}>
+              <span className={styles.dot} />
+              #ABillionLivesGlobally
             </div>
           </div>
-        </section>
-      </main>
-      <Footer />
+          <div>
+            <p className={styles.footerTitle}>Programs</p>
+            <ul className={styles.footerLinks}>
+              <li><a href="#programs">Personal Branding Academy</a></li>
+              <li><a href="#programs">The SME School</a></li>
+              <li><a href="#programs">Finding Yourself</a></li>
+              <li><a href="#programs">Skills Stacking</a></li>
+              <li><a href="#programs">CEC Partnership</a></li>
+            </ul>
+          </div>
+          <div>
+            <p className={styles.footerTitle}>Community</p>
+            <ul className={styles.footerLinks}>
+              <li><a href="#community">Member Directory</a></li>
+              <li><a href="#community">Coach Network</a></li>
+              <li><a href="#community">Events and Webinars</a></li>
+              <li><a href="#community">Brand Coach Blog</a></li>
+              <li><a href="#community">Forum and Circles</a></li>
+            </ul>
+          </div>
+          <div>
+            <p className={styles.footerTitle}>Partner</p>
+            <ul className={styles.footerLinks}>
+              <li><a href="#programs">Sponsor a Program</a></li>
+              <li><a href="#programs">Investor Relations</a></li>
+              <li><a href="#programs">Enterprise Tier</a></li>
+              <li><a href="#programs">Become a Coach</a></li>
+              <li><a href="#about">Contact Us</a></li>
+            </ul>
+          </div>
+        </footer>
+        <div className={styles.footerBottom}>
+          <span className={styles.footerCopy}>© 2025 The Brand Coach Network. All rights reserved.</span>
+          <span className={styles.footerCopy}>Built to empower · Designed to inspire · Made for Africa and beyond</span>
+        </div>
+      </div>
     </div>
   );
 }
