@@ -28,6 +28,7 @@
     "seed:events-sessions": "ts-node -r tsconfig-paths/register src/common/commands/seed-events-sessions.ts"
   },
   "dependencies": {
+    "@tbcn/shared": "*",
     "@aws-sdk/client-s3": "^3.985.0",
     "@aws-sdk/s3-request-presigner": "^3.985.0",
     "@nestjs/bull": "^10.0.1",

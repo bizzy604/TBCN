@@ -524,7 +524,7 @@ export class UsersService {
       .getRawMany();
 
     const counts = {} as Record<UserRole, number>;
-    Object.values(UserRole).forEach((role) => {
+    (Object.values(UserRole) as UserRole[]).forEach((role) => {
       counts[role] = 0;
     });
 
