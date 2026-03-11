@@ -1,0 +1,85 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+/**
+ * Admin App Proxy (was middleware) — Server-side route protection
+ *
+ * Reads the `admin_token` cookie set at login. If the cookie is absent on any
+ * dashboard route, the user is redirected to /login. If the cookie is present
+ * on /login, they are sent to the dashboard.
+ *
+ * We also decode the JWT payload (without verifying the signature — that is
+ * the API server's responsibility) to confirm the role is admin/super_admin.
+ */
+
+const LMS_ROLES = ['super_admin', 'admin', 'coach'];
+const PLATFORM_ADMIN_ROLES = ['super_admin', 'admin'];
+const ADMIN_ONLY_PREFIXES = [
+	'/users',
+	'/partners',
+	'/transactions',
+	'/settings',
+	'/content-moderation',
+];
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+	try {
+		const parts = token.split('.');
+		if (parts.length !== 3) return null;
+		// Convert base64url → standard base64, then decode via atob (Edge-safe)
+		const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+		const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+		const json = atob(padded);
+		return JSON.parse(json);
+	} catch {
+		return null;
+	}
+}
+
+function getAuth(request: NextRequest): {
+	isAuthenticated: boolean;
+	role: string | null;
+} {
+	const token = request.cookies.get('admin_token')?.value;
+	if (!token) return { isAuthenticated: false, role: null };
+
+	const payload = decodeJwtPayload(token);
+	if (!payload) return { isAuthenticated: false, role: null };
+
+	const role = (payload.role as string) || null;
+	const isAllowed = role ? LMS_ROLES.includes(role) : false;
+
+	return { isAuthenticated: isAllowed, role };
+}
+
+export function proxy(request: NextRequest) {
+	const { pathname } = request.nextUrl;
+	const { isAuthenticated, role } = getAuth(request);
+
+	// Allow /login for unauthenticated users
+	if (pathname === '/login') {
+		if (isAuthenticated) {
+			// Already logged in — redirect to dashboard
+			return NextResponse.redirect(new URL('/', request.url));
+		}
+		return NextResponse.next();
+	}
+
+	// All other routes require authentication
+	if (!isAuthenticated) {
+		const loginUrl = new URL('/login', request.url);
+		loginUrl.searchParams.set('redirect', pathname);
+		return NextResponse.redirect(loginUrl);
+	}
+
+	const isAdminOnlyRoute = ADMIN_ONLY_PREFIXES.some(
+		(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+	);
+	const isPlatformAdmin = role ? PLATFORM_ADMIN_ROLES.includes(role) : false;
+
+	if (isAdminOnlyRoute && !isPlatformAdmin) {
+		return NextResponse.redirect(new URL('/', request.url));
+	}
+
+	return NextResponse.next();
+}

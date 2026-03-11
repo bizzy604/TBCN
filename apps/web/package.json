@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@tbcn/shared": "*",
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.3.3",
     "@paystack/inline-js": "^2.21.0",
