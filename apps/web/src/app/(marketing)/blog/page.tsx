@@ -1,11 +1,12 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { ArrowRightIcon, NewspaperIcon } from '@heroicons/react/24/outline';
+import Link from "next/link";
+import type { Metadata } from "next";
+import { ArrowRightIcon, NewspaperIcon } from "@heroicons/react/24/outline";
+import { marketingBlogPosts } from "@/lib/content/marketing";
 
 export const metadata: Metadata = {
-  title: 'Blog',
+  title: "Blog",
   description:
-    'Insights, stories, and practical brand growth guidance from The Brand Coach Network.',
+    "Insights, stories, and practical brand growth guidance from The Brand Coach Network.",
 };
 
 export default function BlogPage() {
@@ -23,8 +24,8 @@ export default function BlogPage() {
               TBCN <span className="text-gradient">Blog</span>
             </h1>
             <p className="text-lg leading-relaxed text-muted-foreground">
-              Practical insights on personal branding, coaching, leadership, and
-              community transformation.
+              Practical insights, essays, and newsletters on personal branding,
+              leadership, visibility, and community transformation.
             </p>
           </div>
         </div>
@@ -33,8 +34,14 @@ export default function BlogPage() {
       <section className="section-padding bg-background">
         <div className="container-app">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post) => (
-              <article key={post.title} className="card-hover p-6">
+            {marketingBlogPosts.map((post) => (
+              <a
+                key={post.href}
+                href={post.href}
+                target="_blank"
+                rel="noreferrer"
+                className="card-hover flex h-full flex-col p-6"
+              >
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                   {post.tag}
                 </p>
@@ -42,13 +49,17 @@ export default function BlogPage() {
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {post.excerpt}
                 </p>
-              </article>
+                <div className="mt-5 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                  <span>{post.source}</span>
+                  <span>{post.ctaLabel}</span>
+                </div>
+              </a>
             ))}
           </div>
 
           <div className="mt-12 text-center">
-            <Link href="/#collaboration-media-publishing" className="btn-primary btn-lg">
-              Explore Publishing Focus
+            <Link href="/#blog" className="btn-primary btn-lg">
+              Back to Featured Stories
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
           </div>
@@ -57,24 +68,3 @@ export default function BlogPage() {
     </>
   );
 }
-
-const posts = [
-  {
-    tag: 'Brand Strategy',
-    title: 'From Invisible to Influential: Building Your Brand Presence',
-    excerpt:
-      'A practical framework for clarifying your message, strengthening visibility, and positioning your value in crowded markets.',
-  },
-  {
-    tag: 'Coaching',
-    title: 'How 1:1 Coaching Accelerates Career and Business Clarity',
-    excerpt:
-      'Why personalized coaching remains one of the fastest ways to align goals, execution, and measurable outcomes.',
-  },
-  {
-    tag: 'Community',
-    title: 'Why Community-Led Growth Outperforms Solo Hustle',
-    excerpt:
-      'Peer learning, mentorship, and accountability loops are key drivers of consistent progress and confidence.',
-  },
-];
