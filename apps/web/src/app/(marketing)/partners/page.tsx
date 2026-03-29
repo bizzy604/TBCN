@@ -1,21 +1,21 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
+  AcademicCapIcon,
   ArrowRightIcon,
   BuildingOffice2Icon,
   ChartBarSquareIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
+  CheckCircleIcon,
   DocumentTextIcon,
   GlobeAltIcon,
-  CheckCircleIcon,
   SparklesIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 
 export const metadata: Metadata = {
   title: 'Partners',
   description:
-    'Partner with The Brand Coach Network. Discover co-branded training, CSR programs, bulk enrollment, and enterprise solutions for corporates, NGOs, and institutions.',
+    'Partner with The Brand Coach Network. Discover co-branded training, CSR programs, school partnerships, bulk enrollment, and enterprise solutions for corporates, NGOs, and institutions.',
 };
 
 /**
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default function PartnersPage() {
   return (
     <>
-      {/* ──────────────────── HERO ──────────────────── */}
+      {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-card via-card to-muted">
         <div className="absolute inset-0 bg-[url('/images/grid-pattern.svg')] opacity-5" />
         <div className="container-app relative py-20 lg:py-28">
@@ -38,11 +38,11 @@ export default function PartnersPage() {
               Partner with{' '}
               <span className="text-gradient">The Brand Coach Network</span>
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Join a growing ecosystem of corporates, institutions, and
-              organisations that are investing in human capital development,
-              brand-powered entrepreneurship, and measurable social impact
-              across Africa and beyond.
+            <p className="text-lg leading-relaxed text-muted-foreground">
+              Join a growing ecosystem of corporates, institutions,
+              educational partners, and organisations that are investing in
+              human capital development, brand-powered entrepreneurship, and
+              measurable social impact across Africa and beyond.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="#inquiry" className="btn-primary btn-lg group">
@@ -57,7 +57,7 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* ──────────────────── PARTNER TYPES ──────────────────── */}
+      {/* Partner types */}
       <section className="section-padding bg-background">
         <div className="container-app">
           <div className="mx-auto max-w-2xl text-center">
@@ -65,13 +65,13 @@ export default function PartnersPage() {
               Partnership Opportunities
             </h2>
             <p className="text-lg text-muted-foreground">
-              Whether you&apos;re a financial institution, corporate, NGO, or
-              government body — we have a partnership model designed for your
-              impact goals.
+              Whether you&apos;re a financial institution, corporate, NGO,
+              government body, or educational institution, we have a
+              partnership model designed for your impact goals.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-2">
+          <div className="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
             {partnerTypes.map((pt) => (
               <div key={pt.title} className="card-hover p-8">
                 <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3">
@@ -96,7 +96,7 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* ──────────────────── WHY PARTNER ──────────────────── */}
+      {/* Why partner */}
       <section className="section-padding bg-muted/30">
         <div className="container-app">
           <div className="mx-auto max-w-2xl text-center">
@@ -122,7 +122,7 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* ──────────────────── HOW IT WORKS ──────────────────── */}
+      {/* How it works */}
       <section className="section-padding bg-background">
         <div className="container-app">
           <div className="mx-auto max-w-2xl text-center">
@@ -140,7 +140,7 @@ export default function PartnersPage() {
                 {idx < processSteps.length - 1 && (
                   <div className="absolute left-1/2 top-8 hidden h-0.5 w-full bg-border lg:block" />
                 )}
-                <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold shadow-brand">
+                <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-brand">
                   {idx + 1}
                 </div>
                 <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
@@ -153,7 +153,7 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* ──────────────────── COMMUNITY EMPOWERMENT CENTRES ──────────────────── */}
+      {/* Community Empowerment Centres */}
       <section className="section-padding bg-muted/30">
         <div className="container-app">
           <div className="mx-auto max-w-4xl">
@@ -166,10 +166,11 @@ export default function PartnersPage() {
                   Community Empowerment Centres (CECs)
                 </h2>
                 <p className="mb-4 text-muted-foreground leading-relaxed">
-                  CECs are our grassroots hubs for local training and support —
-                  physical community spaces where brand coaching meets real-world
-                  impact. Partners can sponsor, host, or collaborate on CECs to
-                  extend their reach into underserved communities.
+                  CECs are our grassroots hubs for local training and support,
+                  physical community spaces where brand coaching meets
+                  real-world impact. Partners can sponsor, host, or
+                  collaborate on CECs to extend their reach into underserved
+                  communities.
                 </p>
                 <ul className="flex flex-col gap-3">
                   {cecFeatures.map((f) => (
@@ -193,7 +194,48 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* ──────────────────── PARTNERSHIP INQUIRY FORM ──────────────────── */}
+      {/* Career Counselling Centres */}
+      <section className="section-padding bg-background">
+        <div className="container-app">
+          <div className="mx-auto max-w-4xl">
+            <div className="grid items-center gap-12 lg:grid-cols-2">
+              <div className="order-2 flex items-center justify-center lg:order-1">
+                <div className="flex aspect-square w-full max-w-sm items-center justify-center rounded-2xl bg-gradient-to-br from-secondary/20 to-primary/20 shadow-lg">
+                  <AcademicCapIcon className="h-24 w-24 text-primary/50" />
+                </div>
+              </div>
+              <div className="order-1 lg:order-2">
+                <p className="mb-2 text-sm font-medium uppercase tracking-wider text-primary">
+                  Education Partnerships
+                </p>
+                <h2 className="mb-4 text-3xl font-bold">
+                  Career Counselling Centres (CCCs)
+                </h2>
+                <p className="mb-4 text-muted-foreground leading-relaxed">
+                  CCCs extend TBCN into selective universities, colleges, high
+                  schools, and primary schools, both private and public. The
+                  goal is to turn these institutions into Career Counselling
+                  Centres that give learners structured guidance, brand
+                  discovery, and clearer career pathways early.
+                </p>
+                <ul className="flex flex-col gap-3">
+                  {cccFeatures.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
+                    >
+                      <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Partnership inquiry form */}
       <section id="inquiry" className="section-padding bg-background">
         <div className="container-app">
           <div className="mx-auto max-w-2xl">
@@ -265,6 +307,9 @@ export default function PartnersPage() {
                     <option value="training">Corporate Training</option>
                     <option value="csr">CSR / Social Impact</option>
                     <option value="sponsorship">Sponsorship</option>
+                    <option value="ccc">
+                      Career Counselling Centres (CCC)
+                    </option>
                     <option value="cec">
                       Community Empowerment Centres (CEC)
                     </option>
@@ -327,6 +372,19 @@ const partnerTypes = [
     ],
   },
   {
+    title: 'CCC / School Partner',
+    description:
+      'Partner with TBCN to turn selective schools into Career Counselling Centres with structured guidance and future-facing mentorship pathways.',
+    icon: AcademicCapIcon,
+    features: [
+      'Partnerships with universities, colleges, high schools, and primary schools',
+      'Career Counselling Centre design and implementation support',
+      'Career Counselling Club activation for learners',
+      'Structured guidance around identity, visibility, and career pathways',
+      'Long-term mentorship outreach to schools',
+    ],
+  },
+  {
     title: 'Sponsorship Partner',
     description:
       'Align your brand with African entrepreneurship and gain visibility across our growing platform.',
@@ -364,7 +422,7 @@ const benefits = [
   {
     title: 'White-Label Solutions',
     description:
-      'Co-branded or fully white-labelled program experiences with your organisation\'s identity.',
+      "Co-branded or fully white-labelled program experiences with your organisation's identity.",
     icon: BuildingOffice2Icon,
   },
   {
@@ -422,4 +480,12 @@ const cecFeatures = [
   'Goal: 50+ active CECs across Africa',
   'Group training for women, youth, and SMEs',
   'Monthly impact data and participant analytics',
+];
+
+const cccFeatures = [
+  'Selective partnerships with universities, colleges, high schools, and primary schools',
+  'Career Counselling Centre setup and implementation support',
+  'Career Counselling Clubs embedded inside partner institutions',
+  'Long-term mentorship outreach pathways for schools',
+  'Progress visibility and impact reporting for partner institutions',
 ];

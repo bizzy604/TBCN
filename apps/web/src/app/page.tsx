@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Cormorant_Garamond, DM_Sans, Syne } from "next/font/google";
+import BrandLogo from "@/components/shared/BrandLogo";
 import SocialLinksBar from "@/components/shared/SocialLinksBar";
 import { marketingBlogPosts } from "@/lib/content/marketing";
 import LandingPageEffects from "./landing-page-effects";
@@ -166,10 +167,12 @@ export default function HomePage() {
           aria-label="Primary navigation"
           data-landing-nav="true"
         >
-          <div className={styles.navLogo}>
-            <span className={styles.logoMark}>BCN</span>
-            The Brand Coach Network
-          </div>
+          <BrandLogo
+            size={38}
+            priority
+            className={styles.navLogo}
+            imageWrapperClassName={styles.logoMark}
+          />
           <ul className={styles.navLinks}>
             <li>
               <a href="#programs">Programs</a>
@@ -345,10 +348,10 @@ export default function HomePage() {
                   <strong>We walk with you through it.</strong>
                 </h2>
                 <p className={styles.guideBody}>
-                  The Brand Coach Network is Africa's most integrated personal
-                  and business branding ecosystem, connecting the SME School,
-                  the Branding Academy, Personal Development Institute, and
-                  Community Empowerment Centres under one digital home.
+                  The Brand Coach Network is Africa's storytelling-powered
+                  human capital & community empowerment infrastructure,
+                  designed to solve youth unemployment at scale and tell a
+                  different African story to the world 🌎.
                 </p>
                 <p className={styles.guideBody}>
                   We've walked with entrepreneurs who had nothing but a dream,
@@ -356,6 +359,13 @@ export default function HomePage() {
                   needed someone to believe in their potential. Every time, the
                   outcome is the same: clarity leads to confidence, confidence
                   leads to action, and action leads to transformation.
+                </p>
+                <p className={styles.guideBody}>
+                  And ladies and gentlemen, this is an express welcome to help
+                  you turn your story into your career advantage.{" "}
+                  <Link href="/register" className={styles.guideInlineCta}>
+                    Start your journey.
+                  </Link>
                 </p>
                 <div className={styles.missionBadge}>
                   <span className={styles.dot} />
@@ -664,10 +674,11 @@ export default function HomePage() {
 
         <footer className={styles.footer}>
           <div>
-            <div className={styles.footerBrand}>
-              <span className={styles.logoMark}>BCN</span>
-              The Brand Coach Network
-            </div>
+            <BrandLogo
+              size={42}
+              className={styles.footerBrand}
+              imageWrapperClassName={styles.logoMark}
+            />
             <p className={styles.footerTag}>
               From Surviving Individuals to Thriving Brands(TM)
             </p>

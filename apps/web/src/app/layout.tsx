@@ -50,10 +50,10 @@ export const metadata: Metadata = {
       'Join Africa\'s premier coaching platform. Discover your brand, build visibility, and create measurable impact.',
     images: [
       {
-        url: '/images/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'The Brand Coach Network',
+        url: '/images/tbcn-logo.jpeg',
+        width: 720,
+        height: 638,
+        alt: 'The Brand Coach Network logo',
       },
     ],
   },
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'The Brand Coach Network',
     description: 'Build Your Brand, Transform Your Life',
-    images: ['/images/og-image.png'],
+    images: ['/images/tbcn-logo.jpeg'],
   },
   robots: {
     index: true,
@@ -76,9 +76,9 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/images/tbcn-fav.jpeg',
+    shortcut: '/images/tbcn-fav.jpeg',
+    apple: '/images/tbcn-fav.jpeg',
   },
 };
 

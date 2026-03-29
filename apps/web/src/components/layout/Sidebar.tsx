@@ -29,6 +29,7 @@ import {
   PARTNER_WORKSPACE_ROLES,
   type AppRole,
 } from '@/lib/auth/rbac';
+import BrandLogo from '@/components/shared/BrandLogo';
 
 interface SidebarLink {
   label: string;
@@ -89,15 +90,14 @@ export default function Sidebar({
           href="/dashboard"
           className={`flex items-center gap-2 overflow-hidden transition-all ${collapsed ? 'w-0 opacity-0 lg:w-auto lg:opacity-100' : 'w-auto opacity-100'}`}
         >
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-            T
-          </span>
-          {!collapsed && (
-            <div>
-              <p className="text-sm font-semibold text-sidebar-foreground">TBCN</p>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-sidebar-muted-foreground">Member Area</p>
-            </div>
-          )}
+          <BrandLogo
+            size={36}
+            title={collapsed ? undefined : 'TBCN'}
+            subtitle={collapsed ? undefined : 'Member Area'}
+            imageWrapperClassName="ring-sidebar-border bg-sidebar-accent/30"
+            titleClassName="text-sm font-semibold text-sidebar-foreground"
+            subtitleClassName="text-[10px] uppercase tracking-[0.14em] text-sidebar-muted-foreground"
+          />
         </Link>
 
         <div className="flex items-center gap-1">

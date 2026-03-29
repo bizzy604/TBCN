@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import BrandLogo from '@/components/shared/BrandLogo';
 import { AdminRoute } from '@/components/auth';
 import { useAuth, useNotificationsRealtime } from '@/hooks';
 import { useUnreadNotificationsCount } from '@/hooks/use-engagement';
@@ -70,11 +71,13 @@ export default function AdminLayout({
         >
           {/* Logo */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
-            <Link href="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">TBCN</span>
-              </div>
-              <span className="text-sidebar-foreground font-semibold">Admin</span>
+            <Link href="/admin" className="flex items-center">
+              <BrandLogo
+                size={36}
+                title="Admin"
+                imageWrapperClassName="ring-sidebar-border bg-sidebar-accent/30"
+                titleClassName="font-semibold text-sidebar-foreground"
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}

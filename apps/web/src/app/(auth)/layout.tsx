@@ -1,4 +1,6 @@
-﻿export default function AuthLayout({
+import BrandLogo from '@/components/shared/BrandLogo';
+
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -8,9 +10,12 @@
       <div className="grid min-h-screen lg:grid-cols-2">
         <aside className="relative hidden overflow-hidden border-r border-sidebar-border bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
           <div className="space-y-4">
-            <p className="inline-flex rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground">
-              The Brand Coach Network
-            </p>
+            <BrandLogo
+              size={84}
+              title="The Brand Coach Network"
+              imageWrapperClassName="ring-sidebar-border bg-sidebar-accent/30"
+              titleClassName="text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground"
+            />
             <h1 className="max-w-lg text-4xl font-semibold leading-tight text-white">
               Everyone is a Brand
             </h1>

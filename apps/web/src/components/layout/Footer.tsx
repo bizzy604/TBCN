@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLogo from "@/components/shared/BrandLogo";
 import SocialLinksBar from "@/components/shared/SocialLinksBar";
 
 const columns = {
@@ -30,7 +31,12 @@ export default function Footer() {
       <div className="container-app py-14">
         <div className="grid gap-10 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <p className="text-lg font-semibold">The Brand Coach Network</p>
+            <BrandLogo
+              size={52}
+              title="The Brand Coach Network"
+              imageWrapperClassName="ring-sidebar-border"
+              titleClassName="text-lg font-semibold"
+            />
             <p className="mt-3 max-w-md text-sm leading-relaxed text-sidebar-foreground/75">
               A practical ecosystem for personal branding, entrepreneurship
               coaching, and measurable impact for individuals, coaches, and

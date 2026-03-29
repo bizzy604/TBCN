@@ -25,10 +25,10 @@ export const SITE_ARCHITECTURE: ArchitectureSection[] = [
           'The mission backbone of the platform: transform aspiring brands into thriving global contributors through measurable community impact and empowerment outcomes.',
       },
       {
-        title: 'CCC (Career Counseling Centers)',
+        title: 'CCC (Career Counselling Centres)',
         anchorId: 'community-ccc',
         description:
-          'Career counseling pathways help members clarify identity, improve visibility, and transition into stronger opportunities using mentorship, assessments, and coaching support.',
+          'Career counselling pathways help members clarify identity, improve visibility, and transition into stronger opportunities using mentorship, assessments, and coaching support.',
       },
       {
         title: 'CEC (Community Empowerment Center)',

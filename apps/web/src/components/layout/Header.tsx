@@ -1,4 +1,5 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import BrandLogo from '@/components/shared/BrandLogo';
 
 const navItems = [
   { label: 'Programs', href: '/#featured-programs' },
@@ -12,14 +13,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 text-foreground backdrop-blur dark:border-sidebar-border dark:bg-sidebar dark:text-sidebar-foreground/95">
       <div className="container-app flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="inline-flex items-center gap-2">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-            T
-          </span>
-          <div className="leading-none">
-            <p className="text-sm font-semibold tracking-wide">The Brand Coach Network</p>
-            <p className="text-[11px] text-muted-foreground dark:text-sidebar-foreground/70">Everyone is a Brand</p>
-          </div>
+        <Link href="/" className="inline-flex items-center">
+          <BrandLogo
+            size={40}
+            title="The Brand Coach Network"
+            subtitle="Everyone is a Brand"
+            imageWrapperClassName="ring-border dark:ring-sidebar-border"
+            titleClassName="text-sm font-semibold tracking-wide text-foreground dark:text-sidebar-foreground"
+            subtitleClassName="text-[11px] text-muted-foreground dark:text-sidebar-foreground/70"
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
