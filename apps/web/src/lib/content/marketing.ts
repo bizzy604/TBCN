@@ -68,7 +68,7 @@ export const socialMediaLinks: SocialMediaLink[] = [
   {
     icon: "message",
     label: "WhatsApp Community",
-    href: "https://chat.whatsapp.com/KNQ4rKVPQQn8N9ROEuAYWU",
+    href: "https://chat.whatsapp.com/ChjdiTE2bcRIxfuSSzjiuZ",
   },
   {
     icon: "send",
