@@ -47,58 +47,58 @@ export const configValidationSchema = Joi.object({
   // ============================================
   // OAuth Providers
   // ============================================
-  GOOGLE_CLIENT_ID: Joi.string().optional(),
-  GOOGLE_CLIENT_SECRET: Joi.string().optional(),
-  LINKEDIN_CLIENT_ID: Joi.string().optional(),
-  LINKEDIN_CLIENT_SECRET: Joi.string().optional(),
-  FACEBOOK_CLIENT_ID: Joi.string().optional(),
-  FACEBOOK_CLIENT_SECRET: Joi.string().optional(),
+  GOOGLE_CLIENT_ID: Joi.string().optional().allow(''),
+  GOOGLE_CLIENT_SECRET: Joi.string().optional().allow(''),
+  LINKEDIN_CLIENT_ID: Joi.string().optional().allow(''),
+  LINKEDIN_CLIENT_SECRET: Joi.string().optional().allow(''),
+  FACEBOOK_CLIENT_ID: Joi.string().optional().allow(''),
+  FACEBOOK_CLIENT_SECRET: Joi.string().optional().allow(''),
 
   // ============================================
   // AWS
   // ============================================
   AWS_REGION: Joi.string().default('us-east-1'),
-  AWS_ACCESS_KEY_ID: Joi.string().optional(),
-  AWS_SECRET_ACCESS_KEY: Joi.string().optional(),
-  AWS_S3_BUCKET: Joi.string().optional(),
-  AWS_S3_ENDPOINT: Joi.string().optional(), // For LocalStack
+  AWS_ACCESS_KEY_ID: Joi.string().optional().allow(''),
+  AWS_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
+  AWS_S3_BUCKET: Joi.string().optional().allow(''),
+  AWS_S3_ENDPOINT: Joi.string().optional().allow(''), // For LocalStack
 
   // ============================================
   // Email (SMTP)
   // ============================================
-  SMTP_HOST: Joi.string().optional(),
+  SMTP_HOST: Joi.string().optional().allow(''),
   SMTP_PORT: Joi.number().default(587),
-  SMTP_USER: Joi.string().optional(),
-  SMTP_PASS: Joi.string().optional(),
+  SMTP_USER: Joi.string().optional().allow(''),
+  SMTP_PASS: Joi.string().optional().allow(''),
   SMTP_SECURE: Joi.boolean().default(false),
-  SMTP_FROM_EMAIL: Joi.string().email().optional(),
+  SMTP_FROM_EMAIL: Joi.string().email().optional().allow(''),
   SMTP_FROM_NAME: Joi.string().default('The Brand Coach Network'),
 
   // ============================================
   // Email (SendGrid) — legacy, optional
   // ============================================
-  SENDGRID_API_KEY: Joi.string().optional(),
-  SENDGRID_FROM_EMAIL: Joi.string().email().optional(),
+  SENDGRID_API_KEY: Joi.string().optional().allow(''),
+  SENDGRID_FROM_EMAIL: Joi.string().email().optional().allow(''),
   SENDGRID_FROM_NAME: Joi.string().default('The Brand Coach Network'),
 
   // ============================================
   // Payments
   // ============================================
-  STRIPE_SECRET_KEY: Joi.string().optional(),
-  STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
-  FLUTTERWAVE_SECRET_KEY: Joi.string().optional(),
-  FLUTTERWAVE_WEBHOOK_SECRET: Joi.string().optional(),
-  PAYSTACK_SECRET_KEY: Joi.string().optional(),
-  PAYSTACK_WEBHOOK_SECRET: Joi.string().optional(),
-  PAYSTACK_CURRENCY: Joi.string().length(3).optional(),
+  STRIPE_SECRET_KEY: Joi.string().optional().allow(''),
+  STRIPE_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+  FLUTTERWAVE_SECRET_KEY: Joi.string().optional().allow(''),
+  FLUTTERWAVE_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+  PAYSTACK_SECRET_KEY: Joi.string().optional().allow(''),
+  PAYSTACK_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+  PAYSTACK_CURRENCY: Joi.string().length(3).optional().allow(''),
   MPESA_ENV: Joi.string().valid('sandbox', 'production').default('sandbox'),
-  MPESA_CONSUMER_KEY: Joi.string().optional(),
-  MPESA_CONSUMER_SECRET: Joi.string().optional(),
-  MPESA_SHORTCODE: Joi.string().optional(),
-  MPESA_PASSKEY: Joi.string().optional(),
-  MPESA_CALLBACK_URL: Joi.string().uri().optional(),
-  MPESA_SANDBOX_CALLBACK_FALLBACK: Joi.string().uri().optional(),
-  MPESA_TRANSACTION_TYPE: Joi.string().optional(),
+  MPESA_CONSUMER_KEY: Joi.string().optional().allow(''),
+  MPESA_CONSUMER_SECRET: Joi.string().optional().allow(''),
+  MPESA_SHORTCODE: Joi.string().optional().allow(''),
+  MPESA_PASSKEY: Joi.string().optional().allow(''),
+  MPESA_CALLBACK_URL: Joi.string().uri().optional().allow(''),
+  MPESA_SANDBOX_CALLBACK_FALLBACK: Joi.string().uri().optional().allow(''),
+  MPESA_TRANSACTION_TYPE: Joi.string().optional().allow(''),
 
   // ============================================
   // Rate Limiting
