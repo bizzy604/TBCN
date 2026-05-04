@@ -79,6 +79,7 @@ This starts:
 
 ```bash
 npm run migration:run
+pnpm --filter api migration:run
 ```
 
 ### 5. Start Development Server

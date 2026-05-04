@@ -1,11 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 // Common modules
 import { DatabaseModule } from './common/database/database.module';
@@ -13,6 +12,8 @@ import { CacheModule } from './common/cache/cache.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
+import { RlsInterceptor } from './common/rls/rls.interceptor';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { HealthController } from './health/health.controller';
 
 // Feature modules
@@ -135,20 +136,17 @@ import { configValidationSchema } from './common/config/config.schema';
     CertificatesModule,
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: RateLimitGuard,
-    },
-    // Global guards — every route requires JWT auth by default.
-    // Use @Public() decorator to opt-out specific routes.
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+    // Every route requires JWT auth by default; use @Public() to opt out.
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    // Runs after JwtAuthGuard so req.user is populated; sets the
+    // AsyncLocalStorage RLS context that RlsSubscriber reads before each query.
+    { provide: APP_INTERCEPTOR, useClass: RlsInterceptor },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}
