@@ -53,6 +53,7 @@ export interface JwtPayloadBase {
   sub: string;    // User ID
   email: string;
   role: UserRole;
+  jti?: string;   // JWT ID used for token revocation
   iat?: number;
   exp?: number;
 }

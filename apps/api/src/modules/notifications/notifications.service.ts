@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { UserRole } from '@tbcn/shared';
 import {
   PaginatedResult,
@@ -59,11 +59,22 @@ export class NotificationsService {
     }));
     const saved = await this.notificationRepo.save(created);
 
-    await Promise.all(saved.map(async (n) => {
-      await this.inAppChannel.send(n.userId, n.title);
-      await this.emailChannel.send(n.userId, n.title);
+    // Batch the unread count once per unique user rather than once per notification
+    const unreadByUser = new Map<string, number>();
+    for (const n of saved) {
+      if (!unreadByUser.has(n.userId)) {
+        unreadByUser.set(n.userId, await this.getUnreadCountValue(n.userId));
+      }
+    }
+
+    // Use allSettled so one failing channel never blocks others
+    await Promise.allSettled(saved.map(async (n) => {
+      await Promise.allSettled([
+        this.inAppChannel.send(n.userId, n.title),
+        this.emailChannel.send(n.userId, n.title),
+      ]);
       this.notificationsGateway.emitNotification(n);
-      this.notificationsGateway.emitUnreadCount(n.userId, await this.getUnreadCountValue(n.userId));
+      this.notificationsGateway.emitUnreadCount(n.userId, unreadByUser.get(n.userId) ?? 0);
     }));
 
     return saved;
@@ -105,19 +116,15 @@ export class NotificationsService {
   }
 
   async markAllRead(userId: string): Promise<{ updated: number }> {
-    const pending = await this.notificationRepo.find({
-      where: { userId, isRead: false },
-      select: ['id'],
-    });
-    if (!pending.length) {
-      return { updated: 0 };
-    }
-    await this.notificationRepo.update(
-      { id: In(pending.map((n) => n.id)) },
+    const result = await this.notificationRepo.update(
+      { userId, isRead: false },
       { isRead: true, readAt: new Date() },
     );
-    this.notificationsGateway.emitUnreadCount(userId, 0);
-    return { updated: pending.length };
+    const updated = result.affected ?? 0;
+    if (updated > 0) {
+      this.notificationsGateway.emitUnreadCount(userId, 0);
+    }
+    return { updated };
   }
 
   async getUnreadCount(userId: string): Promise<{ unread: number }> {

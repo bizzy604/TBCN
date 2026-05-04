@@ -269,10 +269,48 @@ describe('AuthController (e2e)', () => {
         });
     });
 
+    it('should reject the same token immediately after logout (blacklist)', async () => {
+      // Obtain a fresh token pair so the main accessToken stays usable for later tests
+      const loginRes = await request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/login`)
+        .send({ email: testUser.email, password: testUser.password })
+        .expect(200);
+
+      const tokenToRevoke: string = loginRes.body.data.accessToken;
+
+      // Logout — this blacklists the token in Redis
+      await request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/logout`)
+        .set('Authorization', `Bearer ${tokenToRevoke}`)
+        .expect(200);
+
+      // Reusing the same token must now return 401
+      await request(app.getHttpServer())
+        .get(`${API_PREFIX}/auth/me`)
+        .set('Authorization', `Bearer ${tokenToRevoke}`)
+        .expect(401);
+    });
+
     it('should fail without authentication', () => {
       return request(app.getHttpServer())
         .post(`${API_PREFIX}/auth/logout`)
         .expect(401);
+    });
+  });
+
+  describe('/auth/oauth-exchange (POST)', () => {
+    it('should return 401 for an invalid code', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/oauth-exchange`)
+        .send({ code: 'non-existent-code' })
+        .expect(401);
+    });
+
+    it('should return 400 when code field is missing', () => {
+      return request(app.getHttpServer())
+        .post(`${API_PREFIX}/auth/oauth-exchange`)
+        .send({})
+        .expect(400);
     });
   });
 

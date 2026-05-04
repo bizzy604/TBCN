@@ -56,7 +56,7 @@ export class CoachingService {
     qb.orderBy('user.created_at', 'DESC').skip((page - 1) * limit).take(limit);
 
     const [users, total] = await qb.getManyAndCount();
-    const coaches = await Promise.all(users.map((user) => this.buildCoachView(user.id, user)));
+    const coaches = await this.buildCoachViewBatch(users);
 
     return createPaginatedResult(coaches, createPaginationMeta(page, limit, total));
   }
@@ -105,6 +105,65 @@ export class CoachingService {
     }
 
     return this.getCoachById(actorId);
+  }
+
+  private async buildCoachViewBatch(users: User[]) {
+    if (users.length === 0) return [];
+
+    const coachIds = users.map((u) => u.id);
+
+    const [profiles, sessionCounts, ratingRows] = await Promise.all([
+      this.profileRepo.find({ where: coachIds.map((id) => ({ userId: id })) }),
+
+      this.sessionRepo
+        .createQueryBuilder('s')
+        .select('s.coach_id', 'coachId')
+        .addSelect('COUNT(s.id)', 'count')
+        .where('s.coach_id IN (:...ids)', { ids: coachIds })
+        .groupBy('s.coach_id')
+        .getRawMany<{ coachId: string; count: string }>(),
+
+      this.feedbackRepo
+        .createQueryBuilder('fb')
+        .innerJoin('fb.session', 'session')
+        .select('session.coach_id', 'coachId')
+        .addSelect('COALESCE(AVG(fb.rating), 0)', 'avg')
+        .addSelect('COUNT(fb.id)', 'count')
+        .where('session.coach_id IN (:...ids)', { ids: coachIds })
+        .groupBy('session.coach_id')
+        .getRawMany<{ coachId: string; avg: string; count: string }>(),
+    ]);
+
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const sessionMap = new Map(sessionCounts.map((r) => [r.coachId, Number(r.count)]));
+    const ratingMap = new Map(ratingRows.map((r) => [r.coachId, r]));
+
+    return users.map((u) => {
+      const profile = profileMap.get(u.id);
+      const rating = ratingMap.get(u.id);
+      return {
+        id: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        fullName: u.fullName,
+        email: u.email,
+        avatarUrl: u.avatarUrl,
+        tagline: profile?.tagline ?? null,
+        bio: profile?.bio ?? null,
+        hourlyRate: Number(profile?.hourlyRate ?? 0),
+        currency: profile?.currency ?? 'USD',
+        yearsExperience: profile?.yearsExperience ?? 0,
+        specialties: (profile?.specialties ?? []).filter(Boolean),
+        languages: (profile?.languages ?? []).filter(Boolean),
+        stats: {
+          totalSessions: sessionMap.get(u.id) ?? 0,
+          averageRating: Number(rating?.avg ?? 0),
+          reviewCount: Number(rating?.count ?? 0),
+        },
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
+      };
+    });
   }
 
   private async buildCoachView(coachId: string, user?: User) {

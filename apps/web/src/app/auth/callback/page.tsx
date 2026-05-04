@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
-import { usersApi } from '@/lib/api';
+import { authApi, usersApi } from '@/lib/api';
 import { getRedirectForRole } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -12,8 +12,9 @@ type CallbackStatus = 'processing' | 'success' | 'error';
 
 /**
  * OAuth Callback Page
- * Receives tokens from the API's OAuth redirect and stores them in the auth store.
- * URL format: /auth/callback?accessToken=...&refreshToken=...&expiresIn=...&provider=...
+ * Receives a short-lived one-time code from the API redirect, exchanges it
+ * for tokens via POST /auth/oauth-exchange, then stores them in the auth store.
+ * URL format: /auth/callback?code=...&provider=...
  * Error format: /auth/callback?error=...&provider=...
  */
 export default function OAuthCallbackPage() {
@@ -34,7 +35,6 @@ export default function OAuthCallbackPage() {
       const error = searchParams.get('error');
       const provider = searchParams.get('provider') || 'social';
 
-      // Handle error case
       if (error) {
         setStatus('error');
         const errorMessages: Record<string, string> = {
@@ -43,57 +43,40 @@ export default function OAuthCallbackPage() {
         };
         setMessage(errorMessages[error] || `Login with ${provider} failed. Please try again.`);
         toast.error(`${provider} login failed`);
-        
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
+        setTimeout(() => router.push('/login'), 3000);
         return;
       }
 
-      // Extract tokens from URL
-      const accessToken = searchParams.get('accessToken');
-      const refreshToken = searchParams.get('refreshToken');
-      const expiresIn = searchParams.get('expiresIn');
-      const redirectTo = searchParams.get('redirectTo');
+      // Exchange the one-time code for tokens (code is never stored in browser history)
+      const code = searchParams.get('code');
 
-      if (!accessToken || !refreshToken) {
+      if (!code) {
         setStatus('error');
-        setMessage('Invalid callback: missing authentication tokens.');
-        toast.error('Login failed — missing tokens');
-        
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
+        setMessage('Invalid callback: missing authorization code.');
+        toast.error('Login failed — missing code');
+        setTimeout(() => router.push('/login'), 3000);
         return;
       }
 
       try {
-        // Store tokens in auth store
-        setTokens(accessToken, refreshToken);
+        const tokenResponse = await authApi.exchangeOAuthCode(code);
+        setTokens(tokenResponse.accessToken, tokenResponse.refreshToken);
 
-        // Fetch full user profile from /users/me
         const user = await usersApi.getMe();
         setUser(user);
 
-        // Determine role-based redirect
-        const destination = redirectTo || getRedirectForRole(user.role);
+        const destination = tokenResponse.redirectTo || getRedirectForRole(user.role);
 
         setStatus('success');
         setMessage(`Welcome${user.firstName ? `, ${user.firstName}` : ''}! Redirecting...`);
         toast.success(`Signed in with ${provider}`);
 
-        // Redirect to role-appropriate page
-        setTimeout(() => {
-          router.push(destination);
-        }, 1500);
+        setTimeout(() => router.push(destination), 1500);
       } catch (err) {
         setStatus('error');
-        setMessage('Failed to fetch your profile. Please try logging in again.');
+        setMessage('Failed to complete login. Please try again.');
         toast.error('Login failed');
-        
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
+        setTimeout(() => router.push('/login'), 3000);
       }
     };
 

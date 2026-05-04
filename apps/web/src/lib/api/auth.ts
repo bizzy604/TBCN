@@ -106,6 +106,18 @@ export const authApi = {
   },
 
   /**
+   * Exchange the one-time OAuth code (received via redirect) for JWT tokens.
+   * This keeps raw tokens out of browser history and server logs.
+   */
+  async exchangeOAuthCode(code: string): Promise<AuthTokens & { user?: unknown; redirectTo?: string }> {
+    const response = await apiClient.post<ApiResponse<AuthTokens & { user?: unknown; redirectTo?: string }>>(
+      '/auth/oauth-exchange',
+      { code },
+    );
+    return response.data.data;
+  },
+
+  /**
    * Get the OAuth redirect URL for a provider
    * Redirects the browser to the API's OAuth endpoint
    */

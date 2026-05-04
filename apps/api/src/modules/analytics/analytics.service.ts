@@ -78,19 +78,20 @@ export class AnalyticsService {
   }
 
   async getRecentActivity(limit = 12) {
+    const safeLimit = Math.min(Math.max(1, limit), 50);
     const [transactions, messages, events] = await Promise.all([
       this.transactionRepo.find({
         where: { status: PaymentStatus.SUCCESS },
         order: { createdAt: 'DESC' },
-        take: limit,
+        take: safeLimit,
       }),
       this.messageRepo.find({
         order: { createdAt: 'DESC' },
-        take: limit,
+        take: safeLimit,
       }),
       this.eventRepo.find({
         order: { createdAt: 'DESC' },
-        take: limit,
+        take: safeLimit,
       }),
     ]);
 

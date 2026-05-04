@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthService, AUTH_EVENTS } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { CacheService } from '../../common/cache/cache.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -36,6 +37,12 @@ describe('AuthService', () => {
 
   const mockEventEmitter = {
     emit: jest.fn(),
+  };
+
+  const mockCacheService = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
   };
 
   const mockUsersService = {
@@ -81,6 +88,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: CacheService, useValue: mockCacheService },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
@@ -560,9 +568,83 @@ describe('AuthService', () => {
   // logout
   // ==================================================
   describe('logout', () => {
-    it('should return success message', async () => {
-      const result = await service.logout('user-uuid-1');
+    it('should blacklist the jti in Redis with remaining TTL', async () => {
+      const jti = 'test-jti-uuid';
+      const exp = Math.floor(Date.now() / 1000) + 900; // 15 min from now
+      mockCacheService.set.mockResolvedValueOnce(undefined);
+
+      const result = await service.logout(jti, exp);
+
       expect(result.message).toContain('Logged out successfully');
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `blacklist:${jti}`,
+        true,
+        expect.any(Number),
+      );
+      const ttlArg = mockCacheService.set.mock.calls[0][2] as number;
+      expect(ttlArg).toBeGreaterThan(0);
+      expect(ttlArg).toBeLessThanOrEqual(900);
+    });
+
+    it('should not write to cache when token is already expired', async () => {
+      const jti = 'expired-jti';
+      const exp = Math.floor(Date.now() / 1000) - 60; // already expired
+      mockCacheService.set.mockResolvedValueOnce(undefined);
+
+      await service.logout(jti, exp);
+
+      expect(mockCacheService.set).not.toHaveBeenCalled();
+    });
+  });
+
+  // ==================================================
+  // storeOAuthCode / exchangeOAuthCode
+  // ==================================================
+  describe('storeOAuthCode', () => {
+    it('should store token data in cache and return a UUID code', async () => {
+      mockCacheService.set.mockResolvedValueOnce(undefined);
+      const tokenData = {
+        accessToken: 'at',
+        refreshToken: 'rt',
+        expiresIn: 900,
+        tokenType: 'Bearer' as const,
+      };
+
+      const code = await service.storeOAuthCode(tokenData);
+
+      expect(typeof code).toBe('string');
+      expect(code.length).toBeGreaterThan(10);
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `oauth:code:${code}`,
+        tokenData,
+        120,
+      );
+    });
+  });
+
+  describe('exchangeOAuthCode', () => {
+    it('should return token data and delete the code on valid exchange', async () => {
+      const tokenData = {
+        accessToken: 'at',
+        refreshToken: 'rt',
+        expiresIn: 900,
+        tokenType: 'Bearer' as const,
+      };
+      mockCacheService.get.mockResolvedValueOnce(tokenData);
+      mockCacheService.del.mockResolvedValueOnce(undefined);
+
+      const result = await service.exchangeOAuthCode('valid-code');
+
+      expect(result).toEqual(tokenData);
+      expect(mockCacheService.del).toHaveBeenCalledWith('oauth:code:valid-code');
+    });
+
+    it('should throw UnauthorizedException for invalid or expired code', async () => {
+      mockCacheService.get.mockResolvedValueOnce(undefined);
+
+      await expect(service.exchangeOAuthCode('bad-code')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

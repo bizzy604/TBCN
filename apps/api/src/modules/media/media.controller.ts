@@ -3,10 +3,9 @@ import {
   Post,
   Delete,
   Body,
-  Query,
+  Param,
   HttpCode,
   HttpStatus,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -67,14 +66,14 @@ export class MediaController {
     );
   }
 
-  @Delete()
+  @Delete(':key')
   @Roles(...MEDIA_USER_ROLES)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a media asset' })
-  async delete(@CurrentUser('id') userId: string, @Query('key') key: string) {
-    if (!key) {
-      throw new BadRequestException('Missing media key');
-    }
+  async delete(
+    @CurrentUser('id') userId: string,
+    @Param('key') key: string,
+  ) {
     return this.uploadService.deleteUpload(userId, key);
   }
 }

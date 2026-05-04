@@ -186,6 +186,16 @@ export class ChangePasswordDto {
 }
 
 /**
+ * OAuth Code Exchange DTO
+ * Used to exchange a short-lived one-time code for JWT tokens after OAuth login.
+ */
+export class OAuthExchangeDto {
+  @ApiProperty({ description: 'One-time OAuth authorization code' })
+  @IsString()
+  code: string;
+}
+
+/**
  * Social Login Profile (validated from OAuth callback)
  */
 export class SocialLoginProfileDto {

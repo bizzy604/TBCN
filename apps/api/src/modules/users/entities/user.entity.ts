@@ -87,12 +87,13 @@ export class User extends BaseEntity {
   @Column({ name: 'two_factor_enabled', type: 'boolean', default: false })
   twoFactorEnabled: boolean;
 
-  @Column({ name: 'two_factor_secret', type: 'varchar', length: 255, nullable: true })
+  @Column({ name: 'two_factor_secret', type: 'varchar', length: 255, select: false, nullable: true })
   @Exclude()
   twoFactorSecret: string | null;
 
   // Password reset fields
-  @Column({ name: 'password_reset_token', type: 'varchar', length: 255, nullable: true })
+  @Index('idx_users_password_reset_token')
+  @Column({ name: 'password_reset_token', type: 'varchar', length: 255, select: false, nullable: true })
   @Exclude()
   passwordResetToken: string | null;
 
@@ -101,7 +102,8 @@ export class User extends BaseEntity {
   passwordResetExpires: Date | null;
 
   // Email verification fields
-  @Column({ name: 'email_verification_token', type: 'varchar', length: 255, nullable: true })
+  @Index('idx_users_email_verification_token')
+  @Column({ name: 'email_verification_token', type: 'varchar', length: 255, select: false, nullable: true })
   @Exclude()
   emailVerificationToken: string | null;
 

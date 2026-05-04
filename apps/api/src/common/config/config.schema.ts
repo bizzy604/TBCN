@@ -12,7 +12,11 @@ export const configValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
   PORT: Joi.number().default(4000),
-  CORS_ORIGIN: Joi.string().default('http://localhost:3000'),
+  CORS_ORIGIN: Joi.string().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.required(),
+    otherwise: Joi.string().default('http://localhost:3000,http://localhost:3002'),
+  }),
   FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
   API_PUBLIC_URL: Joi.string().uri().optional(),
 
@@ -21,8 +25,8 @@ export const configValidationSchema = Joi.object({
   // ============================================
   DATABASE_HOST: Joi.string().default('localhost'),
   DATABASE_PORT: Joi.number().default(5432),
-  DATABASE_USERNAME: Joi.string().default('postgres'),
-  DATABASE_PASSWORD: Joi.string().default('postgres'),
+  DATABASE_USERNAME: Joi.string().required(),
+  DATABASE_PASSWORD: Joi.string().required(),
   DATABASE_NAME: Joi.string().default('brandcoach'),
   DATABASE_URL: Joi.string().optional(),
   DATABASE_SYNC: Joi.boolean().default(false),
@@ -39,7 +43,7 @@ export const configValidationSchema = Joi.object({
   // ============================================
   // JWT & Authentication
   // ============================================
-  JWT_SECRET: Joi.string().required().min(32),
+  JWT_SECRET: Joi.string().required().min(64),
   JWT_ACCESS_EXPIRATION: Joi.string().default('15m'),
   JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
   JWT_ISSUER: Joi.string().default('brandcoachnetwork.com'),

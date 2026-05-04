@@ -29,6 +29,7 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   VerifyEmailDto,
+  OAuthExchangeDto,
 } from './dto';
 import { Public, CurrentUser } from '../../common/decorators';
 import {
@@ -138,8 +139,18 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Logout current user' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@CurrentUser('sub') userId: string) {
-    return this.authService.logout(userId);
+  async logout(@CurrentUser() user: { jti: string; exp: number }) {
+    return this.authService.logout(user.jti, user.exp);
+  }
+
+  @Post('oauth-exchange')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange one-time OAuth code for JWT tokens' })
+  @ApiResponse({ status: 200, description: 'Tokens issued' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired code' })
+  async oauthExchange(@Body() dto: OAuthExchangeDto) {
+    return this.authService.exchangeOAuthCode(dto.code);
   }
 
   @Post('change-password')
@@ -243,8 +254,9 @@ export class AuthController {
   // ============================================
 
   /**
-   * Handle OAuth callback from any provider
-   * Generates JWT tokens and redirects to frontend with tokens in URL
+   * Handle OAuth callback from any provider.
+   * Stores tokens under a short-lived one-time code in Redis and redirects
+   * the frontend with only that code — raw tokens never appear in the URL.
    */
   private async handleOAuthCallback(
     req: Request,
@@ -262,7 +274,6 @@ export class AuthController {
         return;
       }
 
-      // Generate JWT tokens from the social profile
       const tokens = await this.authService.socialLogin({
         provider: socialUser.provider || provider,
         providerId: socialUser.providerId,
@@ -272,15 +283,12 @@ export class AuthController {
         avatarUrl: socialUser.avatarUrl || null,
       });
 
-      // Redirect to frontend callback page with tokens
+      // Store tokens in Redis; send only a short-lived opaque code to the browser
+      const code = await this.authService.storeOAuthCode(tokens);
+
       const callbackUrl = new URL(`${this.frontendUrl}/auth/callback`);
-      callbackUrl.searchParams.set('accessToken', tokens.accessToken);
-      callbackUrl.searchParams.set('refreshToken', tokens.refreshToken);
-      callbackUrl.searchParams.set('expiresIn', tokens.expiresIn.toString());
+      callbackUrl.searchParams.set('code', code);
       callbackUrl.searchParams.set('provider', provider);
-      if (tokens.redirectTo) {
-        callbackUrl.searchParams.set('redirectTo', tokens.redirectTo);
-      }
 
       res.redirect(callbackUrl.toString());
     } catch (error) {

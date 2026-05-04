@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
 import { UserRole, ROLE_REDIRECT_MAP } from '@tbcn/shared';
+import { CacheService } from '../../common/cache/cache.service';
 import {
   LoginDto,
   RegisterDto,
@@ -32,6 +33,7 @@ export interface JwtPayload {
   sub: string; // User ID
   email: string;
   role: UserRole;
+  jti?: string;
   iat?: number;
   exp?: number;
 }
@@ -67,6 +69,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly cacheService: CacheService,
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
   ) {}
@@ -355,15 +358,40 @@ export class AuthService {
   }
 
   /**
-   * Logout user (invalidate tokens)
+   * Logout user — blacklists the access token's JTI in Redis so it cannot
+   * be reused even before its natural expiry.
    */
-  async logout(userId: string): Promise<{ message: string }> {
-    // TODO: Add refresh token to blacklist
-    // TODO: Clear any sessions
+  async logout(jti: string, exp: number): Promise<{ message: string }> {
+    const now = Math.floor(Date.now() / 1000);
+    const ttl = exp - now;
+    if (ttl > 0) {
+      await this.cacheService.set(`blacklist:${jti}`, true, ttl);
+    }
+    return { message: 'Logged out successfully.' };
+  }
 
-    return {
-      message: 'Logged out successfully.',
-    };
+  /**
+   * Store a short-lived one-time code in Redis that maps to the OAuth token
+   * response. The code is sent to the frontend in the redirect URL instead of
+   * the raw tokens, keeping tokens out of browser history and server logs.
+   */
+  async storeOAuthCode(data: TokenResponse): Promise<string> {
+    const code = uuidv4();
+    await this.cacheService.set(`oauth:code:${code}`, data, 120); // 2-minute TTL
+    return code;
+  }
+
+  /**
+   * Exchange a one-time OAuth code for the token response.
+   * The code is deleted immediately after retrieval (single-use).
+   */
+  async exchangeOAuthCode(code: string): Promise<TokenResponse> {
+    const data = await this.cacheService.get<TokenResponse>(`oauth:code:${code}`);
+    if (!data) {
+      throw new UnauthorizedException('Invalid or expired authorization code');
+    }
+    await this.cacheService.del(`oauth:code:${code}`);
+    return data;
   }
 
   // ============================================
@@ -378,22 +406,15 @@ export class AuthService {
     email: string,
     role: UserRole,
   ): Promise<TokenResponse> {
-    const payload: JwtPayload = {
-      sub: userId,
-      email,
-      role,
-    };
-
     const accessExpiration = this.configService.get<string>('JWT_ACCESS_EXPIRATION', '15m');
     const refreshExpiration = this.configService.get<string>('JWT_REFRESH_EXPIRATION', '7d');
 
+    const accessPayload: JwtPayload = { sub: userId, email, role, jti: uuidv4() };
+    const refreshPayload: JwtPayload = { sub: userId, email, role, jti: uuidv4() };
+
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        expiresIn: accessExpiration,
-      }),
-      this.jwtService.signAsync(payload, {
-        expiresIn: refreshExpiration,
-      }),
+      this.jwtService.signAsync(accessPayload, { expiresIn: accessExpiration }),
+      this.jwtService.signAsync(refreshPayload, { expiresIn: refreshExpiration }),
     ]);
 
     // Parse expiration to seconds

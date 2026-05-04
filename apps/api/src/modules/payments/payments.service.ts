@@ -250,9 +250,14 @@ export class PaymentsService {
     return transaction;
   }
 
-  async confirmCallback(dto: PaymentCallbackDto): Promise<Transaction> {
+  async confirmCallback(dto: PaymentCallbackDto, requestingUserId: string): Promise<Transaction> {
     const transaction = await this.transactionRepo.findOne({ where: { reference: dto.reference } });
     if (!transaction) {
+      throw new NotFoundException(`Transaction "${dto.reference}" not found`);
+    }
+
+    // Ensure the authenticated user owns the transaction they are confirming
+    if (transaction.userId !== requestingUserId) {
       throw new NotFoundException(`Transaction "${dto.reference}" not found`);
     }
 
